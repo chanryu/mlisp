@@ -2,12 +2,6 @@
 
 #include "mlisp.hpp"
 
-void debug_print(mlisp::Node node)
-{
-    mlisp::Printer(std::cout).print(node);
-    std::cout << std::endl;
-}
-
 namespace {
     using namespace mlisp;
 
@@ -52,6 +46,11 @@ namespace {
         }
 
         return token;
+    }
+
+    void debug_print(mlisp::Node node)
+    {
+        std::cout << node << std::endl;
     }
 }
 
@@ -457,4 +456,66 @@ mlisp::cons(Node head, List tail) noexcept
     }
 
     return List{ std::make_shared<List::Data>(head, tail) };
+}
+
+std::ostream&
+std::operator << (std::ostream& os, mlisp::Node const& node)
+{
+    using namespace mlisp;
+
+    class NodePrinter: NodeVisitor {
+    public:
+        explicit NodePrinter(std::ostream& ostream) : ostream_(ostream)
+        {
+        }
+
+        void print(Node const& node)
+        {
+            is_head_.push(true);
+            node.accept(*this);
+            is_head_.pop();
+        }
+
+    private:
+        void visit(Symbol symbol) override
+        {
+            ostream_ << symbol.text();
+        }
+
+        void visit(List list) override
+        {
+            auto head = car(list);
+            if (!head) {
+                ostream_ << "nil";
+                return;
+            }
+
+            if (is_head_.top()) {
+                ostream_ << '(';
+            }
+
+            is_head_.push(true);
+            head.accept(*this);
+            is_head_.pop();
+
+            auto tail = cdr(list);
+            if (tail) {
+                ostream_ << ' ';
+
+                is_head_.push(false);
+                tail.accept(*this);
+                is_head_.pop();
+            }
+            else {
+                ostream_ << ')';
+            }
+        }
+
+    private:
+        std::stack<bool> is_head_;
+        std::ostream& ostream_;
+    };
+
+    NodePrinter{os}.print(node);
+    return os;
 }

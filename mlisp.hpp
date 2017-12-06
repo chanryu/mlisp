@@ -114,3 +114,7 @@ namespace mlisp {
     List cdr(List list) noexcept;
     List cons(Node head, List tail) noexcept;
 }
+
+namespace std {
+    ostream& operator << (ostream& os, mlisp::Node const& node);
+}

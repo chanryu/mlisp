@@ -2,13 +2,6 @@
 
 #include "mlisp.hpp"
 
-std::ostream&
-operator << (std::ostream& os, mlisp::Node const& node)
-{
-    mlisp::Printer{os}.print(node);
-    return os;
-}
-
 std::string
 readline()
 {
