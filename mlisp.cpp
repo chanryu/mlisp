@@ -294,58 +294,6 @@ mlisp::Parser::intern(std::string text) noexcept
     return symbol;
 }
 
-
-///////////////////////////////////////////////////////////////////////////////
-// Printer
-
-mlisp::Printer::Printer(std::ostream& ostream) : ostream_(ostream)
-{
-}
-
-void
-mlisp::Printer::print(Node const& node)
-{
-    is_head_.push(true);
-    node.accept(*this);
-    is_head_.pop();
-}
-
-void
-mlisp::Printer::visit(Symbol symbol)
-{
-    ostream_ << symbol.text();
-}
-
-void
-mlisp::Printer::visit(List list)
-{
-    auto head = car(list);
-    if (!head) {
-        ostream_ << "nil";
-        return;
-    }
-
-    if (is_head_.top()) {
-        ostream_ << '(';
-    }
-
-    is_head_.push(true);
-    head.accept(*this);
-    is_head_.pop();
-
-    auto tail = cdr(list);
-    if (tail) {
-        ostream_ << ' ';
-
-        is_head_.push(false);
-        tail.accept(*this);
-        is_head_.pop();
-    }
-    else {
-        ostream_ << ')';
-    }
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 // EvalError
 
