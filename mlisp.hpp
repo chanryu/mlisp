@@ -81,10 +81,15 @@ namespace mlisp {
         std::map<std::string, Symbol> symbols_;
     };
 
+    class EvalError: public std::runtime_error {
+    public:
+        explicit EvalError(char const* what);
+        explicit EvalError(std::string const& what);
+    };
+
+    Node eval(Node expr, List env);
+
     Node car(List list) noexcept;
     List cdr(List list) noexcept;
     List cons(Node head, List tail) noexcept;
-
-    using EvalError = std::runtime_error;
-    Node eval(Node expr, List env);
 }

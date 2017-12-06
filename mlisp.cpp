@@ -284,6 +284,26 @@ mlisp::Parser::intern(std::string text) noexcept
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// EvalError
+
+mlisp::EvalError::EvalError(char const* what) : std::runtime_error{what}
+{
+}
+
+mlisp::EvalError::EvalError(std::string const& what) : std::runtime_error{what}
+{
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// eval
+
+mlisp::Node
+mlisp::eval(Node expr, List env)
+{
+    return expr;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Builtins
 
 mlisp::Node
@@ -307,10 +327,4 @@ mlisp::cons(Node head, List tail) noexcept
     }
 
     return List{ std::make_shared<List::Data>(head, tail) };
-}
-
-mlisp::Node
-mlisp::eval(Node expr, List env)
-{
-    return {};
 }

@@ -73,6 +73,7 @@ readline()
 
 int main(int argc, char *argv[])
 {
+    mlisp::List env;
     mlisp::Parser parser;
 
     while (true) {
@@ -91,9 +92,10 @@ int main(int argc, char *argv[])
                 if (!expr) {
                     break;
                 }
-                //std::cout << *mlisp::eval(expr) << std::endl;
-                std::cout << expr << std::endl;
-            } catch (std::runtime_error& e) {
+                std::cout << mlisp::eval(expr, env) << std::endl;
+            } catch (mlisp::ParseError& e) {
+                std::cout << e.what() << std::endl;
+            } catch (mlisp::EvalError& e) {
                 std::cout << e.what() << std::endl;
             }
         }
