@@ -58,7 +58,11 @@ namespace mlisp {
         virtual void visit(Symbol) = 0;
     };
 
-    using ParseError = std::runtime_error;
+    class ParseError: public std::runtime_error {
+    public:
+        explicit ParseError(char const* what);
+        explicit ParseError(std::string const& what);
+    };
     
     class Parser {
     public:
@@ -70,7 +74,7 @@ namespace mlisp {
 
     private:
         struct Context {
-            bool paran;
+            bool paren;
             Node head;
         };
         std::stack<Context> stack_;

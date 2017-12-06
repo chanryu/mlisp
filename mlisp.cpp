@@ -198,6 +198,17 @@ mlisp::Symbol::text() const
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// ParseError
+
+mlisp::ParseError::ParseError(char const* what) : std::runtime_error{what}
+{
+}
+
+mlisp::ParseError::ParseError(std::string const& what) : std::runtime_error{what}
+{
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Parser
 
 Node
@@ -230,7 +241,7 @@ mlisp::Parser::parse(std::istream& istream)
                 auto c = stack_.top();
                 stack_.pop();
                 list = cons(c.head, list);
-                if (c.paran) {
+                if (c.paren) {
                     break;
                 }
             }
@@ -271,7 +282,6 @@ mlisp::Parser::intern(std::string text) noexcept
     symbols_[text] = symbol;
     return symbol;
 }
-
 
 ///////////////////////////////////////////////////////////////////////////////
 // Builtins
