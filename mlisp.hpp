@@ -55,7 +55,7 @@ namespace mlisp {
         explicit Symbol(std::shared_ptr<Data const>);
         Symbol& operator = (Symbol const&);
 
-        std::string const& text() const;
+        std::string const& name() const;
     };
 
     class NodeVisitor {

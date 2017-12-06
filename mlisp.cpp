@@ -90,9 +90,9 @@ struct mlisp::List::Data: public mlisp::Node::Data {
 
 struct mlisp::Symbol::Data: public mlisp::Node::Data {
     
-    explicit Data(std::string t) noexcept : text{std::move(t)}
+    explicit Data(std::string n) noexcept : name{std::move(n)}
     {
-        assert(!text.empty());
+        assert(!name.empty());
     }
 
     void accept(NodeVisitor& visitor) const override
@@ -100,7 +100,7 @@ struct mlisp::Symbol::Data: public mlisp::Node::Data {
         visitor.visit(Symbol{ std::static_pointer_cast<Data const>(shared_from_this()) });
     }
     
-    std::string const text;
+    std::string const name;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -200,10 +200,10 @@ mlisp::Symbol::operator = (Symbol const& rhs)
 }
 
 std::string const&
-mlisp::Symbol::text() const
+mlisp::Symbol::name() const
 {
     assert(data_);
-    return static_cast<Data const*>(data_.get())->text;
+    return static_cast<Data const*>(data_.get())->name;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -336,7 +336,7 @@ mlisp::eval(Node expr, List env)
             auto symbol = head.to_symbol();
 
             if (symbol) {
-                auto name = symbol.text();
+                auto name = symbol.name();
                 if (name == "quote") {
                     stack_.push(tail);
                 }
@@ -427,7 +427,7 @@ std::operator << (std::ostream& os, mlisp::Node const& node)
     private:
         void visit(Symbol symbol) override
         {
-            ostream_ << symbol.text();
+            ostream_ << symbol.name();
         }
 
         void visit(List list) override
