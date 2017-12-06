@@ -4,61 +4,7 @@
 
 void debug_print(mlisp::Node node)
 {
-    using namespace mlisp;
-    class NodePrinter: NodeVisitor {
-    public:
-        explicit NodePrinter(std::ostream& ostream) : ostream_(ostream)
-        {
-        }
-
-        void print(Node const& node)
-        {
-            is_head_.push(true);
-            node.accept(*this);
-            is_head_.pop();
-        }
-
-    private:
-        void visit(Symbol symbol) override
-        {
-            ostream_ << symbol.text();
-        }
-
-        void visit(List list) override
-        {
-            auto head = car(list);
-            if (!head) {
-                ostream_ << "nil";
-                return;
-            }
-
-            if (is_head_.top()) {
-                ostream_ << '(';
-            }
-
-            is_head_.push(true);
-            head.accept(*this);
-            is_head_.pop();
-
-            auto tail = cdr(list);
-            if (tail) {
-                ostream_ << ' ';
-
-                is_head_.push(false);
-                tail.accept(*this);
-                is_head_.pop();
-            }
-            else {
-                ostream_ << ')';
-            }
-        }
-
-    private:
-        std::stack<bool> is_head_;
-        std::ostream& ostream_;
-    };
-
-    NodePrinter(std::cout).print(node);
+    mlisp::Printer(std::cout).print(node);
     std::cout << std::endl;
 }
 
@@ -347,6 +293,58 @@ mlisp::Parser::intern(std::string text) noexcept
     Symbol symbol{ std::make_shared<Symbol::Data>(text) };
     symbols_[text] = symbol;
     return symbol;
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+// Printer
+
+mlisp::Printer::Printer(std::ostream& ostream) : ostream_(ostream)
+{
+}
+
+void
+mlisp::Printer::print(Node const& node)
+{
+    is_head_.push(true);
+    node.accept(*this);
+    is_head_.pop();
+}
+
+void
+mlisp::Printer::visit(Symbol symbol)
+{
+    ostream_ << symbol.text();
+}
+
+void
+mlisp::Printer::visit(List list)
+{
+    auto head = car(list);
+    if (!head) {
+        ostream_ << "nil";
+        return;
+    }
+
+    if (is_head_.top()) {
+        ostream_ << '(';
+    }
+
+    is_head_.push(true);
+    head.accept(*this);
+    is_head_.pop();
+
+    auto tail = cdr(list);
+    if (tail) {
+        ostream_ << ' ';
+
+        is_head_.push(false);
+        tail.accept(*this);
+        is_head_.pop();
+    }
+    else {
+        ostream_ << ')';
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

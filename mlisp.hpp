@@ -87,6 +87,21 @@ namespace mlisp {
         std::map<std::string, Symbol> symbols_;
     };
 
+    class Printer: NodeVisitor {
+    public:
+        explicit Printer(std::ostream& ostream);
+
+        void print(Node const& node);
+
+    private:
+        void visit(Symbol symbol) override;
+        void visit(List list) override;
+
+    private:
+        std::stack<bool> is_head_;
+        std::ostream& ostream_;
+    };
+
     class EvalError: public std::runtime_error {
     public:
         explicit EvalError(char const* what);
