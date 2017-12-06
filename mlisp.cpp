@@ -2,6 +2,59 @@
 
 #include "mlisp.hpp"
 
+void debug_print(mlisp::Node node)
+{
+    using namespace mlisp;
+    class NodePrinter: NodeVisitor {
+    public:
+        explicit NodePrinter(std::ostream& ostream) : ostream_(ostream)
+        {
+        }
+
+        void print(Node const& node)
+        {
+            node.accept(*this, true);
+        }
+
+    private:
+        void visit(Symbol symbol, bool is_head) override
+        {
+            ostream_ << symbol.text();
+        }
+
+        void visit(List list, bool is_head) override
+        {
+            auto head = car(list);
+            if (!head) {
+                ostream_ << "nil";
+                return;
+            }
+
+            if (is_head) {
+                ostream_ << '(';
+            }
+
+            head.accept(*this, true);
+
+            auto tail = cdr(list);
+            if (tail) {
+                ostream_ << ' ';
+
+                tail.accept(*this, false);
+            }
+            else {
+                ostream_ << ')';
+            }
+        }
+
+    private:
+        std::ostream& ostream_;
+    };
+
+    NodePrinter(std::cout).print(node);
+    std::cout << std::endl;
+}
+
 namespace {
     using namespace mlisp;
 
@@ -36,7 +89,8 @@ namespace {
             if (is_paren(c)) {
                 if (token.empty()) {
                     token.push_back(c);
-                } else {
+                }
+                else {
                     istream.unget();
                 }
                 break;
@@ -130,6 +184,23 @@ mlisp::Node::accept(NodeVisitor& visitor, bool is_head) const
     if (data_) {
         data_->accept(visitor, is_head);
     }
+}
+
+mlisp::List
+mlisp::Node::to_list() const noexcept
+{
+    auto list_data = std::dynamic_pointer_cast<List::Data const>(data_);
+    if (list_data) {
+        return cons(list_data->head, list_data->tail);
+    }
+
+    return {};
+}
+
+mlisp::Symbol
+mlisp::Node::to_symbol() const noexcept
+{
+    return Symbol{ std::dynamic_pointer_cast<Symbol::Data const>(data_) };
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -232,13 +303,15 @@ mlisp::Parser::parse(std::istream& istream)
                 }
             }
             expr = list;
-        } else {
+        }
+        else {
             expr = intern(token);
         }
             
         if (stack_.empty()) {
             return expr;
-        } else {
+        }
+        else {
             if (stack_.top().head) {
                 stack_.push({ false, expr });
             } else {
@@ -286,7 +359,71 @@ mlisp::EvalError::EvalError(std::string const& what) : std::runtime_error{what}
 mlisp::Node
 mlisp::eval(Node expr, List env)
 {
-    return expr;
+    class NodeEvaluator: public NodeVisitor {
+    public:
+        explicit NodeEvaluator(List env) : env_(env)
+        {
+        }
+
+        Node evaluate(Node expr)
+        {
+            expr.accept(*this, true);
+
+            auto result = stack_.top();
+            stack_.pop();
+            return result;
+        }
+
+        void visit(List list, bool is_head)
+        {
+            static auto const nil = cons({}, {});
+
+            auto head = car(list);
+            auto tail = cdr(list);
+
+            auto symbol = head.to_symbol();
+
+            if (symbol) {
+                auto name = symbol.text();
+                if (name == "quote") {
+                    stack_.push(tail);
+                }
+                else if (name == "car" || name == "cdr") {
+
+                    if (cdr(tail)) {
+                        throw EvalError(name + ": too many args given");
+                    }
+
+                    List arg = eval(car(tail), env_).to_list();
+                    if (!arg) {
+                        throw EvalError(name + ": must be given a list");
+                    }
+
+                    if (name == "car") {
+                        stack_.push(car(arg));
+                    } else {
+                        stack_.push(cdr(arg));
+                    }
+                }
+                else {
+                    stack_.push(nil);
+                }
+            } else {
+                stack_.push(nil);
+            }
+        }
+
+        void visit(Symbol symbol, bool is_head)
+        {
+            stack_.push(symbol);
+        }
+
+    private:
+        List env_;
+        std::stack<Node> stack_;
+    };
+
+    return NodeEvaluator(env).evaluate(expr);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

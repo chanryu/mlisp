@@ -10,6 +10,9 @@ namespace mlisp {
 
     class NodeVisitor;
 
+    class List;
+    class Symbol;
+
     class Node {
     public:
         struct Data;
@@ -22,6 +25,9 @@ namespace mlisp {
         operator bool() const;
 
         void accept(NodeVisitor&, bool) const;
+
+        List to_list() const noexcept;
+        Symbol to_symbol() const noexcept;
 
     protected:
         std::shared_ptr<Data const> data_;

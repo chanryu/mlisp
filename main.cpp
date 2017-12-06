@@ -43,7 +43,8 @@ operator << (std::ostream& os, mlisp::Node const& node)
                 ostream_ << ' ';
 
                 tail.accept(*this, false);
-            } else {
+            }
+            else {
                 ostream_ << ')';
             }
         }
@@ -72,7 +73,8 @@ int main(int argc, char *argv[])
     while (true) {
         if (parser.clean()) {
             std::cout << "mlisp> ";
-        } else {
+        }
+        else {
             std::cout << "...... ";
         }
 
@@ -86,9 +88,11 @@ int main(int argc, char *argv[])
                     break;
                 }
                 std::cout << mlisp::eval(expr, env) << std::endl;
-            } catch (mlisp::ParseError& e) {
+            }
+            catch (mlisp::ParseError& e) {
                 std::cout << e.what() << std::endl;
-            } catch (mlisp::EvalError& e) {
+            }
+            catch (mlisp::EvalError& e) {
                 std::cout << e.what() << std::endl;
             }
         }
