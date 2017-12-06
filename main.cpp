@@ -2,59 +2,63 @@
 
 #include "mlisp.hpp"
 
-class NodePrinter: mlisp::NodeVisitor {
-public:
-    explicit NodePrinter(std::ostream& ostream) : ostream_(ostream)
-    {
-    }
-
-    void print(mlisp::Node const& node)
-    {
-        is_head_.push(true);
-        node.accept(*this);
-        is_head_.pop();
-    }
-
-private:
-    void visit(mlisp::Symbol const& symbol) override
-    {
-        ostream_ << symbol.text;
-    }
-
-    void visit(mlisp::List const& list) override
-    {
-        if (!list.head) {
-            ostream_ << "nil";
-            return;
-        }
-
-        if (is_head_.top()) {
-            ostream_ << '(';
-        }
-
-        is_head_.push(true);
-        list.head->accept(*this);
-        is_head_.pop();
-
-        if (list.tail) {
-            ostream_ << ' ';
-
-            is_head_.push(false);
-            list.tail->accept(*this);
-            is_head_.pop();
-        } else {
-            ostream_ << ')';
-        }
-    }
-
-private:
-    std::stack<bool> is_head_;
-    std::ostream& ostream_;
-};
-
 std::ostream&
 operator << (std::ostream& os, mlisp::Node const& node)
 {
+    using namespace mlisp;
+
+    class NodePrinter: NodeVisitor {
+    public:
+        explicit NodePrinter(std::ostream& ostream) : ostream_(ostream)
+        {
+        }
+
+        void print(Node const& node)
+        {
+            is_head_.push(true);
+            node.accept(*this);
+            is_head_.pop();
+        }
+
+    private:
+        void visit(Symbol symbol) override
+        {
+            ostream_ << symbol.text();
+        }
+
+        void visit(List list) override
+        {
+            auto head = car(list);
+            if (!head) {
+                ostream_ << "nil";
+                return;
+            }
+
+            if (is_head_.top()) {
+                ostream_ << '(';
+            }
+
+            is_head_.push(true);
+            head.accept(*this);
+            is_head_.pop();
+
+            auto tail = cdr(list);
+            if (tail) {
+                ostream_ << ' ';
+
+                is_head_.push(false);
+                tail.accept(*this);
+                is_head_.pop();
+            } else {
+                ostream_ << ')';
+            }
+        }
+
+    private:
+        std::stack<bool> is_head_;
+        std::ostream& ostream_;
+    };
+
     NodePrinter{os}.print(node);
     return os;
 }
@@ -88,7 +92,7 @@ int main(int argc, char *argv[])
                     break;
                 }
                 //std::cout << *mlisp::eval(expr) << std::endl;
-                std::cout << *expr << std::endl;
+                std::cout << expr << std::endl;
             } catch (std::runtime_error& e) {
                 std::cout << e.what() << std::endl;
             }

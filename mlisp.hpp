@@ -12,52 +12,75 @@ namespace mlisp {
 
     class Node {
     public:
-        virtual ~Node();
-        virtual void accept(NodeVisitor&) const = 0;
-    };
+        struct Data;
 
-    class Atom: public Node {
-    };
+        Node();
+        Node(Node const&);
+        explicit Node(std::shared_ptr<Data const>);
+        Node& operator = (Node const&);
 
-    class Symbol: public Atom {
-    public:
-        explicit Symbol(std::string text) noexcept;
-        void accept(NodeVisitor& visitor) const override;
-        
-        std::string const text;
+        operator bool() const;
+
+        void accept(NodeVisitor&) const;
+
+    protected:
+        std::shared_ptr<Data const> data_;
     };
 
     class List: public Node {
     public:
-        List(std::shared_ptr<Node> head, std::shared_ptr<List> tail) noexcept;
-        void accept(NodeVisitor& visitor) const override;
-        
-        std::shared_ptr<Node> const head;
-        std::shared_ptr<List> const tail;
+        struct Data;
+
+        List();
+        List(List const&);
+        explicit List(std::shared_ptr<Data const>);
+        List& operator = (List const&);
+
+        Node head() const;
+        List tail() const;
+    };
+
+    class Symbol: public Node {
+    public:
+        struct Data;
+
+        Symbol();
+        Symbol(Symbol const&);
+        explicit Symbol(std::shared_ptr<Data const>);
+        Symbol& operator = (Symbol const&);
+
+        std::string const& text() const;
     };
 
     class NodeVisitor {
     public:
-        virtual void visit(Symbol const&) = 0;
-        virtual void visit(List const&) = 0;
+        virtual void visit(List) = 0;
+        virtual void visit(Symbol) = 0;
     };
 
-    std::shared_ptr<Node> eval(std::shared_ptr<Node> expr, std::shared_ptr<List> env);
-
+    using ParseError = std::runtime_error;
+    
     class Parser {
     public:
-        std::shared_ptr<Node> parse(std::istream& istream);
+        Node parse(std::istream& istream);
         bool clean() const noexcept;
 
     private:
-        std::shared_ptr<Symbol> intern(std::string text) noexcept;
+        Symbol intern(std::string text) noexcept;
 
     private:
         struct Context {
             bool paran;
-            std::shared_ptr<Node> node;
+            Node head;
         };
         std::stack<Context> stack_;
-        std::map<std::string, std::shared_ptr<Symbol>> symbols_;
+        std::map<std::string, Symbol> symbols_;
     };
+
+    Node car(List list) noexcept;
+    List cdr(List list) noexcept;
+    List cons(Node head, List tail) noexcept;
+
+    using EvalError = std::runtime_error;
+    Node eval(Node expr, List env);
 }

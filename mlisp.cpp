@@ -5,32 +5,6 @@
 namespace {
     using namespace mlisp;
 
-    std::shared_ptr<Node> car(std::shared_ptr<List> list) noexcept
-    {
-        return list->head;
-    }
-
-    std::shared_ptr<List> cdr(std::shared_ptr<List> list) noexcept
-    {
-        return list->tail;
-    }
-
-    std::shared_ptr<List> nil() noexcept
-    {
-        static auto nil = std::make_shared<List>(nullptr, nullptr);
-        return nil;
-    }
-
-    std::shared_ptr<List> cons(std::shared_ptr<Node> head, std::shared_ptr<List> tail) noexcept
-    {
-        if (!head) {
-            assert(!tail);
-            return nil();
-        }
-
-        return std::make_shared<List>(head, tail);
-    }
-
     bool is_paren(int c) noexcept
     {
         return c == '(' || c == ')';
@@ -72,50 +46,161 @@ namespace {
 
         return token;
     }
-
-    using EvalError = std::runtime_error;
-    using ParseError = std::runtime_error;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// Node::Data
+
+struct mlisp::Node::Data: public std::enable_shared_from_this<Data> {
+    virtual ~Data()
+    {
+    }
+
+    virtual void accept(NodeVisitor&) const = 0;
+};
+
+
+///////////////////////////////////////////////////////////////////////////////
+// List::Data
+
+struct mlisp::List::Data: public mlisp::Node::Data {
+
+    Data(Node h, List t) noexcept : head{h}, tail{t}
+    {
+        assert(head || (!head && !tail));
+    }
+
+    void accept(NodeVisitor& visitor) const override
+    {
+        visitor.visit(List{ std::static_pointer_cast<Data const>(shared_from_this()) });
+    }
+    
+    Node head;
+    List tail;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+// Symbol::Data
+
+struct mlisp::Symbol::Data: public mlisp::Node::Data {
+    
+    explicit Data(std::string t) noexcept : text{std::move(t)}
+    {
+        assert(!text.empty());
+    }
+
+    void accept(NodeVisitor& visitor) const override
+    {
+        visitor.visit(Symbol{ std::static_pointer_cast<Data const>(shared_from_this()) });
+    }
+    
+    std::string const text;
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 // Node
 
-mlisp::Node::~Node()
+mlisp::Node::Node()
 {
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// Symbol
-
-mlisp::Symbol::Symbol(std::string t) noexcept : text{std::move(t)}
+mlisp::Node::Node(Node const& other) : data_{other.data_}
 {
-    assert(!text.empty());
+}
+
+mlisp::Node::Node(std::shared_ptr<Data const> data) : data_{data}
+{
+}
+
+mlisp::Node&
+mlisp::Node::operator = (Node const& rhs)
+{
+    data_ = rhs.data_;
+    return *this;
+}
+
+mlisp::Node::operator bool() const
+{
+    return !!data_;
 }
 
 void
-mlisp::Symbol::accept(NodeVisitor& visitor) const
+mlisp::Node::accept(NodeVisitor& visitor) const
 {
-    visitor.visit(*this);
+    if (data_) {
+        data_->accept(visitor);
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // List
 
-mlisp::List::List(std::shared_ptr<Node> h, std::shared_ptr<List> t) noexcept : head{h}, tail{t}
+mlisp::List::List()
 {
-    assert(head || (!head && !tail));
 }
 
-void
-mlisp::List::accept(NodeVisitor& visitor) const
+mlisp::List::List(List const& other) : Node{other.data_}
 {
-    visitor.visit(*this);
+}
+
+mlisp::List::List(std::shared_ptr<Data const> data) : Node{data}
+{
+}
+
+mlisp::List&
+mlisp::List::operator = (List const& rhs)
+{
+    data_ = rhs.data_;
+    return *this;
+}
+
+mlisp::Node
+mlisp::List::head() const
+{
+    assert(data_);
+    return static_cast<Data const*>(data_.get())->head;
+}
+
+mlisp::List
+mlisp::List::tail() const
+{
+    assert(data_);
+    return static_cast<Data const*>(data_.get())->tail;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Symbol
+
+mlisp::Symbol::Symbol()
+{
+}
+
+mlisp::Symbol::Symbol(Symbol const& other) : Node{other.data_}
+{
+}
+
+mlisp::Symbol::Symbol(std::shared_ptr<Data const> data) : Node{data}
+{
+}
+
+mlisp::Symbol&
+mlisp::Symbol::operator = (Symbol const& rhs)
+{
+    data_ = rhs.data_;
+    return *this;
+}
+
+std::string const&
+mlisp::Symbol::text() const
+{
+    assert(data_);
+    return static_cast<Data const*>(data_.get())->text;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // Parser
 
-std::shared_ptr<Node>
+Node
 mlisp::Parser::parse(std::istream& istream)
 {
     std::string token;
@@ -128,15 +213,15 @@ mlisp::Parser::parse(std::istream& istream)
         }
 
         if (token == "(") {
-            stack_.push({ true, nullptr });
+            stack_.push({ true, {} });
             continue;
         }
 
-        std::shared_ptr<Node> node;
+        Node expr;
 
         if (token == ")") {
 
-            std::shared_ptr<List> list;
+            List list;
             while (true) {
                 if (stack_.empty()) {
                     throw ParseError{"Unexpected ')'"};
@@ -144,28 +229,28 @@ mlisp::Parser::parse(std::istream& istream)
 
                 auto c = stack_.top();
                 stack_.pop();
-                list = cons(c.node, list);
+                list = cons(c.head, list);
                 if (c.paran) {
                     break;
                 }
             }
-            node = list;
+            expr = list;
         } else {
-            node = intern(token);
+            expr = intern(token);
         }
             
         if (stack_.empty()) {
-            return node;
+            return expr;
         } else {
-            if (stack_.top().node) {
-                stack_.push({ false, node });
+            if (stack_.top().head) {
+                stack_.push({ false, expr });
             } else {
-                stack_.top().node = node;
+                stack_.top().head = expr;
             }
         }
     }
 
-    return nullptr;
+    return {};
 }
 
 bool
@@ -174,15 +259,48 @@ mlisp::Parser::clean() const noexcept
     return stack_.empty();
 }
 
-std::shared_ptr<Symbol>
+mlisp::Symbol
 mlisp::Parser::intern(std::string text) noexcept
 {
     auto i = symbols_.find(text);
     if (i != symbols_.end()) {
         return i->second;
     }
-    auto symbol = std::make_shared<Symbol>(text);
+
+    Symbol symbol{ std::make_shared<Symbol::Data>(text) };
     symbols_[text] = symbol;
     return symbol;
 }
 
+
+///////////////////////////////////////////////////////////////////////////////
+// Builtins
+
+mlisp::Node
+mlisp::car(List list) noexcept
+{
+    return list.head();
+}
+
+mlisp::List
+mlisp::cdr(List list) noexcept
+{
+    return list.tail();
+}
+
+mlisp::List
+mlisp::cons(Node head, List tail) noexcept
+{
+    if (!head) {
+        static List nil{ std::make_shared<List::Data>(Node{}, List{}) };
+        return nil;
+    }
+
+    return List{ std::make_shared<List::Data>(head, tail) };
+}
+
+mlisp::Node
+mlisp::eval(Node expr, List env)
+{
+    return {};
+}
