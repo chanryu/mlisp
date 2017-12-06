@@ -36,8 +36,8 @@ namespace mlisp {
         explicit List(std::shared_ptr<Data const>);
         List& operator = (List const&);
 
-        Node head() const;
-        List tail() const;
+        friend Node car(List list) noexcept;
+        friend List cdr(List list) noexcept;
     };
 
     class Symbol: public Node {

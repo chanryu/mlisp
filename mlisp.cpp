@@ -154,20 +154,6 @@ mlisp::List::operator = (List const& rhs)
     return *this;
 }
 
-mlisp::Node
-mlisp::List::head() const
-{
-    assert(data_);
-    return static_cast<Data const*>(data_.get())->head;
-}
-
-mlisp::List
-mlisp::List::tail() const
-{
-    assert(data_);
-    return static_cast<Data const*>(data_.get())->tail;
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 // Symbol
 
@@ -309,13 +295,15 @@ mlisp::eval(Node expr, List env)
 mlisp::Node
 mlisp::car(List list) noexcept
 {
-    return list.head();
+    assert(list.data_);
+    return static_cast<List::Data const*>(list.data_.get())->head;
 }
 
 mlisp::List
 mlisp::cdr(List list) noexcept
 {
-    return list.tail();
+    assert(list.data_);
+    return static_cast<List::Data const*>(list.data_.get())->tail;
 }
 
 mlisp::List
