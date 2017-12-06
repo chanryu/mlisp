@@ -13,16 +13,18 @@ void debug_print(mlisp::Node node)
 
         void print(Node const& node)
         {
-            node.accept(*this, true);
+            is_head_.push(true);
+            node.accept(*this);
+            is_head_.pop();
         }
 
     private:
-        void visit(Symbol symbol, bool is_head) override
+        void visit(Symbol symbol) override
         {
             ostream_ << symbol.text();
         }
 
-        void visit(List list, bool is_head) override
+        void visit(List list) override
         {
             auto head = car(list);
             if (!head) {
@@ -30,17 +32,21 @@ void debug_print(mlisp::Node node)
                 return;
             }
 
-            if (is_head) {
+            if (is_head_.top()) {
                 ostream_ << '(';
             }
 
-            head.accept(*this, true);
+            is_head_.push(true);
+            head.accept(*this);
+            is_head_.pop();
 
             auto tail = cdr(list);
             if (tail) {
                 ostream_ << ' ';
 
-                tail.accept(*this, false);
+                is_head_.push(false);
+                tail.accept(*this);
+                is_head_.pop();
             }
             else {
                 ostream_ << ')';
@@ -48,6 +54,7 @@ void debug_print(mlisp::Node node)
         }
 
     private:
+        std::stack<bool> is_head_;
         std::ostream& ostream_;
     };
 
@@ -110,7 +117,7 @@ struct mlisp::Node::Data: public std::enable_shared_from_this<Data> {
     {
     }
 
-    virtual void accept(NodeVisitor&, bool) const = 0;
+    virtual void accept(NodeVisitor&) const = 0;
 };
 
 
@@ -124,9 +131,9 @@ struct mlisp::List::Data: public mlisp::Node::Data {
         assert(head || (!head && !tail));
     }
 
-    void accept(NodeVisitor& visitor, bool is_head) const override
+    void accept(NodeVisitor& visitor) const override
     {
-        visitor.visit(List{ std::static_pointer_cast<Data const>(shared_from_this()) }, is_head);
+        visitor.visit(List{ std::static_pointer_cast<Data const>(shared_from_this()) });
     }
     
     Node const head;
@@ -143,9 +150,9 @@ struct mlisp::Symbol::Data: public mlisp::Node::Data {
         assert(!text.empty());
     }
 
-    void accept(NodeVisitor& visitor, bool is_head) const override
+    void accept(NodeVisitor& visitor) const override
     {
-        visitor.visit(Symbol{ std::static_pointer_cast<Data const>(shared_from_this()) }, is_head);
+        visitor.visit(Symbol{ std::static_pointer_cast<Data const>(shared_from_this()) });
     }
     
     std::string const text;
@@ -179,10 +186,10 @@ mlisp::Node::operator bool() const
 }
 
 void
-mlisp::Node::accept(NodeVisitor& visitor, bool is_head) const
+mlisp::Node::accept(NodeVisitor& visitor) const
 {
     if (data_) {
-        data_->accept(visitor, is_head);
+        data_->accept(visitor);
     }
 }
 
@@ -367,14 +374,14 @@ mlisp::eval(Node expr, List env)
 
         Node evaluate(Node expr)
         {
-            expr.accept(*this, true);
+            expr.accept(*this);
 
             auto result = stack_.top();
             stack_.pop();
             return result;
         }
 
-        void visit(List list, bool is_head)
+        void visit(List list)
         {
             static auto const nil = cons({}, {});
 
@@ -413,7 +420,7 @@ mlisp::eval(Node expr, List env)
             }
         }
 
-        void visit(Symbol symbol, bool is_head)
+        void visit(Symbol symbol)
         {
             stack_.push(symbol);
         }

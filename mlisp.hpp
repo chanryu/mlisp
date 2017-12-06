@@ -24,7 +24,7 @@ namespace mlisp {
 
         operator bool() const;
 
-        void accept(NodeVisitor&, bool) const;
+        void accept(NodeVisitor&) const;
 
         List to_list() const noexcept;
         Symbol to_symbol() const noexcept;
@@ -39,14 +39,11 @@ namespace mlisp {
 
         List();
         List(List const&);
+        explicit List(std::shared_ptr<Data const>);
         List& operator = (List const&);
 
         friend Node car(List list) noexcept;
         friend List cdr(List list) noexcept;
-        friend List cons(Node head, List tail) noexcept;
-
-    private:
-        explicit List(std::shared_ptr<Data const>);
     };
 
     class Symbol: public Node {
@@ -63,8 +60,8 @@ namespace mlisp {
 
     class NodeVisitor {
     public:
-        virtual void visit(List, bool is_head) = 0;
-        virtual void visit(Symbol, bool is_head) = 0;
+        virtual void visit(List) = 0;
+        virtual void visit(Symbol) = 0;
     };
 
     class ParseError: public std::runtime_error {

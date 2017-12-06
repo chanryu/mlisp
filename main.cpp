@@ -15,16 +15,18 @@ operator << (std::ostream& os, mlisp::Node const& node)
 
         void print(Node const& node)
         {
-            node.accept(*this, true);
+            is_head_.push(true);
+            node.accept(*this);
+            is_head_.pop();
         }
 
     private:
-        void visit(Symbol symbol, bool is_head) override
+        void visit(Symbol symbol) override
         {
             ostream_ << symbol.text();
         }
 
-        void visit(List list, bool is_head) override
+        void visit(List list) override
         {
             auto head = car(list);
             if (!head) {
@@ -32,17 +34,21 @@ operator << (std::ostream& os, mlisp::Node const& node)
                 return;
             }
 
-            if (is_head) {
+            if (is_head_.top()) {
                 ostream_ << '(';
             }
 
-            head.accept(*this, true);
+            is_head_.push(true);
+            head.accept(*this);
+            is_head_.pop();
 
             auto tail = cdr(list);
             if (tail) {
                 ostream_ << ' ';
 
-                tail.accept(*this, false);
+                is_head_.push(false);
+                tail.accept(*this);
+                is_head_.pop();
             }
             else {
                 ostream_ << ')';
@@ -50,6 +56,7 @@ operator << (std::ostream& os, mlisp::Node const& node)
         }
 
     private:
+        std::stack<bool> is_head_;
         std::ostream& ostream_;
     };
 
