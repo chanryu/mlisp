@@ -75,8 +75,8 @@ struct mlisp::List::Data: public mlisp::Node::Data {
         visitor.visit(List{ std::static_pointer_cast<Data const>(shared_from_this()) });
     }
     
-    Node head;
-    List tail;
+    Node const head;
+    List const tail;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
