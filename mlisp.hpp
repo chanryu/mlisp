@@ -23,6 +23,7 @@ namespace mlisp {
     class NodeVisitor;
 
     class List;
+    class Number;
     class Symbol;
 
     class Node {
@@ -40,6 +41,7 @@ namespace mlisp {
         void accept(NodeVisitor&) const;
 
         List to_list() const noexcept;
+        Number to_number() const noexcept;
         Symbol to_symbol() const noexcept;
 
     protected:
@@ -60,6 +62,19 @@ namespace mlisp {
         friend List cdr(List list) noexcept;
     };
 
+    class Number: public Node {
+    public:
+        struct Data;
+
+        Number() noexcept;
+        Number(Number const&) noexcept;
+        Number(std::shared_ptr<Data const>) noexcept;
+
+        Number& operator = (Number const&) noexcept;
+
+        double value() const;
+    };
+
     class Symbol: public Node {
     public:
         struct Data;
@@ -76,6 +91,7 @@ namespace mlisp {
     class NodeVisitor {
     public:
         virtual void visit(List) = 0;
+        virtual void visit(Number) = 0;
         virtual void visit(Symbol) = 0;
     };
 

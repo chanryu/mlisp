@@ -5,12 +5,12 @@
 namespace {
     using namespace mlisp;
 
-    bool is_paren(int c) noexcept
+    bool is_paren(char c) noexcept
     {
         return c == '(' || c == ')';
     }
 
-    bool is_space(int c) noexcept
+    bool is_space(char c) noexcept
     {
         return c == ' ' || c == '\t' || c == '\r' || c == '\n';
     }
@@ -27,8 +27,9 @@ namespace {
         skip_spaces(istream);
 
         std::string token;
-        while (istream.good()) {
-            auto c = istream.get();
+
+        char c;
+        while (istream.get(c)) {
             if (is_space(c)) {
                 assert(!token.empty());
                 break;
@@ -50,7 +51,12 @@ namespace {
 
     void debug_print(mlisp::Node node)
     {
-        std::cout << node << std::endl;
+        std::cout << node << std::endl << std::flush;
+    }
+
+    void debug_print(std::string text)
+    {
+        std::cout << text << std::endl << std::flush;
     }
 }
 
@@ -58,10 +64,7 @@ namespace {
 // Node::Data
 
 struct mlisp::Node::Data: public std::enable_shared_from_this<Data> {
-    virtual ~Data()
-    {
-    }
-
+    virtual ~Data() {}
     virtual void accept(NodeVisitor&) const = 0;
 };
 
@@ -86,6 +89,23 @@ struct mlisp::List::Data: public mlisp::Node::Data {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+// Number::Data
+
+struct mlisp::Number::Data: public mlisp::Node::Data {
+    
+    explicit Data(double v) noexcept : value{v}
+    {
+    }
+
+    void accept(NodeVisitor& visitor) const override
+    {
+        visitor.visit(Number{ std::static_pointer_cast<Data const>(shared_from_this()) });
+    }
+    
+    double const value;
+};
+
+///////////////////////////////////////////////////////////////////////////////
 // Symbol::Data
 
 struct mlisp::Symbol::Data: public mlisp::Node::Data {
@@ -106,17 +126,9 @@ struct mlisp::Symbol::Data: public mlisp::Node::Data {
 ///////////////////////////////////////////////////////////////////////////////
 // Node
 
-mlisp::Node::Node() noexcept
-{
-}
-
-mlisp::Node::Node(Node const& other) noexcept : data_{other.data_}
-{
-}
-
-mlisp::Node::Node(std::shared_ptr<Data const> data) noexcept : data_{data}
-{
-}
+mlisp::Node::Node() noexcept {}
+mlisp::Node::Node(Node const& other) noexcept : data_{other.data_} {}
+mlisp::Node::Node(std::shared_ptr<Data const> data) noexcept : data_{data} {}
 
 mlisp::Node&
 mlisp::Node::operator = (Node const& rhs) noexcept
@@ -149,26 +161,24 @@ mlisp::Node::to_list() const noexcept
     return {};
 }
 
+mlisp::Number
+mlisp::Node::to_number() const noexcept
+{
+    return { std::dynamic_pointer_cast<Number::Data const>(data_) };
+}
+
 mlisp::Symbol
 mlisp::Node::to_symbol() const noexcept
 {
-    return Symbol{ std::dynamic_pointer_cast<Symbol::Data const>(data_) };
+    return { std::dynamic_pointer_cast<Symbol::Data const>(data_) };
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // List
 
-mlisp::List::List() noexcept
-{
-}
-
-mlisp::List::List(List const& other) noexcept : Node{other.data_}
-{
-}
-
-mlisp::List::List(std::shared_ptr<Data const> data) noexcept : Node{data}
-{
-}
+mlisp::List::List() noexcept {}
+mlisp::List::List(List const& other) noexcept : Node{other.data_} {}
+mlisp::List::List(std::shared_ptr<Data const> data) noexcept : Node{data} {}
 
 mlisp::List&
 mlisp::List::operator = (List const& rhs) noexcept
@@ -178,19 +188,32 @@ mlisp::List::operator = (List const& rhs) noexcept
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Number
+
+mlisp::Number::Number() noexcept {}
+mlisp::Number::Number(Number const& other) noexcept : Node{other.data_} {}
+mlisp::Number::Number(std::shared_ptr<Data const> data) noexcept : Node{data} {}
+
+mlisp::Number&
+mlisp::Number::operator = (Number const& rhs) noexcept
+{
+    data_ = rhs.data_;
+    return *this;
+}
+
+double
+mlisp::Number::value() const
+{
+    assert(data_);
+    return static_cast<Data const*>(data_.get())->value;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Symbol
 
-mlisp::Symbol::Symbol() noexcept
-{
-}
-
-mlisp::Symbol::Symbol(Symbol const& other) noexcept : Node{other.data_}
-{
-}
-
-mlisp::Symbol::Symbol(std::shared_ptr<Data const> data) noexcept : Node{data}
-{
-}
+mlisp::Symbol::Symbol() noexcept {}
+mlisp::Symbol::Symbol(Symbol const& other) noexcept : Node{other.data_} {}
+mlisp::Symbol::Symbol(std::shared_ptr<Data const> data) noexcept : Node{data} {}
 
 mlisp::Symbol&
 mlisp::Symbol::operator = (Symbol const& rhs) noexcept
@@ -245,6 +268,9 @@ mlisp::Parser::parse(std::istream& istream)
             }
             expr = list;
         }
+        else if (token[0] == '.' || (token[0] >= '0' && token[0] <= '9')) {
+            expr = Number{ std::make_shared<Number::Data>(std::stod(token)) };
+        }
         else {
             expr = intern(token);
         }
@@ -289,7 +315,7 @@ mlisp::Parser::intern(std::string text) noexcept
 mlisp::Node
 mlisp::eval(Node expr, List env)
 {
-    class NodeEvaluator: public NodeVisitor {
+    class NodeEvaluator: NodeVisitor {
     public:
         explicit NodeEvaluator(List env) : env_(env)
         {
@@ -299,12 +325,11 @@ mlisp::eval(Node expr, List env)
         {
             expr.accept(*this);
 
-            auto result = stack_.top();
-            stack_.pop();
-            return result;
+            return result_;
         }
 
-        void visit(List list)
+    private:
+        void visit(List list) override
         {
             static auto const nil = cons({}, {});
 
@@ -316,7 +341,7 @@ mlisp::eval(Node expr, List env)
             if (symbol) {
                 auto name = symbol.name();
                 if (name == "quote") {
-                    stack_.push(tail);
+                    result_ = tail;
                 }
                 else if (name == "car" || name == "cdr") {
 
@@ -330,27 +355,34 @@ mlisp::eval(Node expr, List env)
                     }
 
                     if (name == "car") {
-                        stack_.push(car(arg));
-                    } else {
-                        stack_.push(cdr(arg));
+                        result_ = car(arg);
+                    }
+                    else {
+                        result_ = cdr(arg);
                     }
                 }
                 else {
-                    stack_.push(nil);
+                    result_ = nil;
                 }
-            } else {
-                stack_.push(nil);
+            }
+            else {
+                result_ = nil;
             }
         }
 
-        void visit(Symbol symbol)
+        void visit(Number number) override
         {
-            stack_.push(symbol);
+            result_ = number;
+        }
+
+        void visit(Symbol symbol) override
+        {
+            result_ = symbol;
         }
 
     private:
         List env_;
-        detail::Stack<Node> stack_;
+        Node result_;
     };
 
     return NodeEvaluator(env).evaluate(expr);
@@ -403,6 +435,11 @@ std::operator << (std::ostream& os, mlisp::Node const& node)
         }
 
     private:
+        void visit(Number number) override
+        {
+            ostream_ << number.value();
+        }
+
         void visit(Symbol symbol) override
         {
             ostream_ << symbol.name();
