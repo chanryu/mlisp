@@ -8,6 +8,18 @@
 
 namespace mlisp {
 
+    namespace detail {
+        template <typename T>
+        using Stack = std::stack<T, std::vector<T>>;
+
+        template <int TAG>
+        class UniqueRuntimeError: public std::runtime_error {
+        public:
+            explicit UniqueRuntimeError(char const* what) : std::runtime_error{what} {}
+            explicit UniqueRuntimeError(std::string const& what) : std::runtime_error{what} {}
+        };
+    }
+
     class NodeVisitor;
 
     class List;
@@ -17,12 +29,13 @@ namespace mlisp {
     public:
         struct Data;
 
-        Node();
-        Node(Node const&);
-        explicit Node(std::shared_ptr<Data const>);
-        Node& operator = (Node const&);
+        Node() noexcept;
+        Node(Node const&) noexcept;
+        Node(std::shared_ptr<Data const>) noexcept;
 
-        operator bool() const;
+        Node& operator = (Node const&) noexcept;
+
+        operator bool() const noexcept;
 
         void accept(NodeVisitor&) const;
 
@@ -37,10 +50,11 @@ namespace mlisp {
     public:
         struct Data;
 
-        List();
-        List(List const&);
-        explicit List(std::shared_ptr<Data const>);
-        List& operator = (List const&);
+        List() noexcept;
+        List(List const&) noexcept;
+        List(std::shared_ptr<Data const>) noexcept;
+
+        List& operator = (List const&) noexcept;
 
         friend Node car(List list) noexcept;
         friend List cdr(List list) noexcept;
@@ -50,10 +64,11 @@ namespace mlisp {
     public:
         struct Data;
 
-        Symbol();
-        Symbol(Symbol const&);
-        explicit Symbol(std::shared_ptr<Data const>);
-        Symbol& operator = (Symbol const&);
+        Symbol() noexcept;
+        Symbol(Symbol const&) noexcept;
+        Symbol(std::shared_ptr<Data const>) noexcept;
+
+        Symbol& operator = (Symbol const&) noexcept;
 
         std::string const& name() const;
     };
@@ -64,11 +79,7 @@ namespace mlisp {
         virtual void visit(Symbol) = 0;
     };
 
-    class ParseError: public std::runtime_error {
-    public:
-        explicit ParseError(char const* what);
-        explicit ParseError(std::string const& what);
-    };
+    using ParseError = detail::UniqueRuntimeError<0>;
     
     class Parser {
     public:
@@ -83,15 +94,11 @@ namespace mlisp {
             bool paren;
             Node head;
         };
-        std::stack<Context> stack_;
+        detail::Stack<Context> stack_;
         std::map<std::string, Symbol> symbols_;
     };
 
-    class EvalError: public std::runtime_error {
-    public:
-        explicit EvalError(char const* what);
-        explicit EvalError(std::string const& what);
-    };
+    using EvalError = detail::UniqueRuntimeError<1>;
 
     Node eval(Node expr, List env);
 

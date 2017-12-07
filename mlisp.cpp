@@ -106,26 +106,26 @@ struct mlisp::Symbol::Data: public mlisp::Node::Data {
 ///////////////////////////////////////////////////////////////////////////////
 // Node
 
-mlisp::Node::Node()
+mlisp::Node::Node() noexcept
 {
 }
 
-mlisp::Node::Node(Node const& other) : data_{other.data_}
+mlisp::Node::Node(Node const& other) noexcept : data_{other.data_}
 {
 }
 
-mlisp::Node::Node(std::shared_ptr<Data const> data) : data_{data}
+mlisp::Node::Node(std::shared_ptr<Data const> data) noexcept : data_{data}
 {
 }
 
 mlisp::Node&
-mlisp::Node::operator = (Node const& rhs)
+mlisp::Node::operator = (Node const& rhs) noexcept
 {
     data_ = rhs.data_;
     return *this;
 }
 
-mlisp::Node::operator bool() const
+mlisp::Node::operator bool() const noexcept
 {
     return !!data_;
 }
@@ -158,20 +158,20 @@ mlisp::Node::to_symbol() const noexcept
 ///////////////////////////////////////////////////////////////////////////////
 // List
 
-mlisp::List::List()
+mlisp::List::List() noexcept
 {
 }
 
-mlisp::List::List(List const& other) : Node{other.data_}
+mlisp::List::List(List const& other) noexcept : Node{other.data_}
 {
 }
 
-mlisp::List::List(std::shared_ptr<Data const> data) : Node{data}
+mlisp::List::List(std::shared_ptr<Data const> data) noexcept : Node{data}
 {
 }
 
 mlisp::List&
-mlisp::List::operator = (List const& rhs)
+mlisp::List::operator = (List const& rhs) noexcept
 {
     data_ = rhs.data_;
     return *this;
@@ -180,20 +180,20 @@ mlisp::List::operator = (List const& rhs)
 ///////////////////////////////////////////////////////////////////////////////
 // Symbol
 
-mlisp::Symbol::Symbol()
+mlisp::Symbol::Symbol() noexcept
 {
 }
 
-mlisp::Symbol::Symbol(Symbol const& other) : Node{other.data_}
+mlisp::Symbol::Symbol(Symbol const& other) noexcept : Node{other.data_}
 {
 }
 
-mlisp::Symbol::Symbol(std::shared_ptr<Data const> data) : Node{data}
+mlisp::Symbol::Symbol(std::shared_ptr<Data const> data) noexcept : Node{data}
 {
 }
 
 mlisp::Symbol&
-mlisp::Symbol::operator = (Symbol const& rhs)
+mlisp::Symbol::operator = (Symbol const& rhs) noexcept
 {
     data_ = rhs.data_;
     return *this;
@@ -204,17 +204,6 @@ mlisp::Symbol::name() const
 {
     assert(data_);
     return static_cast<Data const*>(data_.get())->name;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// ParseError
-
-mlisp::ParseError::ParseError(char const* what) : std::runtime_error{what}
-{
-}
-
-mlisp::ParseError::ParseError(std::string const& what) : std::runtime_error{what}
-{
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -290,19 +279,8 @@ mlisp::Parser::intern(std::string text) noexcept
     }
 
     Symbol symbol{ std::make_shared<Symbol::Data>(text) };
-    symbols_[text] = symbol;
+    symbols_.insert(symbols_.begin(), std::make_pair(text, symbol));
     return symbol;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// EvalError
-
-mlisp::EvalError::EvalError(char const* what) : std::runtime_error{what}
-{
-}
-
-mlisp::EvalError::EvalError(std::string const& what) : std::runtime_error{what}
-{
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -372,7 +350,7 @@ mlisp::eval(Node expr, List env)
 
     private:
         List env_;
-        std::stack<Node> stack_;
+        detail::Stack<Node> stack_;
     };
 
     return NodeEvaluator(env).evaluate(expr);
@@ -460,7 +438,7 @@ std::operator << (std::ostream& os, mlisp::Node const& node)
         }
 
     private:
-        std::stack<bool> is_head_;
+        detail::Stack<bool> is_head_;
         std::ostream& ostream_;
     };
 
