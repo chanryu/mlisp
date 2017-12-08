@@ -93,7 +93,7 @@ struct mlisp::List::Data: public mlisp::Node::Data {
 
 struct mlisp::Proc::Data: public mlisp::Node::Data {
 
-    explicit Data(Function f) noexcept : func{f}
+    explicit Data(Func f) noexcept : func{f}
     {
     }
 
@@ -102,7 +102,7 @@ struct mlisp::Proc::Data: public mlisp::Node::Data {
         visitor.visit(Proc{ std::static_pointer_cast<Data const>(shared_from_this()) });
     }
 
-    Function const func;
+    Func const func;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -213,9 +213,20 @@ mlisp::List::operator = (List const& rhs) noexcept
 ///////////////////////////////////////////////////////////////////////////////
 // Proc
 
-mlisp::Proc::Proc() noexcept {}
-mlisp::Proc::Proc(Proc const& other) noexcept : Node{other.data_} {}
-mlisp::Proc::Proc(std::shared_ptr<Data const> data) noexcept : Node{data} {}
+mlisp::Proc::Proc(Func func) noexcept
+    : Node{ std::make_shared<Data>(func) }
+{
+}
+
+mlisp::Proc::Proc(Proc const& other) noexcept
+    : Node{other.data_}
+{
+}
+
+mlisp::Proc::Proc(std::shared_ptr<Data const> data) noexcept
+    : Node{data}
+{
+}
 
 mlisp::Node
 mlisp::Proc::operator()(List args, List env) const
@@ -228,28 +239,48 @@ mlisp::Proc::operator()(List args, List env) const
 ///////////////////////////////////////////////////////////////////////////////
 // Number
 
-mlisp::Number::Number() noexcept {}
-mlisp::Number::Number(Number const& other) noexcept : Node{other.data_} {}
-mlisp::Number::Number(std::shared_ptr<Data const> data) noexcept : Node{data} {}
+mlisp::Number::Number(double value) noexcept
+    : Node{ std::make_shared<Data>(value)}
+{
+}
+
+mlisp::Number::Number(Number const& other) noexcept
+    : Node{other.data_}
+{
+}
+
+mlisp::Number::Number(std::shared_ptr<Data const> data) noexcept
+    : Node{data}
+{
+}
 
 double
 mlisp::Number::value() const
 {
-    assert(data_);
     return static_cast<Data const*>(data_.get())->value;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // Symbol
 
-mlisp::Symbol::Symbol() noexcept {}
-mlisp::Symbol::Symbol(Symbol const& other) noexcept : Node{other.data_} {}
-mlisp::Symbol::Symbol(std::shared_ptr<Data const> data) noexcept : Node{data} {}
+mlisp::Symbol::Symbol(std::string name) noexcept
+    : Node{ std::make_shared<Data>(std::move(name))}
+{
+}
+
+mlisp::Symbol::Symbol(Symbol const& other) noexcept
+    : Node{other.data_}
+{
+}
+
+mlisp::Symbol::Symbol(std::shared_ptr<Data const> data) noexcept
+    : Node{data}
+{
+}
 
 std::string const&
 mlisp::Symbol::name() const
 {
-    assert(data_);
     return static_cast<Data const*>(data_.get())->name;
 }
 
@@ -293,10 +324,10 @@ mlisp::Parser::parse(std::istream& istream)
             expr = list;
         }
         else if (token[0] == '.' || (token[0] >= '0' && token[0] <= '9')) {
-            expr = Number{ std::make_shared<Number::Data>(std::stod(token)) };
+            expr = Number{ std::stod(token) };
         }
         else {
-            expr = Symbol{ std::make_shared<Symbol::Data>(std::move(token)) };
+            expr = Symbol{ std::move(token) };
         }
             
         if (stack_.empty()) {
@@ -347,14 +378,22 @@ mlisp::eval(Node expr, List env)
             auto head = car(list);
             auto tail = cdr(list);
 
+            auto e_head = eval(head, env_);
+
+            auto proc = e_head.to_proc();
+
+            if (!proc) {
+                throw EvalError("xxx not a proc");
+            }
+
+            result_ = proc(tail, env_);
+
+            /*
             auto symbol = head.to_symbol();
 
             if (symbol) {
                 auto name = symbol.name();
-                if (name == "quote") {
-                    result_ = tail;
-                }
-                else if (name == "car" || name == "cdr") {
+                if (name == "car" || name == "cdr") {
 
                     if (cdr(tail)) {
                         throw EvalError(name + ": too many args given");
@@ -379,6 +418,7 @@ mlisp::eval(Node expr, List env)
             else {
                 result_ = nil;
             }
+            */
         }
 
         void visit(Proc proc) override
@@ -392,6 +432,9 @@ mlisp::eval(Node expr, List env)
 
         void visit(Symbol symbol) override
         {
+            for (auto env = env_; env; env = cdr(env)) {
+    
+            }
             result_ = symbol;
         }
 

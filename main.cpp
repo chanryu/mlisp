@@ -12,8 +12,14 @@ readline()
 
 int main(int argc, char *argv[])
 {
-    mlisp::List env;
-    mlisp::Parser parser;
+    using namespace mlisp;
+
+    auto quote = Proc{[] (List args, List env) {
+        return args;
+    }};
+    auto env = cons(Symbol{"quote"}, cons(quote, {}));
+
+    Parser parser;
 
     while (true) {
         if (parser.clean()) {
@@ -32,7 +38,8 @@ int main(int argc, char *argv[])
                 if (!expr) {
                     break;
                 }
-                std::cout << mlisp::eval(expr, env) << std::endl;
+                std::cout << expr << std::endl;
+                //std::cout << eval(expr, env) << std::endl;
             }
             catch (mlisp::ParseError& e) {
                 std::cout << e.what() << std::endl;

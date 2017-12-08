@@ -64,37 +64,48 @@ namespace mlisp {
         friend List cdr(List list) noexcept;
     };
 
+    using Func = std::function<Node(List, List)>;
+
     class Proc: public Node {
     public:
-        struct Data;
-
-        Proc() noexcept;
+        Proc(Func func) noexcept;
         Proc(Proc const&) noexcept;
-        Proc(std::shared_ptr<Data const>) noexcept;
 
         Node operator()(List, List) const;
+
+    private:
+        struct Data;
+        friend class Node;
+        friend struct Data;
+        Proc(std::shared_ptr<Data const>) noexcept;
     };
 
     class Number: public Node {
     public:
-        struct Data;
-
-        Number() noexcept;
+        Number(double) noexcept;
         Number(Number const&) noexcept;
-        Number(std::shared_ptr<Data const>) noexcept;
 
         double value() const;
+
+    private:
+        struct Data;
+        friend class Node;
+        friend struct Data;
+        Number(std::shared_ptr<Data const>) noexcept;
     };
 
     class Symbol: public Node {
     public:
-        struct Data;
-
-        Symbol() noexcept;
+        Symbol(std::string) noexcept;
         Symbol(Symbol const&) noexcept;
-        Symbol(std::shared_ptr<Data const>) noexcept;
 
         std::string const& name() const;
+
+    private:
+        struct Data;
+        friend class Node;
+        friend struct Data;
+        Symbol(std::shared_ptr<Data const>) noexcept;
     };
 
     class NodeVisitor {
@@ -119,8 +130,6 @@ namespace mlisp {
         };
         detail::Stack<Context> stack_;
     };
-
-    using Function = std::function<Node(List, List)>;
 
     using EvalError = detail::UniqueRuntimeError<1>;
 
