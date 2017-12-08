@@ -50,9 +50,11 @@ int main(int argc, char *argv[])
         }
         
         if (std::cin.eof()) {
-            std::cout << std::endl;
-            std::cout << "Bye." << std::endl;
-            return parser.clean() ? 0 : -1;
+            break;
         }
     }
+
+    std::cout << std::endl;
+    std::cout << "Bye." << std::endl;
+    return parser.clean() ? 0 : -1;
 }
