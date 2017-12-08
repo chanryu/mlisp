@@ -23,6 +23,7 @@ namespace mlisp {
     class NodeVisitor;
 
     class List;
+    class Proc;
     class Number;
     class Symbol;
 
@@ -41,6 +42,7 @@ namespace mlisp {
         void accept(NodeVisitor&) const;
 
         List to_list() const noexcept;
+        Proc to_proc() const noexcept;
         Number to_number() const noexcept;
         Symbol to_symbol() const noexcept;
 
@@ -62,6 +64,17 @@ namespace mlisp {
         friend List cdr(List list) noexcept;
     };
 
+    class Proc: public Node {
+    public:
+        struct Data;
+
+        Proc() noexcept;
+        Proc(Proc const&) noexcept;
+        Proc(std::shared_ptr<Data const>) noexcept;
+
+        Node operator()(List, List) const;
+    };
+
     class Number: public Node {
     public:
         struct Data;
@@ -69,8 +82,6 @@ namespace mlisp {
         Number() noexcept;
         Number(Number const&) noexcept;
         Number(std::shared_ptr<Data const>) noexcept;
-
-        Number& operator = (Number const&) noexcept;
 
         double value() const;
     };
@@ -83,14 +94,13 @@ namespace mlisp {
         Symbol(Symbol const&) noexcept;
         Symbol(std::shared_ptr<Data const>) noexcept;
 
-        Symbol& operator = (Symbol const&) noexcept;
-
         std::string const& name() const;
     };
 
     class NodeVisitor {
     public:
         virtual void visit(List) = 0;
+        virtual void visit(Proc) = 0;
         virtual void visit(Number) = 0;
         virtual void visit(Symbol) = 0;
     };
@@ -113,6 +123,8 @@ namespace mlisp {
         detail::Stack<Context> stack_;
         std::map<std::string, Symbol> symbols_;
     };
+
+    using Function = std::function<Node(List, List)>;
 
     using EvalError = detail::UniqueRuntimeError<1>;
 
