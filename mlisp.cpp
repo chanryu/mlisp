@@ -296,7 +296,7 @@ mlisp::Parser::parse(std::istream& istream)
             expr = Number{ std::make_shared<Number::Data>(std::stod(token)) };
         }
         else {
-            expr = intern(token);
+            expr = Symbol{ std::make_shared<Symbol::Data>(std::move(token)) };
         }
             
         if (stack_.empty()) {
@@ -318,19 +318,6 @@ bool
 mlisp::Parser::clean() const noexcept
 {
     return stack_.empty();
-}
-
-mlisp::Symbol
-mlisp::Parser::intern(std::string text) noexcept
-{
-    auto i = symbols_.find(text);
-    if (i != symbols_.end()) {
-        return i->second;
-    }
-
-    Symbol symbol{ std::make_shared<Symbol::Data>(text) };
-    symbols_.insert(symbols_.begin(), std::make_pair(text, symbol));
-    return symbol;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

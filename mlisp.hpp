@@ -113,15 +113,11 @@ namespace mlisp {
         bool clean() const noexcept;
 
     private:
-        Symbol intern(std::string text) noexcept;
-
-    private:
         struct Context {
             bool paren;
             Node head;
         };
         detail::Stack<Context> stack_;
-        std::map<std::string, Symbol> symbols_;
     };
 
     using Function = std::function<Node(List, List)>;
