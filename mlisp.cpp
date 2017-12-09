@@ -263,9 +263,11 @@ mlisp::Proc::Proc(std::shared_ptr<Data const> data) noexcept
 mlisp::Node
 mlisp::Proc::operator()(List args, List env) const
 {
-    assert(data_);
     auto const& func = static_cast<Data const*>(data_.get())->func;
-    return func(args, env);
+    if (func) {
+        return func(args, env);
+    }
+    return {};  // nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -308,6 +310,18 @@ mlisp::Symbol::Symbol(Symbol const& other) noexcept
 mlisp::Symbol::Symbol(std::shared_ptr<Data const> data) noexcept
     : Node{data}
 {
+}
+
+bool
+mlisp::Symbol::operator == (Node const& rhs) noexcept
+{
+    if (rhs) {
+        auto const* rhs_data = dynamic_cast<Data const*>(data_.get());
+        if (rhs_data) {
+            return name() == rhs_data->name;
+        }
+    }
+    return false;
 }
 
 std::string const&
@@ -416,6 +430,7 @@ mlisp::eval(Node expr, List env)
 
         void visit(Proc proc) override
         {
+            assert(false);
         }
 
         void visit(Number number) override
@@ -426,9 +441,13 @@ mlisp::eval(Node expr, List env)
         void visit(Symbol symbol) override
         {
             for (auto env = env_; env; env = cdr(env)) {
-
+                if (symbol == car(env)) {
+                    result_ = car(cdr(env));
+                    return;
+                }
             }
-            result_ = symbol;
+
+            throw EvalError("Unknown symbol: " + symbol.name());
         }
 
     private:
@@ -503,7 +522,7 @@ namespace {
 
             void visit(Proc proc) override
             {
-                //ostream_ << proc;
+                ostream_ << "<#proc>";
             }
 
             void visit(Number number) override

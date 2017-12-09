@@ -12,8 +12,10 @@ namespace mlisp {
         template <int TAG>
         class UniqueRuntimeError: public std::runtime_error {
         public:
-            explicit UniqueRuntimeError(char const* what) : std::runtime_error{what} {}
-            explicit UniqueRuntimeError(std::string const& what) : std::runtime_error{what} {}
+            explicit UniqueRuntimeError(char const* what)
+                : std::runtime_error{what} {}
+            explicit UniqueRuntimeError(std::string const& what)
+                : std::runtime_error{what} {}
         };
     }
 
@@ -32,6 +34,7 @@ namespace mlisp {
         Node(Node const&) noexcept;
 
         Node& operator = (Node const&) noexcept;
+        bool operator == (Node const&) noexcept = delete;
 
         operator bool() const noexcept;
 
@@ -63,6 +66,10 @@ namespace mlisp {
         friend class Node;
         List(std::shared_ptr<Data const>) noexcept;
     };
+
+    Node car(List list) noexcept;
+    List cdr(List list) noexcept;
+    List cons(Node head, List tail) noexcept;
 
     using Func = std::function<Node(List, List)>;
 
@@ -99,6 +106,8 @@ namespace mlisp {
         explicit Symbol(std::string) noexcept;
         Symbol(Symbol const&) noexcept;
 
+        bool operator == (Node const&) noexcept;
+
         std::string const& name() const;
 
     private:
@@ -115,6 +124,10 @@ namespace mlisp {
         virtual void visit(Number) = 0;
         virtual void visit(Symbol) = 0;
     };
+
+    struct ParseError: detail::UniqueRuntimeError<0> {
+        using UniqueRuntimeError<0>::UniqueRuntimeError;
+    };
     
     class Parser {
     public:
@@ -130,15 +143,15 @@ namespace mlisp {
         std::stack<Context> stack_;
     };
 
-    using ParseError = detail::UniqueRuntimeError<0>;
-    using EvalError = detail::UniqueRuntimeError<1>;
-    using TypeError = detail::UniqueRuntimeError<2>;
+    struct EvalError: detail::UniqueRuntimeError<1> {
+        using UniqueRuntimeError<1>::UniqueRuntimeError;
+    };
+
+    struct TypeError: EvalError {
+        using EvalError::EvalError;
+    };
 
     Node eval(Node expr, List env);
-
-    Node car(List list) noexcept;
-    List cdr(List list) noexcept;
-    List cons(Node head, List tail) noexcept;
 }
 
 namespace std {
