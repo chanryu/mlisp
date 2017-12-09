@@ -7,7 +7,7 @@ mlisp::List build_env()
     using namespace mlisp;
 
     auto quote_proc = Proc{[] (List args, List env) {
-        return args;
+        return car(args);
     }};
 
     auto car_proc = Proc{[] (List args, List env) {

@@ -136,9 +136,10 @@ namespace mlisp {
 
     private:
         struct Context {
-            bool paren_open;
-            bool head_empty;
+            enum class Type { quote, paren, list };
+            Type type;
             Node head;
+            bool head_empty;
         };
         std::stack<Context> stack_;
     };

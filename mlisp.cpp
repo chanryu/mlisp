@@ -15,6 +15,11 @@ namespace {
         return c == ' ' || c == '\t' || c == '\r' || c == '\n';
     }
 
+    bool is_quote(char c) noexcept
+    {
+        return c == '\'';
+    }
+
     void skip_spaces(std::istream& istream) noexcept
     {
         while (is_space(istream.peek())) {
@@ -33,6 +38,12 @@ namespace {
                 assert(!token.empty());
                 return true;
             }
+
+            if (is_quote(c)) {
+                token.push_back(c);
+                return true;
+            }
+
             if (is_paren(c)) {
                 if (token.empty()) {
                     token.push_back(c);
@@ -45,7 +56,7 @@ namespace {
             token.push_back(c);
         }
 
-        return false;
+        return !token.empty();
     }
 
     void debug_print(mlisp::Node node)
@@ -344,8 +355,13 @@ mlisp::Parser::parse(std::istream& istream, Node& expr)
 
     while (parse_token(istream, token)) {
 
+        if (token == "'") {
+            stack_.push({ Context::Type::quote, {}, true });
+            continue;
+        }
+
         if (token == "(") {
-            stack_.push({ true, true, {} });
+            stack_.push({ Context::Type::paren, {}, true });
             continue;
         }
 
@@ -355,19 +371,21 @@ mlisp::Parser::parse(std::istream& istream, Node& expr)
 
             List list;
             while (true) {
-                if (stack_.empty()) {
+                if (stack_.empty() ||
+                    stack_.top().type == Context::Type::quote) {
                     throw ParseError{"Unexpected ')'"};
                 }
 
                 auto c = stack_.top();
                 stack_.pop();
                 if (c.head_empty) {
-                    assert(c.paren_open);
+                    assert(c.type == Context::Type::paren);
                     assert(!list);
-                } else {
+                }
+                else {
                     list = cons(c.head, list);
                 }
-                if (c.paren_open) {
+                if (c.type == Context::Type::paren) {
                     break;
                 }
             }
@@ -379,18 +397,27 @@ mlisp::Parser::parse(std::istream& istream, Node& expr)
         else {
             node = Symbol{ std::move(token) };
         }
-            
-        if (stack_.empty()) {
-            expr = node;
-            return true;
-        }
 
-        if (stack_.top().head_empty) {
-            stack_.top().head_empty = false;
-            stack_.top().head = node;
-        }
-        else {
-            stack_.push({ false, false, node });
+        while (true) {
+            if (stack_.empty()) {
+                expr = node;
+                return true;
+            }
+
+            if (stack_.top().type == Context::Type::quote) {
+                stack_.pop();
+                node = cons(Symbol("quote"), cons(node, {}));
+                continue;
+            }
+
+            if (stack_.top().head_empty) {
+                stack_.top().head = node;
+                stack_.top().head_empty = false;
+            }
+            else {
+                stack_.push({ Context::Type::list, node, false });
+            }
+            break;
         }
     }
 
