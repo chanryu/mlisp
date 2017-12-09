@@ -20,10 +20,21 @@ mlisp::List build_env()
         return cdr(eval(car(args), env).to_list());
     }};
 
+    auto plus_proc = Proc{[] (List args, List env) {
+        double result = 0;
+        while (args) {
+            auto arg = eval(car(args), env);
+            result += arg.to_number().value();
+            args = cdr(args);
+        }
+        return Number(result);
+    }};
+
     auto m = std::map<std::string, mlisp::Node>{
         { "nil", {} },
         { "car", car_proc },
         { "cdr", cdr_proc },
+        { "+", plus_proc },
     };
 
     List env;
