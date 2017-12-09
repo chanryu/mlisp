@@ -59,15 +59,7 @@ namespace {
         return !token.empty();
     }
 
-    void debug_print(mlisp::Node node)
-    {
-        std::cout << node << std::endl << std::flush;
-    }
-
-    void debug_print(std::string text)
-    {
-        std::cout << text << std::endl << std::flush;
-    }
+    char const* const MLISP_QUOTE = "mlisp:quote";
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -406,7 +398,7 @@ mlisp::Parser::parse(std::istream& istream, Node& expr)
 
             if (stack_.top().type == Context::Type::quote) {
                 stack_.pop();
-                node = cons(Symbol("quote"), cons(node, {}));
+                node = cons(Symbol(MLISP_QUOTE), cons(node, {}));
                 continue;
             }
 
@@ -438,8 +430,12 @@ mlisp::eval(Node expr, List env)
 {
     class NodeEvaluator: NodeVisitor {
     public:
-        explicit NodeEvaluator(List env) : env_(env)
+        explicit NodeEvaluator(List env)
         {
+            auto quote_proc = Proc{[] (List args, List) {
+                return car(args);
+            }};
+            env_ = cons(Symbol{MLISP_QUOTE}, cons(quote_proc, env));
         }
 
         Node evaluate(Node expr)
@@ -533,19 +529,36 @@ namespace {
         private:
             void visit(List list) override
             {
-                if (is_head_) {
-                    ostream_ << '(';
+                auto print_parens = is_head_;
+                auto print_head = true;
+
+                try {
+                    auto symbol = car(list).to_symbol();
+                    if (symbol.name() == MLISP_QUOTE) {
+                        ostream_ << "'";
+                        print_parens = false;
+                        print_head = false;
+                    }
+                }
+                catch (TypeError&) {
+                    // ignore and continue
                 }
 
-                auto head = car(list);
-                auto tail = cdr(list);
-                print_node(ostream_, head, true);
-                if (tail) {
-                    ostream_ << ' ';
-                    print_node(ostream_, tail, false);
+                if (print_parens) {
+                    ostream_ << '(';
                 }
-                
-                if (is_head_) {
+                if (print_head) {
+                    auto head = car(list);
+                    print_node(ostream_, head, true);
+                }
+                auto tail = cdr(list);
+                if (tail) {
+                    if (print_head) {
+                        ostream_ << ' ';
+                    }
+                    print_node(ostream_, tail, false);
+                }                
+                if (print_parens) {
                     ostream_ << ')';
                 }
             }

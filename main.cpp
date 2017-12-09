@@ -6,10 +6,6 @@ mlisp::List build_env()
 {
     using namespace mlisp;
 
-    auto quote_proc = Proc{[] (List args, List env) {
-        return car(args);
-    }};
-
     auto car_proc = Proc{[] (List args, List env) {
         if (cdr(args)) {
             throw EvalError("car: too many args given");
@@ -26,7 +22,6 @@ mlisp::List build_env()
 
     auto m = std::map<std::string, mlisp::Node>{
         { "nil", {} },
-        { "quote", quote_proc },
         { "car", car_proc },
         { "cdr", cdr_proc },
     };
