@@ -59,7 +59,7 @@ namespace {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 // Node::Data
 
 struct mlisp::Node::Data: public std::enable_shared_from_this<Data> {
@@ -68,77 +68,76 @@ struct mlisp::Node::Data: public std::enable_shared_from_this<Data> {
 };
 
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 // List::Data
 
 struct mlisp::List::Data: public mlisp::Node::Data {
 
-    Data(Node h, List t) noexcept : head{h}, tail{t}
-    {
-    }
+    Data(Node h, List t) noexcept : head{h}, tail{t} { }
 
     void accept(NodeVisitor& visitor) const override
     {
-        visitor.visit(List{ std::static_pointer_cast<Data const>(shared_from_this()) });
+        visitor.visit(List{
+            std::static_pointer_cast<Data const>(shared_from_this())
+        });
     }
     
     Node const head;
     List const tail;
 };
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 // Proc::Data
 
 struct mlisp::Proc::Data: public mlisp::Node::Data {
 
-    explicit Data(Func f) noexcept : func{f}
-    {
-    }
+    explicit Data(Func f) noexcept : func{f} { }
 
     void accept(NodeVisitor& visitor) const override
     {
-        visitor.visit(Proc{ std::static_pointer_cast<Data const>(shared_from_this()) });
+        visitor.visit(Proc{
+            std::static_pointer_cast<Data const>(shared_from_this())
+        });
     }
 
     Func const func;
 };
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 // Number::Data
 
 struct mlisp::Number::Data: public mlisp::Node::Data {
     
-    explicit Data(double v) noexcept : value{v}
-    {
-    }
+    explicit Data(double v) noexcept : value{v} { }
 
     void accept(NodeVisitor& visitor) const override
     {
-        visitor.visit(Number{ std::static_pointer_cast<Data const>(shared_from_this()) });
+        visitor.visit(Number{
+            std::static_pointer_cast<Data const>(shared_from_this())
+        });
     }
     
     double const value;
 };
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 // Symbol::Data
 
 struct mlisp::Symbol::Data: public mlisp::Node::Data {
     
-    explicit Data(std::string n) noexcept : name{std::move(n)}
-    {
-        assert(!name.empty());
-    }
+    explicit Data(std::string n) noexcept : name{std::move(n)} { }
 
     void accept(NodeVisitor& visitor) const override
     {
-        visitor.visit(Symbol{ std::static_pointer_cast<Data const>(shared_from_this()) });
+        visitor.visit(Symbol{
+            std::static_pointer_cast<Data const>(shared_from_this())
+        });
     }
     
     std::string const name;
 };
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 // Node
 
 mlisp::Node::Node() noexcept
@@ -219,7 +218,7 @@ mlisp::Node::to_symbol() const
     return { symbol_data };
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 // List
 
 mlisp::List::List() noexcept
@@ -243,7 +242,7 @@ mlisp::List::operator = (List const& rhs) noexcept
     return *this;
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 // Proc
 
 mlisp::Proc::Proc(Func func) noexcept
@@ -269,7 +268,7 @@ mlisp::Proc::operator()(List args, List env) const
     return func(args, env);
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 // Number
 
 mlisp::Number::Number(double value) noexcept
@@ -293,7 +292,7 @@ mlisp::Number::value() const
     return static_cast<Data const*>(data_.get())->value;
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 // Symbol
 
 mlisp::Symbol::Symbol(std::string name) noexcept
@@ -327,8 +326,6 @@ mlisp::Parser::parse(std::istream& istream, Node& expr)
     std::string token;
 
     while (parse_token(istream, token)) {
-
-        debug_print("token: " + token);
 
         if (token == "(") {
             stack_.push({ true, true, {} });
@@ -470,17 +467,17 @@ mlisp::cons(Node head, List tail) noexcept
 }
 
 namespace {
-    void print_node(std::ostream& ostream, mlisp::Node const& node, bool is_head) {
-        using namespace mlisp;
+    using namespace mlisp;
+
+    void print_node(std::ostream& ostream, Node const& node, bool is_head) {
 
         class NodePrinter: NodeVisitor {
         public:
             NodePrinter(std::ostream& ostream, bool is_head)
-                : ostream_(ostream), is_head_(is_head)
-            {
-            }
+                : ostream_(ostream), is_head_(is_head) {}
 
-            void print(Node const& node) {
+            void print(Node const& node)
+            {
                 node.accept(*this);
             }
 
@@ -492,9 +489,8 @@ namespace {
                 }
 
                 auto head = car(list);
-                print_node(ostream_, head, true);
-
                 auto tail = cdr(list);
+                print_node(ostream_, head, true);
                 if (tail) {
                     ostream_ << ' ';
                     print_node(ostream_, tail, false);
@@ -524,7 +520,7 @@ namespace {
             std::ostream& ostream_;
             bool is_head_;
         };
-
+        
         if (node) {
             NodePrinter{ostream, is_head}.print(node);
         }
