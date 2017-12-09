@@ -2,27 +2,21 @@
 
 #include "mlisp.hpp"
 
-std::string
-readline()
-{
-    std::string line;
-    std::getline(std::cin, line);
-    return line;
-}
-
-int main(int argc, char *argv[])
+mlisp::List build_env()
 {
     using namespace mlisp;
 
     auto quote_proc = Proc{[] (List args, List env) {
         return args;
     }};
+
     auto car_proc = Proc{[] (List args, List env) {
         if (cdr(args)) {
             throw EvalError("car: too many args given");
         }
         return car(eval(car(args), env).to_list());
     }};
+
     auto cdr_proc = Proc{[] (List args, List env) {
         if (cdr(args)) {
             throw EvalError("cdr: too many args given");
@@ -30,13 +24,33 @@ int main(int argc, char *argv[])
         return cdr(eval(car(args), env).to_list());
     }};
 
-    List env;
-    env = cons(Symbol{"nil"}, cons({}, env));
-    env = cons(Symbol{"car"}, cons(car_proc, env));
-    env = cons(Symbol{"cdr"}, cons(cdr_proc, env));
-    env = cons(Symbol{"quote"}, cons(quote_proc, env));
+    auto m = std::map<std::string, mlisp::Node>{
+        { "nil", {} },
+        { "quote", quote_proc },
+        { "car", car_proc },
+        { "cdr", cdr_proc },
+    };
 
-    Parser parser;
+    List env;
+    for (auto const& pair: m) {
+        env = cons(Symbol{pair.first}, cons(pair.second, env));
+    }
+
+    return env;
+}
+
+int main(int argc, char *argv[])
+{
+    using namespace mlisp;
+
+    auto env = build_env();
+    auto parser = Parser{};
+
+    auto readline = [] {
+        std::string line;
+        std::getline(std::cin, line);
+        return line;
+    };
 
     while (true) {
         if (parser.clean()) {
@@ -46,8 +60,8 @@ int main(int argc, char *argv[])
             std::cout << "...... ";
         }
 
-        std::string line = readline();
-        std::istringstream is(line);
+        auto line = readline();
+        auto is = std::istringstream(line);
 
         while (!is.eof()) {
             try {
@@ -73,5 +87,6 @@ int main(int argc, char *argv[])
 
     std::cout << std::endl;
     std::cout << "Bye." << std::endl;
+
     return parser.clean() ? 0 : -1;
 }
