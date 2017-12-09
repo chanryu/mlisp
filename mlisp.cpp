@@ -22,17 +22,16 @@ namespace {
         }
     }
 
-    std::string get_token(std::istream& istream) noexcept
+    bool parse_token(std::istream& istream, std::string& token) noexcept
     {
         skip_spaces(istream);
-
-        std::string token;
+        token.clear();
 
         char c;
         while (istream.get(c)) {
             if (is_space(c)) {
                 assert(!token.empty());
-                break;
+                return true;
             }
             if (is_paren(c)) {
                 if (token.empty()) {
@@ -41,12 +40,12 @@ namespace {
                 else {
                     istream.unget();
                 }
-                break;
+                return true;
             }
             token.push_back(c);
         }
 
-        return token;
+        return false;
     }
 
     void debug_print(mlisp::Node node)
@@ -76,7 +75,6 @@ struct mlisp::List::Data: public mlisp::Node::Data {
 
     Data(Node h, List t) noexcept : head{h}, tail{t}
     {
-        assert(head || (!head && !tail));
     }
 
     void accept(NodeVisitor& visitor) const override
@@ -143,9 +141,19 @@ struct mlisp::Symbol::Data: public mlisp::Node::Data {
 ///////////////////////////////////////////////////////////////////////////////
 // Node
 
-mlisp::Node::Node() noexcept {}
-mlisp::Node::Node(Node const& other) noexcept : data_{other.data_} {}
-mlisp::Node::Node(std::shared_ptr<Data const> data) noexcept : data_{data} {}
+mlisp::Node::Node() noexcept
+{
+}
+
+mlisp::Node::Node(Node const& other) noexcept
+    : data_{other.data_}
+{
+}
+
+mlisp::Node::Node(std::shared_ptr<Data const> data) noexcept
+    : data_{data}
+{
+}
 
 mlisp::Node&
 mlisp::Node::operator = (Node const& rhs) noexcept
@@ -168,40 +176,65 @@ mlisp::Node::accept(NodeVisitor& visitor) const
 }
 
 mlisp::List
-mlisp::Node::to_list() const noexcept
+mlisp::Node::to_list() const
 {
-    auto list_data = std::dynamic_pointer_cast<List::Data const>(data_);
-    if (list_data) {
-        return cons(list_data->head, list_data->tail);
+    if (!data_) {
+        return {}; // nil
     }
 
-    return {};
+    auto list_data = std::dynamic_pointer_cast<List::Data const>(data_);
+    if (!list_data) {
+        throw TypeError("XXX is not a List");
+    }
+    return { list_data };
 }
 
 mlisp::Proc
-mlisp::Node::to_proc() const noexcept
+mlisp::Node::to_proc() const
 {
-    return { std::dynamic_pointer_cast<Proc::Data const>(data_) };
+    auto proc_data = std::dynamic_pointer_cast<Proc::Data const>(data_);
+    if (!proc_data) {
+        throw TypeError("XXX is not a Proc");
+    }
+    return { proc_data };
 }
 
 mlisp::Number
-mlisp::Node::to_number() const noexcept
+mlisp::Node::to_number() const
 {
-    return { std::dynamic_pointer_cast<Number::Data const>(data_) };
+    auto number_data = std::dynamic_pointer_cast<Number::Data const>(data_);
+    if (!number_data) {
+        throw TypeError("XXX is not a Number");
+    }
+    return { number_data };
 }
 
 mlisp::Symbol
-mlisp::Node::to_symbol() const noexcept
+mlisp::Node::to_symbol() const
 {
-    return { std::dynamic_pointer_cast<Symbol::Data const>(data_) };
+    auto symbol_data = std::dynamic_pointer_cast<Symbol::Data const>(data_);
+    if (!symbol_data) {
+        throw TypeError("XXX is not a Symbol");
+    }
+    return { symbol_data };
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // List
 
-mlisp::List::List() noexcept {}
-mlisp::List::List(List const& other) noexcept : Node{other.data_} {}
-mlisp::List::List(std::shared_ptr<Data const> data) noexcept : Node{data} {}
+mlisp::List::List() noexcept
+{
+}
+
+mlisp::List::List(List const& other) noexcept
+    : Node{other.data_}
+{
+}
+
+mlisp::List::List(std::shared_ptr<Data const> data) noexcept
+    : Node{data}
+{
+}
 
 mlisp::List&
 mlisp::List::operator = (List const& rhs) noexcept
@@ -284,27 +317,25 @@ mlisp::Symbol::name() const
     return static_cast<Data const*>(data_.get())->name;
 }
 
+
 ///////////////////////////////////////////////////////////////////////////////
 // Parser
 
-Node
-mlisp::Parser::parse(std::istream& istream)
+bool
+mlisp::Parser::parse(std::istream& istream, Node& expr)
 {
     std::string token;
 
-    while (true) {
-        token = get_token(istream);
+    while (parse_token(istream, token)) {
 
-        if (token.empty()) {
-            break;
-        }
+        debug_print("token: " + token);
 
         if (token == "(") {
-            stack_.push({ true, {} });
+            stack_.push({ true, true, {} });
             continue;
         }
 
-        Node expr;
+        Node node;
 
         if (token == ")") {
 
@@ -316,33 +347,40 @@ mlisp::Parser::parse(std::istream& istream)
 
                 auto c = stack_.top();
                 stack_.pop();
-                list = cons(c.head, list);
-                if (c.paren) {
+                if (c.head_empty) {
+                    assert(c.paren_open);
+                    assert(!list);
+                } else {
+                    list = cons(c.head, list);
+                }
+                if (c.paren_open) {
                     break;
                 }
             }
-            expr = list;
+            node = list;
         }
         else if (token[0] == '.' || (token[0] >= '0' && token[0] <= '9')) {
-            expr = Number{ std::stod(token) };
+            node = Number{ std::stod(token) };
         }
         else {
-            expr = Symbol{ std::move(token) };
+            node = Symbol{ std::move(token) };
         }
             
         if (stack_.empty()) {
-            return expr;
+            expr = node;
+            return true;
+        }
+
+        if (stack_.top().head_empty) {
+            stack_.top().head_empty = false;
+            stack_.top().head = node;
         }
         else {
-            if (stack_.top().head) {
-                stack_.push({ false, expr });
-            } else {
-                stack_.top().head = expr;
-            }
+            stack_.push({ false, false, node });
         }
     }
 
-    return {};
+    return false;
 }
 
 bool
@@ -373,52 +411,10 @@ mlisp::eval(Node expr, List env)
     private:
         void visit(List list) override
         {
-            static auto const nil = cons({}, {});
+            auto cmd = eval(car(list), env_);
+            auto proc = cmd.to_proc();
 
-            auto head = car(list);
-            auto tail = cdr(list);
-
-            auto e_head = eval(head, env_);
-
-            auto proc = e_head.to_proc();
-
-            if (!proc) {
-                throw EvalError("xxx not a proc");
-            }
-
-            result_ = proc(tail, env_);
-
-            /*
-            auto symbol = head.to_symbol();
-
-            if (symbol) {
-                auto name = symbol.name();
-                if (name == "car" || name == "cdr") {
-
-                    if (cdr(tail)) {
-                        throw EvalError(name + ": too many args given");
-                    }
-
-                    List arg = eval(car(tail), env_).to_list();
-                    if (!arg) {
-                        throw EvalError(name + ": must be given a list");
-                    }
-
-                    if (name == "car") {
-                        result_ = car(arg);
-                    }
-                    else {
-                        result_ = cdr(arg);
-                    }
-                }
-                else {
-                    result_ = nil;
-                }
-            }
-            else {
-                result_ = nil;
-            }
-            */
+            result_ = proc(cdr(list), env_);
         }
 
         void visit(Proc proc) override
@@ -433,7 +429,7 @@ mlisp::eval(Node expr, List env)
         void visit(Symbol symbol) override
         {
             for (auto env = env_; env; env = cdr(env)) {
-    
+
             }
             result_ = symbol;
         }
@@ -452,96 +448,95 @@ mlisp::eval(Node expr, List env)
 mlisp::Node
 mlisp::car(List list) noexcept
 {
-    assert(list.data_);
-    return static_cast<List::Data const*>(list.data_.get())->head;
+    if (list.data_) {
+        return static_cast<List::Data const*>(list.data_.get())->head;
+    }
+    return {};
 }
 
 mlisp::List
 mlisp::cdr(List list) noexcept
 {
-    assert(list.data_);
-    return static_cast<List::Data const*>(list.data_.get())->tail;
+    if (list.data_) {
+        return static_cast<List::Data const*>(list.data_.get())->tail;
+    }
+    return {};
 }
 
 mlisp::List
 mlisp::cons(Node head, List tail) noexcept
 {
-    if (!head) {
-        static List nil{ std::make_shared<List::Data>(Node{}, List{}) };
-        return nil;
-    }
-
     return List{ std::make_shared<List::Data>(head, tail) };
 }
 
+namespace {
+    void print_node(std::ostream& ostream, mlisp::Node const& node, bool is_head) {
+        using namespace mlisp;
+
+        class NodePrinter: NodeVisitor {
+        public:
+            NodePrinter(std::ostream& ostream, bool is_head)
+                : ostream_(ostream), is_head_(is_head)
+            {
+            }
+
+            void print(Node const& node) {
+                node.accept(*this);
+            }
+
+        private:
+            void visit(List list) override
+            {
+                if (is_head_) {
+                    ostream_ << '(';
+                }
+
+                auto head = car(list);
+                print_node(ostream_, head, true);
+
+                auto tail = cdr(list);
+                if (tail) {
+                    ostream_ << ' ';
+                    print_node(ostream_, tail, false);
+                }
+                
+                if (is_head_) {
+                    ostream_ << ')';
+                }
+            }
+
+            void visit(Proc proc) override
+            {
+                //ostream_ << proc;
+            }
+
+            void visit(Number number) override
+            {
+                ostream_ << number.value();
+            }
+
+            void visit(Symbol symbol) override
+            {
+                ostream_ << symbol.name();
+            }
+
+        private:
+            std::ostream& ostream_;
+            bool is_head_;
+        };
+
+        if (node) {
+            NodePrinter{ostream, is_head}.print(node);
+        }
+        else {
+            ostream << "nil";
+        }
+    }
+}
+
 std::ostream&
-std::operator << (std::ostream& os, mlisp::Node const& node)
+std::operator << (std::ostream& ostream, mlisp::Node const& node)
 {
-    using namespace mlisp;
-
-    class NodePrinter: NodeVisitor {
-    public:
-        explicit NodePrinter(std::ostream& ostream) : ostream_(ostream)
-        {
-        }
-
-        void print(Node const& node)
-        {
-            is_head_.push(true);
-            node.accept(*this);
-            is_head_.pop();
-        }
-
-    private:
-        void visit(List list) override
-        {
-            auto head = car(list);
-            if (!head) {
-                ostream_ << "nil";
-                return;
-            }
-
-            if (is_head_.top()) {
-                ostream_ << '(';
-            }
-
-            is_head_.push(true);
-            head.accept(*this);
-            is_head_.pop();
-
-            auto tail = cdr(list);
-            if (tail) {
-                ostream_ << ' ';
-
-                is_head_.push(false);
-                tail.accept(*this);
-                is_head_.pop();
-            }
-            else {
-                ostream_ << ')';
-            }
-        }
-
-        void visit(Proc proc) override
-        {
-            //ostream_ << proc;
-        }
-
-        void visit(Number number) override
-        {
-            ostream_ << number.value();
-        }
-
-        void visit(Symbol symbol) override
-        {
-            ostream_ << symbol.name();
-        }
-
-    private:
-        detail::Stack<bool> is_head_;
-        std::ostream& ostream_;
-    };
-
-    NodePrinter{os}.print(node);
-    return os;
+    print_node(ostream, node, true);
+    return ostream;
 }

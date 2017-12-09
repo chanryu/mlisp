@@ -9,9 +9,6 @@
 namespace mlisp {
 
     namespace detail {
-        template <typename T>
-        using Stack = std::stack<T, std::vector<T>>;
-
         template <int TAG>
         class UniqueRuntimeError: public std::runtime_error {
         public:
@@ -33,7 +30,6 @@ namespace mlisp {
 
         Node() noexcept;
         Node(Node const&) noexcept;
-        Node(std::shared_ptr<Data const>) noexcept;
 
         Node& operator = (Node const&) noexcept;
 
@@ -41,34 +37,38 @@ namespace mlisp {
 
         void accept(NodeVisitor&) const;
 
-        List to_list() const noexcept;
-        Proc to_proc() const noexcept;
-        Number to_number() const noexcept;
-        Symbol to_symbol() const noexcept;
+        List to_list() const;
+        Proc to_proc() const;
+        Number to_number() const;
+        Symbol to_symbol() const;
 
     protected:
+        Node(std::shared_ptr<Data const>) noexcept;
         std::shared_ptr<Data const> data_;
     };
 
     class List: public Node {
     public:
-        struct Data;
-
         List() noexcept;
         List(List const&) noexcept;
-        List(std::shared_ptr<Data const>) noexcept;
 
         List& operator = (List const&) noexcept;
 
         friend Node car(List list) noexcept;
         friend List cdr(List list) noexcept;
+        friend List cons(Node head, List tail) noexcept;
+
+    private:
+        struct Data;
+        friend class Node;
+        List(std::shared_ptr<Data const>) noexcept;
     };
 
     using Func = std::function<Node(List, List)>;
 
     class Proc: public Node {
     public:
-        Proc(Func func) noexcept;
+        explicit Proc(Func func) noexcept;
         Proc(Proc const&) noexcept;
 
         Node operator()(List, List) const;
@@ -82,7 +82,7 @@ namespace mlisp {
 
     class Number: public Node {
     public:
-        Number(double) noexcept;
+        explicit Number(double) noexcept;
         Number(Number const&) noexcept;
 
         double value() const;
@@ -96,7 +96,7 @@ namespace mlisp {
 
     class Symbol: public Node {
     public:
-        Symbol(std::string) noexcept;
+        explicit Symbol(std::string) noexcept;
         Symbol(Symbol const&) noexcept;
 
         std::string const& name() const;
@@ -115,23 +115,24 @@ namespace mlisp {
         virtual void visit(Number) = 0;
         virtual void visit(Symbol) = 0;
     };
-
-    using ParseError = detail::UniqueRuntimeError<0>;
     
     class Parser {
     public:
-        Node parse(std::istream& istream);
+        bool parse(std::istream& istream, Node& expr);
         bool clean() const noexcept;
 
     private:
         struct Context {
-            bool paren;
+            bool paren_open;
+            bool head_empty;
             Node head;
         };
-        detail::Stack<Context> stack_;
+        std::stack<Context> stack_;
     };
 
+    using ParseError = detail::UniqueRuntimeError<0>;
     using EvalError = detail::UniqueRuntimeError<1>;
+    using TypeError = detail::UniqueRuntimeError<2>;
 
     Node eval(Node expr, List env);
 

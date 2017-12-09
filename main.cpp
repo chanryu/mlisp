@@ -14,10 +14,34 @@ int main(int argc, char *argv[])
 {
     using namespace mlisp;
 
-    auto quote = Proc{[] (List args, List env) {
+    auto quote_proc = Proc{[] (List args, List env) {
         return args;
     }};
-    auto env = cons(Symbol{"quote"}, cons(quote, {}));
+    auto car_proc = Proc{[] (List args, List env) {
+            if (cdr(args)) {
+                throw EvalError("car: too many args given");
+            }
+            auto list = eval(car(args), env).to_list();
+            //if (!list) {
+            //    throw EvalError(name + ": must be given a list");
+            //}
+            return cdr(list);
+    }};
+    auto cdr_proc = Proc{[] (List args, List env) {
+            if (cdr(args)) {
+                throw EvalError("cdr: too many args given");
+            }
+            auto list = eval(car(args), env).to_list();
+            //if (!list) {
+            //    throw EvalError(name + ": must be given a list");
+            //}
+            return cdr(list);
+    }};
+
+    List env;
+    env = cons(Symbol{"quote"}, cons(quote_proc, env));
+    env = cons(Symbol("car"), cons(car_proc, env));
+    env = cons(Symbol("cdr"), cons(cdr_proc, env));
 
     Parser parser;
 
@@ -34,8 +58,8 @@ int main(int argc, char *argv[])
 
         while (!is.eof()) {
             try {
-                auto expr = parser.parse(is);
-                if (!expr) {
+                Node expr;
+                if (!parser.parse(is, expr)) {
                     break;
                 }
                 std::cout << expr << std::endl;
