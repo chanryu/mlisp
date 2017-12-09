@@ -316,9 +316,12 @@ bool
 mlisp::Symbol::operator == (Node const& rhs) noexcept
 {
     if (rhs) {
-        auto const* rhs_data = dynamic_cast<Data const*>(data_.get());
-        if (rhs_data) {
-            return name() == rhs_data->name;
+        try {
+            auto sym = rhs.to_symbol();
+            return name() == sym.name();
+        }
+        catch (TypeError& e) {
+            return false;
         }
     }
     return false;
