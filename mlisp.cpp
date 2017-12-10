@@ -152,6 +152,26 @@ mlisp::Node::Node(Node const& other) noexcept
 {
 }
 
+mlisp::Node::Node(List const& list) noexcept
+    : data_{list.data_}
+{
+}
+
+mlisp::Node::Node(Proc const& proc) noexcept
+    : data_{proc.data_}
+{
+}
+
+mlisp::Node::Node(Number const& number) noexcept
+    : data_{number.data_}
+{
+}
+
+mlisp::Node::Node(Symbol const& symbol) noexcept
+    : data_{symbol.data_}
+{
+}
+
 mlisp::Node::Node(std::shared_ptr<Data const> data) noexcept
     : data_{data}
 {
@@ -159,6 +179,34 @@ mlisp::Node::Node(std::shared_ptr<Data const> data) noexcept
 
 mlisp::Node&
 mlisp::Node::operator = (Node const& rhs) noexcept
+{
+    data_ = rhs.data_;
+    return *this;
+}
+
+mlisp::Node&
+mlisp::Node::operator = (List const& rhs) noexcept
+{
+    data_ = rhs.data_;
+    return *this;
+}
+
+mlisp::Node&
+mlisp::Node::operator = (Proc const& rhs) noexcept
+{
+    data_ = rhs.data_;
+    return *this;
+}
+
+mlisp::Node&
+mlisp::Node::operator = (Number const& rhs) noexcept
+{
+    data_ = rhs.data_;
+    return *this;
+}
+
+mlisp::Node&
+mlisp::Node::operator = (Symbol const& rhs) noexcept
 {
     data_ = rhs.data_;
     return *this;
@@ -229,12 +277,12 @@ mlisp::List::List() noexcept
 }
 
 mlisp::List::List(List const& other) noexcept
-    : Node{other.data_}
+    : data_{other.data_}
 {
 }
 
 mlisp::List::List(std::shared_ptr<Data const> data) noexcept
-    : Node{data}
+    : data_{data}
 {
 }
 
@@ -245,25 +293,29 @@ mlisp::List::operator = (List const& rhs) noexcept
     return *this;
 }
 
+mlisp::List::operator bool() const noexcept
+{
+    return !!data_;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Proc
 
 mlisp::Proc::Proc(Proc const& other) noexcept
-    : Node{other.data_}
+    : data_{other.data_}
 {
 }
 
 mlisp::Proc::Proc(std::shared_ptr<Data const> data) noexcept
-    : Node{data}
+    : data_{data}
 {
 }
 
 mlisp::Node
 mlisp::Proc::operator()(List args, List env) const
 {
-    auto const& func = static_cast<Data const*>(data_.get())->func;
-    if (func) {
-        return func(args, env);
+    if (data_->func) {
+        return data_->func(args, env);
     }
     return {};  // nil
 }
@@ -272,31 +324,31 @@ mlisp::Proc::operator()(List args, List env) const
 // Number
 
 mlisp::Number::Number(Number const& other) noexcept
-    : Node{other.data_}
+    : data_{other.data_}
 {
 }
 
 mlisp::Number::Number(std::shared_ptr<Data const> data) noexcept
-    : Node{data}
+    : data_{data}
 {
 }
 
 double
 mlisp::Number::value() const
 {
-    return static_cast<Data const*>(data_.get())->value;
+    return data_->value;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Symbol
 
 mlisp::Symbol::Symbol(Symbol const& other) noexcept
-    : Node{other.data_}
+    : data_{other.data_}
 {
 }
 
 mlisp::Symbol::Symbol(std::shared_ptr<Data const> data) noexcept
-    : Node{data}
+    : data_{data}
 {
 }
 
@@ -318,7 +370,7 @@ mlisp::Symbol::operator == (Node const& rhs) noexcept
 std::string const&
 mlisp::Symbol::name() const
 {
-    return static_cast<Data const*>(data_.get())->name;
+    return data_->name;
 }
 
 
@@ -475,19 +527,13 @@ mlisp::eval(Node expr, List env)
 mlisp::Node
 mlisp::car(List list) noexcept
 {
-    if (list.data_) {
-        return static_cast<List::Data const*>(list.data_.get())->head;
-    }
-    return {};
+    return list.data_ ? list.data_->head : Node{};
 }
 
 mlisp::List
 mlisp::cdr(List list) noexcept
 {
-    if (list.data_) {
-        return static_cast<List::Data const*>(list.data_.get())->tail;
-    }
-    return {};
+    return list.data_ ? list.data_->tail : List{};
 }
 
 mlisp::List

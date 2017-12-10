@@ -35,13 +35,20 @@ namespace mlisp {
 
     class NodeVisitor;
 
-    class Node {
+    class Node final {
     public:
         Node() noexcept;
         Node(Node const&) noexcept;
+        Node(List const&) noexcept;
+        Node(Proc const&) noexcept;
+        Node(Number const&) noexcept;
+        Node(Symbol const&) noexcept;
 
         Node& operator = (Node const&) noexcept;
-        bool operator == (Node const&) noexcept = delete;
+        Node& operator = (List const&) noexcept;
+        Node& operator = (Proc const&) noexcept;
+        Node& operator = (Number const&) noexcept;
+        Node& operator = (Symbol const&) noexcept;
 
         operator bool() const noexcept;
 
@@ -52,18 +59,23 @@ namespace mlisp {
         Number to_number() const;
         Symbol to_symbol() const;
 
-    protected:
+    private:
         typedef detail::NodeData Data;
         Node(std::shared_ptr<Data const>) noexcept;
         std::shared_ptr<Data const> data_;
+
+    private:
+        bool operator == (Node const&) noexcept = delete;
     };
 
-    class List: public Node {
+    class List final {
     public:
         List() noexcept;
         List(List const&) noexcept;
 
         List& operator = (List const&) noexcept;
+
+        operator bool() const noexcept;
 
     private:
         friend class Node;
@@ -74,9 +86,10 @@ namespace mlisp {
 
         typedef detail::ListData Data;
         List(std::shared_ptr<Data const>) noexcept;
+        std::shared_ptr<Data const> data_;
     };
 
-    class Proc: public Node {
+    class Proc final {
     public:
         Proc(Proc const&) noexcept;
 
@@ -89,9 +102,10 @@ namespace mlisp {
 
         typedef detail::ProcData Data;
         Proc(std::shared_ptr<Data const>) noexcept;
+        std::shared_ptr<Data const> data_;
     };
 
-    class Number: public Node {
+    class Number final {
     public:
         Number(Number const&) noexcept;
 
@@ -104,9 +118,10 @@ namespace mlisp {
 
         typedef detail::NumberData Data;
         Number(std::shared_ptr<Data const>) noexcept;
+        std::shared_ptr<Data const> data_;
     };
 
-    class Symbol: public Node {
+    class Symbol final {
     public:
         Symbol(Symbol const&) noexcept;
 
@@ -121,6 +136,7 @@ namespace mlisp {
 
         typedef detail::SymbolData Data;
         Symbol(std::shared_ptr<Data const>) noexcept;
+        std::shared_ptr<Data const> data_;
     };
 
     class NodeVisitor {
