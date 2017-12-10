@@ -9,28 +9,31 @@
 namespace mlisp {
 
     namespace detail {
-        template <int TAG>
-        class UniqueRuntimeError: public std::runtime_error {
-        public:
-            explicit UniqueRuntimeError(char const* what)
-                : std::runtime_error{what} {}
-            explicit UniqueRuntimeError(std::string const& what)
-                : std::runtime_error{what} {}
-        };
+        struct NodeData;
+        struct ListData;
+        struct ProcData;
+        struct NumberData;
+        struct SymbolData;
     }
 
-    class NodeVisitor;
-
+    class Node;
     class List;
     class Proc;
     class Number;
     class Symbol;
 
-    struct NodeData;
-    struct ListData;
-    struct ProcData;
-    struct NumberData;
-    struct SymbolData;
+    using Func = std::function<Node(List, List)>;
+
+    Node car(List) noexcept;
+    List cdr(List) noexcept;
+    List cons(Node head, List tail) noexcept;
+    Proc proc(Func) noexcept;
+    Number number(double) noexcept;
+    Symbol symbol(std::string) noexcept;
+
+    Node eval(Node expr, List env); // throws EvalError
+
+    class NodeVisitor;
 
     class Node {
     public:
@@ -50,8 +53,9 @@ namespace mlisp {
         Symbol to_symbol() const;
 
     protected:
-        Node(std::shared_ptr<NodeData const>) noexcept;
-        std::shared_ptr<NodeData const> data_;
+        typedef detail::NodeData Data;
+        Node(std::shared_ptr<Data const>) noexcept;
+        std::shared_ptr<Data const> data_;
     };
 
     class List: public Node {
@@ -61,17 +65,16 @@ namespace mlisp {
 
         List& operator = (List const&) noexcept;
 
+    private:
+        friend class Node;
+        friend struct detail::ListData;
         friend Node car(List list) noexcept;
         friend List cdr(List list) noexcept;
         friend List cons(Node head, List tail) noexcept;
 
-    private:
-        friend class Node;
-        friend struct ListData;
-        List(std::shared_ptr<ListData const>) noexcept;
+        typedef detail::ListData Data;
+        List(std::shared_ptr<Data const>) noexcept;
     };
-
-    using Func = std::function<Node(List, List)>;
 
     class Proc: public Node {
     public:
@@ -81,9 +84,11 @@ namespace mlisp {
 
     private:
         friend class Node;
-        friend struct ProcData;
+        friend struct detail::ProcData;
         friend Proc proc(Func) noexcept;
-        Proc(std::shared_ptr<ProcData const>) noexcept;
+
+        typedef detail::ProcData Data;
+        Proc(std::shared_ptr<Data const>) noexcept;
     };
 
     class Number: public Node {
@@ -94,9 +99,11 @@ namespace mlisp {
 
     private:
         friend class Node;
-        friend struct NumberData;
+        friend struct detail::NumberData;
         friend Number number(double) noexcept;
-        Number(std::shared_ptr<NumberData const>) noexcept;
+
+        typedef detail::NumberData Data;
+        Number(std::shared_ptr<Data const>) noexcept;
     };
 
     class Symbol: public Node {
@@ -109,9 +116,11 @@ namespace mlisp {
 
     private:
         friend class Node;
-        friend struct SymbolData;
+        friend struct detail::SymbolData;
         friend Symbol symbol(std::string) noexcept;
-        Symbol(std::shared_ptr<SymbolData const>) noexcept;
+
+        typedef detail::SymbolData Data;
+        Symbol(std::shared_ptr<Data const>) noexcept;
     };
 
     class NodeVisitor {
@@ -120,10 +129,6 @@ namespace mlisp {
         virtual void visit(Proc) = 0;
         virtual void visit(Number) = 0;
         virtual void visit(Symbol) = 0;
-    };
-
-    struct ParseError: detail::UniqueRuntimeError<0> {
-        using UniqueRuntimeError<0>::UniqueRuntimeError;
     };
     
     class Parser {
@@ -140,23 +145,30 @@ namespace mlisp {
         };
         std::stack<Context> stack_;
     };
+}
 
-    Node car(List list) noexcept;
-    List cdr(List list) noexcept;
-    List cons(Node head, List tail) noexcept;
-    Proc proc(Func) noexcept;
-    Number number(double) noexcept;
-    Symbol symbol(std::string) noexcept;
+namespace mlisp {
+    // printing helper
+    std::ostream& operator << (std::ostream& os, Node const&);
+}
+
+namespace mlisp {
+    namespace detail {
+        template <int TAG>
+        class UniqueRuntimeError: public std::runtime_error {
+        public:
+            explicit UniqueRuntimeError(char const* what)
+                : std::runtime_error{what} {}
+            explicit UniqueRuntimeError(std::string const& what)
+                : std::runtime_error{what} {}
+        };
+    }
+
+    struct ParseError: detail::UniqueRuntimeError<0> {
+        using UniqueRuntimeError<0>::UniqueRuntimeError;
+    };
 
     struct EvalError: detail::UniqueRuntimeError<1> {
         using UniqueRuntimeError<1>::UniqueRuntimeError;
     };
-
-    struct TypeError: EvalError {
-        using EvalError::EvalError;
-    };
-
-    Node eval(Node expr, List env);
-
-    std::ostream& operator << (std::ostream& os, Node const&);
 }
