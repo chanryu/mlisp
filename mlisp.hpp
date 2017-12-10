@@ -26,10 +26,14 @@ namespace mlisp {
     class Number;
     class Symbol;
 
+    struct NodeData;
+    struct ListData;
+    struct ProcData;
+    struct NumberData;
+    struct SymbolData;
+
     class Node {
     public:
-        struct Data;
-
         Node() noexcept;
         Node(Node const&) noexcept;
 
@@ -46,8 +50,8 @@ namespace mlisp {
         Symbol to_symbol() const;
 
     protected:
-        Node(std::shared_ptr<Data const>) noexcept;
-        std::shared_ptr<Data const> data_;
+        Node(std::shared_ptr<NodeData const>) noexcept;
+        std::shared_ptr<NodeData const> data_;
     };
 
     class List: public Node {
@@ -62,48 +66,41 @@ namespace mlisp {
         friend List cons(Node head, List tail) noexcept;
 
     private:
-        struct Data;
         friend class Node;
-        List(std::shared_ptr<Data const>) noexcept;
+        friend struct ListData;
+        List(std::shared_ptr<ListData const>) noexcept;
     };
-
-    Node car(List list) noexcept;
-    List cdr(List list) noexcept;
-    List cons(Node head, List tail) noexcept;
 
     using Func = std::function<Node(List, List)>;
 
     class Proc: public Node {
     public:
-        explicit Proc(Func func) noexcept;
         Proc(Proc const&) noexcept;
 
         Node operator()(List, List) const;
 
     private:
-        struct Data;
         friend class Node;
-        friend struct Data;
-        Proc(std::shared_ptr<Data const>) noexcept;
+        friend struct ProcData;
+        friend Proc proc(Func) noexcept;
+        Proc(std::shared_ptr<ProcData const>) noexcept;
     };
 
     class Number: public Node {
     public:
-        explicit Number(double) noexcept;
         Number(Number const&) noexcept;
 
         double value() const;
 
     private:
-        struct Data;
         friend class Node;
-        friend struct Data;
-        Number(std::shared_ptr<Data const>) noexcept;
+        friend struct NumberData;
+        friend Number number(double) noexcept;
+        Number(std::shared_ptr<NumberData const>) noexcept;
     };
 
     class Symbol: public Node {
     public:
-        explicit Symbol(std::string) noexcept;
         Symbol(Symbol const&) noexcept;
 
         bool operator == (Node const&) noexcept;
@@ -111,10 +108,10 @@ namespace mlisp {
         std::string const& name() const;
 
     private:
-        struct Data;
         friend class Node;
-        friend struct Data;
-        Symbol(std::shared_ptr<Data const>) noexcept;
+        friend struct SymbolData;
+        friend Symbol symbol(std::string) noexcept;
+        Symbol(std::shared_ptr<SymbolData const>) noexcept;
     };
 
     class NodeVisitor {
@@ -144,6 +141,13 @@ namespace mlisp {
         std::stack<Context> stack_;
     };
 
+    Node car(List list) noexcept;
+    List cdr(List list) noexcept;
+    List cons(Node head, List tail) noexcept;
+    Proc proc(Func) noexcept;
+    Number number(double) noexcept;
+    Symbol symbol(std::string) noexcept;
+
     struct EvalError: detail::UniqueRuntimeError<1> {
         using UniqueRuntimeError<1>::UniqueRuntimeError;
     };
@@ -153,8 +157,6 @@ namespace mlisp {
     };
 
     Node eval(Node expr, List env);
-}
 
-namespace std {
-    ostream& operator << (ostream& os, mlisp::Node const& node);
+    std::ostream& operator << (std::ostream& os, Node const&);
 }

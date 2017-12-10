@@ -6,29 +6,29 @@ mlisp::List build_env()
 {
     using namespace mlisp;
 
-    auto car_proc = Proc{[] (List args, List env) {
+    auto car_proc = proc([] (List args, List env) {
         if (cdr(args)) {
             throw EvalError("car: too many args given");
         }
         return car(eval(car(args), env).to_list());
-    }};
+    });
 
-    auto cdr_proc = Proc{[] (List args, List env) {
+    auto cdr_proc = proc([] (List args, List env) {
         if (cdr(args)) {
             throw EvalError("cdr: too many args given");
         }
         return cdr(eval(car(args), env).to_list());
-    }};
+    });
 
-    auto plus_proc = Proc{[] (List args, List env) {
-        double result = 0;
+    auto plus_proc = proc([] (List args, List env) {
+        auto result = 0.0;
         while (args) {
             auto arg = eval(car(args), env);
             result += arg.to_number().value();
             args = cdr(args);
         }
-        return Number(result);
-    }};
+        return number(result);
+    });
 
     auto m = std::map<std::string, mlisp::Node>{
         { "nil", {} },
@@ -39,7 +39,7 @@ mlisp::List build_env()
 
     List env;
     for (auto const& pair: m) {
-        env = cons(Symbol{pair.first}, cons(pair.second, env));
+        env = cons(symbol(pair.first), cons(pair.second, env));
     }
 
     return env;

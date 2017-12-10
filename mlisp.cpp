@@ -63,25 +63,25 @@ namespace {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Node::Data
+// NodeData
 
-struct mlisp::Node::Data: public std::enable_shared_from_this<Data> {
-    virtual ~Data() {}
+struct mlisp::NodeData: public std::enable_shared_from_this<NodeData> {
+    virtual ~NodeData() {}
     virtual void accept(NodeVisitor&) const = 0;
 };
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// List::Data
+// ListData
 
-struct mlisp::List::Data: public mlisp::Node::Data {
+struct mlisp::ListData: public mlisp::NodeData {
 
-    Data(Node h, List t) noexcept : head{h}, tail{t} { }
+    ListData(Node h, List t) noexcept : head{h}, tail{t} { }
 
     void accept(NodeVisitor& visitor) const override
     {
         visitor.visit(List{
-            std::static_pointer_cast<Data const>(shared_from_this())
+            std::static_pointer_cast<ListData const>(shared_from_this())
         });
     }
     
@@ -90,16 +90,16 @@ struct mlisp::List::Data: public mlisp::Node::Data {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-// Proc::Data
+// ProcData
 
-struct mlisp::Proc::Data: public mlisp::Node::Data {
+struct mlisp::ProcData: public mlisp::NodeData {
 
-    explicit Data(Func f) noexcept : func{f} { }
+    explicit ProcData(Func f) noexcept : func{f} { }
 
     void accept(NodeVisitor& visitor) const override
     {
         visitor.visit(Proc{
-            std::static_pointer_cast<Data const>(shared_from_this())
+            std::static_pointer_cast<ProcData const>(shared_from_this())
         });
     }
 
@@ -107,16 +107,16 @@ struct mlisp::Proc::Data: public mlisp::Node::Data {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-// Number::Data
+// NumberData
 
-struct mlisp::Number::Data: public mlisp::Node::Data {
+struct mlisp::NumberData: public mlisp::NodeData {
     
-    explicit Data(double v) noexcept : value{v} { }
+    explicit NumberData(double v) noexcept : value{v} { }
 
     void accept(NodeVisitor& visitor) const override
     {
         visitor.visit(Number{
-            std::static_pointer_cast<Data const>(shared_from_this())
+            std::static_pointer_cast<NumberData const>(shared_from_this())
         });
     }
     
@@ -124,16 +124,16 @@ struct mlisp::Number::Data: public mlisp::Node::Data {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-// Symbol::Data
+// SymbolData
 
-struct mlisp::Symbol::Data: public mlisp::Node::Data {
+struct mlisp::SymbolData: public mlisp::NodeData {
     
-    explicit Data(std::string n) noexcept : name{std::move(n)} { }
+    explicit SymbolData(std::string n) noexcept : name{std::move(n)} { }
 
     void accept(NodeVisitor& visitor) const override
     {
         visitor.visit(Symbol{
-            std::static_pointer_cast<Data const>(shared_from_this())
+            std::static_pointer_cast<SymbolData const>(shared_from_this())
         });
     }
     
@@ -152,7 +152,7 @@ mlisp::Node::Node(Node const& other) noexcept
 {
 }
 
-mlisp::Node::Node(std::shared_ptr<Data const> data) noexcept
+mlisp::Node::Node(std::shared_ptr<NodeData const> data) noexcept
     : data_{data}
 {
 }
@@ -184,7 +184,7 @@ mlisp::Node::to_list() const
         return {}; // nil
     }
 
-    auto list_data = std::dynamic_pointer_cast<List::Data const>(data_);
+    auto list_data = std::dynamic_pointer_cast<ListData const>(data_);
     if (!list_data) {
         throw TypeError("XXX is not a List");
     }
@@ -194,7 +194,7 @@ mlisp::Node::to_list() const
 mlisp::Proc
 mlisp::Node::to_proc() const
 {
-    auto proc_data = std::dynamic_pointer_cast<Proc::Data const>(data_);
+    auto proc_data = std::dynamic_pointer_cast<ProcData const>(data_);
     if (!proc_data) {
         throw TypeError("XXX is not a Proc");
     }
@@ -204,7 +204,7 @@ mlisp::Node::to_proc() const
 mlisp::Number
 mlisp::Node::to_number() const
 {
-    auto number_data = std::dynamic_pointer_cast<Number::Data const>(data_);
+    auto number_data = std::dynamic_pointer_cast<NumberData const>(data_);
     if (!number_data) {
         throw TypeError("XXX is not a Number");
     }
@@ -214,7 +214,7 @@ mlisp::Node::to_number() const
 mlisp::Symbol
 mlisp::Node::to_symbol() const
 {
-    auto symbol_data = std::dynamic_pointer_cast<Symbol::Data const>(data_);
+    auto symbol_data = std::dynamic_pointer_cast<SymbolData const>(data_);
     if (!symbol_data) {
         throw TypeError("XXX is not a Symbol");
     }
@@ -233,7 +233,7 @@ mlisp::List::List(List const& other) noexcept
 {
 }
 
-mlisp::List::List(std::shared_ptr<Data const> data) noexcept
+mlisp::List::List(std::shared_ptr<ListData const> data) noexcept
     : Node{data}
 {
 }
@@ -248,17 +248,12 @@ mlisp::List::operator = (List const& rhs) noexcept
 ////////////////////////////////////////////////////////////////////////////////
 // Proc
 
-mlisp::Proc::Proc(Func func) noexcept
-    : Node{ std::make_shared<Data>(func) }
-{
-}
-
 mlisp::Proc::Proc(Proc const& other) noexcept
     : Node{other.data_}
 {
 }
 
-mlisp::Proc::Proc(std::shared_ptr<Data const> data) noexcept
+mlisp::Proc::Proc(std::shared_ptr<ProcData const> data) noexcept
     : Node{data}
 {
 }
@@ -266,7 +261,7 @@ mlisp::Proc::Proc(std::shared_ptr<Data const> data) noexcept
 mlisp::Node
 mlisp::Proc::operator()(List args, List env) const
 {
-    auto const& func = static_cast<Data const*>(data_.get())->func;
+    auto const& func = static_cast<ProcData const*>(data_.get())->func;
     if (func) {
         return func(args, env);
     }
@@ -276,17 +271,12 @@ mlisp::Proc::operator()(List args, List env) const
 ////////////////////////////////////////////////////////////////////////////////
 // Number
 
-mlisp::Number::Number(double value) noexcept
-    : Node{ std::make_shared<Data>(value)}
-{
-}
-
 mlisp::Number::Number(Number const& other) noexcept
     : Node{other.data_}
 {
 }
 
-mlisp::Number::Number(std::shared_ptr<Data const> data) noexcept
+mlisp::Number::Number(std::shared_ptr<NumberData const> data) noexcept
     : Node{data}
 {
 }
@@ -294,23 +284,18 @@ mlisp::Number::Number(std::shared_ptr<Data const> data) noexcept
 double
 mlisp::Number::value() const
 {
-    return static_cast<Data const*>(data_.get())->value;
+    return static_cast<NumberData const*>(data_.get())->value;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Symbol
-
-mlisp::Symbol::Symbol(std::string name) noexcept
-    : Node{ std::make_shared<Data>(std::move(name))}
-{
-}
 
 mlisp::Symbol::Symbol(Symbol const& other) noexcept
     : Node{other.data_}
 {
 }
 
-mlisp::Symbol::Symbol(std::shared_ptr<Data const> data) noexcept
+mlisp::Symbol::Symbol(std::shared_ptr<SymbolData const> data) noexcept
     : Node{data}
 {
 }
@@ -333,7 +318,7 @@ mlisp::Symbol::operator == (Node const& rhs) noexcept
 std::string const&
 mlisp::Symbol::name() const
 {
-    return static_cast<Data const*>(data_.get())->name;
+    return static_cast<SymbolData const*>(data_.get())->name;
 }
 
 
@@ -384,10 +369,10 @@ mlisp::Parser::parse(std::istream& istream, Node& expr)
             node = list;
         }
         else if (token[0] == '.' || (token[0] >= '0' && token[0] <= '9')) {
-            node = Number{ std::stod(token) };
+            node = number(std::stod(token));
         }
         else {
-            node = Symbol{ std::move(token) };
+            node = symbol(std::move(token));
         }
 
         while (true) {
@@ -398,7 +383,7 @@ mlisp::Parser::parse(std::istream& istream, Node& expr)
 
             if (stack_.top().type == Context::Type::quote) {
                 stack_.pop();
-                node = cons(Symbol(MLISP_QUOTE), cons(node, {}));
+                node = cons(symbol(MLISP_QUOTE), cons(node, {}));
                 continue;
             }
 
@@ -432,10 +417,10 @@ mlisp::eval(Node expr, List env)
     public:
         explicit NodeEvaluator(List env)
         {
-            auto quote_proc = Proc{[] (List args, List) {
+            auto quote_proc = proc([] (List args, List) {
                 return car(args);
-            }};
-            env_ = cons(Symbol{MLISP_QUOTE}, cons(quote_proc, env));
+            });
+            env_ = cons(symbol(MLISP_QUOTE), cons(quote_proc, env));
         }
 
         Node evaluate(Node expr)
@@ -491,7 +476,7 @@ mlisp::Node
 mlisp::car(List list) noexcept
 {
     if (list.data_) {
-        return static_cast<List::Data const*>(list.data_.get())->head;
+        return static_cast<ListData const*>(list.data_.get())->head;
     }
     return {};
 }
@@ -500,7 +485,7 @@ mlisp::List
 mlisp::cdr(List list) noexcept
 {
     if (list.data_) {
-        return static_cast<List::Data const*>(list.data_.get())->tail;
+        return static_cast<ListData const*>(list.data_.get())->tail;
     }
     return {};
 }
@@ -508,7 +493,25 @@ mlisp::cdr(List list) noexcept
 mlisp::List
 mlisp::cons(Node head, List tail) noexcept
 {
-    return List{ std::make_shared<List::Data>(head, tail) };
+    return List{ std::make_shared<ListData>(head, tail) };
+}
+
+mlisp::Proc
+mlisp::proc(Func func) noexcept
+{
+    return Proc{ std::make_shared<ProcData>(func) };
+}
+
+mlisp::Number
+mlisp::number(double value) noexcept
+{
+    return Number{ std::make_shared<NumberData>(value) };
+}
+
+mlisp::Symbol
+mlisp::symbol(std::string name) noexcept
+{
+    return Symbol{ std::make_shared<SymbolData>(std::move(name)) };
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -522,11 +525,16 @@ namespace {
         class NodePrinter: NodeVisitor {
         public:
             NodePrinter(std::ostream& ostream, bool is_head)
-                : ostream_(ostream), is_head_(is_head) {}
+                : ostream_(ostream), is_head_(is_head) { }
 
             void print(Node const& node)
             {
-                node.accept(*this);
+                if (node) {
+                    node.accept(*this);
+                }
+                else {
+                    ostream_ << "nil";
+                }
             }
 
         private:
@@ -586,17 +594,12 @@ namespace {
             bool is_head_;
         };
         
-        if (node) {
-            NodePrinter{ostream, is_head}.print(node);
-        }
-        else {
-            ostream << "nil";
-        }
+        NodePrinter{ostream, is_head}.print(node);
     }
 }
 
 std::ostream&
-std::operator << (std::ostream& ostream, mlisp::Node const& node)
+mlisp::operator << (std::ostream& ostream, mlisp::Node const& node)
 {
     print_node(ostream, node, true);
     return ostream;
