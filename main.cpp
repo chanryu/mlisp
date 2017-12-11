@@ -1,4 +1,5 @@
 #include <sstream>
+#include <map>
 
 #include "mlisp.hpp"
 
