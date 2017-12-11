@@ -69,7 +69,6 @@ int main(int argc, char *argv[])
 {
     using namespace mlisp;
 
-    auto env = build_env();
     auto parser = Parser{};
 
     auto readline = [] {
@@ -77,6 +76,8 @@ int main(int argc, char *argv[])
         std::getline(std::cin, line);
         return line;
     };
+
+    auto evaluator = NodeEvaluator{ build_env() };
 
     while (true) {
         if (parser.clean()) {
@@ -96,7 +97,7 @@ int main(int argc, char *argv[])
                     break;
                 }
                 std::cout << "expr: " << expr << std::endl;
-                std::cout << "eval: " << eval(expr, env) << std::endl;
+                std::cout << "eval: " << evaluator.evaluate(expr) << std::endl;
             }
             catch (mlisp::ParseError& e) {
                 std::cout << e.what() << std::endl;

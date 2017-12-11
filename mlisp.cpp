@@ -461,64 +461,64 @@ mlisp::Parser::clean() const noexcept
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// NodeEvaluator
+
+mlisp::NodeEvaluator::NodeEvaluator(List env)
+{
+    auto quote_proc = proc([] (List args, List) {
+        return car(args);
+    });
+    env_ = cons(symbol(MLISP_BUILTIN_QUOTE), cons(quote_proc, env));
+}
+
+mlisp::Node
+mlisp::NodeEvaluator::evaluate(Node expr)
+{
+    expr.accept(*this);
+
+    return result_;
+}
+
+void
+mlisp::NodeEvaluator::visit(List list)
+{
+    auto cmd = eval(car(list), env_);
+    auto proc = cmd.to_proc();
+
+    result_ = proc(cdr(list), env_);
+}
+
+void
+mlisp::NodeEvaluator::visit(Proc proc)
+{
+    assert(false);
+}
+
+void
+mlisp::NodeEvaluator::visit(Number number)
+{
+    result_ = number;
+}
+
+void
+mlisp::NodeEvaluator::visit(Symbol symbol)
+{
+    for (auto env = env_; env; env = cdr(env)) {
+        if (symbol == car(env)) {
+            result_ = car(cdr(env));
+            return;
+        }
+    }
+
+    throw EvalError("Unknown symbol: " + symbol.name());
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // eval
 
 mlisp::Node
 mlisp::eval(Node expr, List env)
 {
-    class NodeEvaluator: NodeVisitor {
-    public:
-        explicit NodeEvaluator(List env)
-        {
-            auto quote_proc = proc([] (List args, List) {
-                return car(args);
-            });
-            env_ = cons(symbol(MLISP_BUILTIN_QUOTE), cons(quote_proc, env));
-        }
-
-        Node evaluate(Node expr)
-        {
-            expr.accept(*this);
-
-            return result_;
-        }
-
-    private:
-        void visit(List list) override
-        {
-            auto cmd = eval(car(list), env_);
-            auto proc = cmd.to_proc();
-
-            result_ = proc(cdr(list), env_);
-        }
-
-        void visit(Proc proc) override
-        {
-            assert(false);
-        }
-
-        void visit(Number number) override
-        {
-            result_ = number;
-        }
-
-        void visit(Symbol symbol) override
-        {
-            for (auto env = env_; env; env = cdr(env)) {
-                if (symbol == car(env)) {
-                    result_ = car(cdr(env));
-                    return;
-                }
-            }
-
-            throw EvalError("Unknown symbol: " + symbol.name());
-        }
-
-    private:
-        List env_;
-        Node result_;
-    };
-
     return NodeEvaluator(env).evaluate(expr);
 }
 
@@ -654,6 +654,12 @@ mlisp::operator << (std::ostream& ostream, mlisp::Node const& node)
 {
     print_node(ostream, node, true);
     return ostream;
+}
+
+std::ostream&
+mlisp::operator << (std::ostream& ostream, mlisp::List const& list)
+{
+    return ostream << Node{ list };
 }
 
 std::string

@@ -31,8 +31,6 @@ namespace mlisp {
     Number number(double) noexcept;
     Symbol symbol(std::string) noexcept;
 
-    Node eval(Node expr, List env); // throws EvalError
-
     class NodeVisitor;
 
     class Node final {
@@ -164,8 +162,30 @@ namespace mlisp {
 }
 
 namespace mlisp {
+    class NodeEvaluator: NodeVisitor {
+    public:
+        explicit NodeEvaluator(List env);
+
+        Node evaluate(Node expr);
+
+    private:
+        void visit(List list) override;
+        void visit(Proc proc) override;
+        void visit(Number number) override;
+        void visit(Symbol symbol) override;
+
+    private:
+        List env_;
+        Node result_;
+    };
+
+    Node eval(Node expr, List env); // throws EvalError
+}
+
+namespace mlisp {
     // printing helper
     std::ostream& operator << (std::ostream& os, Node const&);
+    std::ostream& operator << (std::ostream& os, List const&);
 }
 
 namespace std {
