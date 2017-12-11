@@ -477,12 +477,8 @@ mlisp::Parser::clean() const noexcept
 ////////////////////////////////////////////////////////////////////////////////
 // NodeEvaluator
 
-mlisp::NodeEvaluator::NodeEvaluator(List env)
+mlisp::NodeEvaluator::NodeEvaluator(List env) : env_(env)
 {
-    auto quote_proc = proc([] (List args, List) {
-        return car(args);
-    });
-    env_ = cons(symbol(MLISP_BUILTIN_QUOTE), cons(quote_proc, env));
 }
 
 mlisp::Node
@@ -517,6 +513,14 @@ mlisp::NodeEvaluator::visit(Number number)
 void
 mlisp::NodeEvaluator::visit(Symbol symbol)
 {
+    if (symbol.name() == MLISP_BUILTIN_QUOTE) {
+        static auto quote_proc = proc([] (List args, List) {
+            return car(args);
+        });
+        result_ = quote_proc;
+        return;
+    }
+
     for (auto env = env_; env; env = cdr(env)) {
         if (symbol == car(env)) {
             result_ = car(cdr(env));
@@ -601,36 +605,34 @@ namespace {
         private:
             void visit(List list) override
             {
-                auto print_parens = is_head_;
-                auto print_head = true;
+                auto quoted = false;
 
                 try {
                     auto symbol = car(list).to_symbol();
                     if (symbol.name() == MLISP_BUILTIN_QUOTE) {
                         ostream_ << "'";
-                        print_parens = false;
-                        print_head = false;
+                        quoted = true;
                     }
                 }
                 catch (EvalError&) {
                     // ignore and continue
                 }
 
-                if (print_parens) {
+                if (!quoted && is_head_) {
                     ostream_ << '(';
                 }
-                if (print_head) {
+                if (!quoted) {
                     auto head = car(list);
                     print_node(ostream_, head, true);
                 }
                 auto tail = cdr(list);
                 if (tail) {
-                    if (print_head) {
+                    if (!quoted) {
                         ostream_ << ' ';
                     }
                     print_node(ostream_, tail, false);
                 }                
-                if (print_parens) {
+                if (!quoted && is_head_) {
                     ostream_ << ')';
                 }
             }
@@ -649,7 +651,8 @@ namespace {
             {
                 if (symbol.name() == MLISP_BUILTIN_QUOTE) {
                     ostream_ << "quote";
-                } else {
+                }
+                else {
                     ostream_ << symbol.name();
                 }
             }
