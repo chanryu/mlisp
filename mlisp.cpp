@@ -60,6 +60,20 @@ namespace {
         return !token.empty();
     }
 
+    bool is_number(std::string const& token)
+    {
+        assert(!token.empty());
+
+        char c = token[0];
+        if (c == '-') {
+            if (token.size() == 1) {
+                return false;
+            }
+            c = token[1];
+        }
+        return c == '.' || (c >= '0' && c <= '9');
+    }
+
     char const* const MLISP_BUILTIN_QUOTE = "mlisp-built-in:quote";
 }
 
@@ -421,7 +435,7 @@ mlisp::Parser::parse(std::istream& istream, Node& expr)
             }
             node = list;
         }
-        else if (token[0] == '.' || (token[0] >= '0' && token[0] <= '9')) {
+        else if (is_number(token)) {
             node = number(std::stod(token));
         }
         else {
