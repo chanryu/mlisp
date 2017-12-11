@@ -1,4 +1,5 @@
 #include <cassert>
+#include <sstream>
 
 #include "mlisp.hpp"
 
@@ -59,7 +60,7 @@ namespace {
         return !token.empty();
     }
 
-    char const* const MLISP_QUOTE = "mlisp:quote";
+    char const* const MLISP_BUILTIN_QUOTE = "mlisp-built-in:quote";
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -234,7 +235,7 @@ mlisp::Node::to_list() const
 
     auto list_data = std::dynamic_pointer_cast<List::Data const>(data_);
     if (!list_data) {
-        throw EvalError("XXX is not a List");
+        throw EvalError(std::to_string(*this) + " is not a list");
     }
     return { list_data };
 }
@@ -244,7 +245,7 @@ mlisp::Node::to_proc() const
 {
     auto proc_data = std::dynamic_pointer_cast<Proc::Data const>(data_);
     if (!proc_data) {
-        throw EvalError("XXX is not a Proc");
+        throw EvalError(std::to_string(*this) + " is not a procedure");
     }
     return { proc_data };
 }
@@ -254,7 +255,7 @@ mlisp::Node::to_number() const
 {
     auto number_data = std::dynamic_pointer_cast<Number::Data const>(data_);
     if (!number_data) {
-        throw EvalError("XXX is not a Number");
+        throw EvalError(std::to_string(*this) + " is not a number");
     }
     return { number_data };
 }
@@ -264,7 +265,7 @@ mlisp::Node::to_symbol() const
 {
     auto symbol_data = std::dynamic_pointer_cast<Symbol::Data const>(data_);
     if (!symbol_data) {
-        throw EvalError("XXX is not a Symbol");
+        throw EvalError(std::to_string(*this) + " is not a symbol");
     }
     return { symbol_data };
 }
@@ -435,7 +436,7 @@ mlisp::Parser::parse(std::istream& istream, Node& expr)
 
             if (stack_.top().type == Context::Type::quote) {
                 stack_.pop();
-                node = cons(symbol(MLISP_QUOTE), cons(node, {}));
+                node = cons(symbol(MLISP_BUILTIN_QUOTE), cons(node, {}));
                 continue;
             }
 
@@ -472,7 +473,7 @@ mlisp::eval(Node expr, List env)
             auto quote_proc = proc([] (List args, List) {
                 return car(args);
             });
-            env_ = cons(symbol(MLISP_QUOTE), cons(quote_proc, env));
+            env_ = cons(symbol(MLISP_BUILTIN_QUOTE), cons(quote_proc, env));
         }
 
         Node evaluate(Node expr)
@@ -591,7 +592,7 @@ namespace {
 
                 try {
                     auto symbol = car(list).to_symbol();
-                    if (symbol.name() == MLISP_QUOTE) {
+                    if (symbol.name() == MLISP_BUILTIN_QUOTE) {
                         ostream_ << "'";
                         print_parens = false;
                         print_head = false;
@@ -632,7 +633,11 @@ namespace {
 
             void visit(Symbol symbol) override
             {
-                ostream_ << symbol.name();
+                if (symbol.name() == MLISP_BUILTIN_QUOTE) {
+                    ostream_ << "quote";
+                } else {
+                    ostream_ << symbol.name();
+                }
             }
 
         private:
@@ -649,4 +654,12 @@ mlisp::operator << (std::ostream& ostream, mlisp::Node const& node)
 {
     print_node(ostream, node, true);
     return ostream;
+}
+
+std::string
+std::to_string(mlisp::Node const& node)
+{
+    ostringstream ss;
+    ss << node;
+    return ss.str();
 }

@@ -168,7 +168,12 @@ namespace mlisp {
     std::ostream& operator << (std::ostream& os, Node const&);
 }
 
+namespace std {
+    string to_string(mlisp::Node const&);
+}
+
 namespace mlisp {
+    // exceptions
     namespace detail {
         template <int TAG>
         class UniqueRuntimeError: public std::runtime_error {

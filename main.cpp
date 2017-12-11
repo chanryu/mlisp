@@ -20,6 +20,24 @@ mlisp::List build_env()
         return cdr(eval(car(args), env).to_list());
     });
 
+    auto cons_proc = proc([] (List args, List env) {
+        auto head = eval(car(args), env);
+        if (!cdr(args)) {
+            throw EvalError("cons: not enough args");
+        }
+        auto tail = eval(car(cdr(args)), env).to_list();
+        return cons(head, tail);
+    });
+
+    auto eval_proc = proc([] (List args, List env) {
+        Node result;
+        while (args) {
+            result = eval(eval(car(args), env), env);
+            args = cdr(args);
+        }
+        return result;
+    });
+
     auto plus_proc = proc([] (List args, List env) {
         auto result = 0.0;
         while (args) {
@@ -34,6 +52,8 @@ mlisp::List build_env()
         { "nil", {} },
         { "car", car_proc },
         { "cdr", cdr_proc },
+        { "cons", cons_proc },
+        { "eval", eval_proc },
         { "+", plus_proc },
     };
 
