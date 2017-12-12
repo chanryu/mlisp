@@ -1,12 +1,18 @@
+#include <cassert>
 #include <sstream>
 #include <map>
 
 #include "mlisp.hpp"
 
-mlisp::List build_env()
-{
-    using namespace mlisp;
+using namespace mlisp;
 
+Node cadr(List list)
+{
+    return car(cdr(list));
+}
+
+List build_env()
+{
     auto car_proc = proc([] (List args, List env) {
         if (cdr(args)) {
             throw EvalError("car: too many args given");
@@ -26,7 +32,7 @@ mlisp::List build_env()
         if (!cdr(args)) {
             throw EvalError("cons: not enough args");
         }
-        auto tail = eval(car(cdr(args)), env).to_list();
+        auto tail = eval(cadr(args), env).to_list();
         return cons(head, tail);
     });
 
@@ -118,7 +124,7 @@ mlisp::List build_env()
 
         auto body = cdr(args);
         auto then_arm = car(body);
-        auto else_arm = car(cdr(body));
+        auto else_arm = cadr(body);
 
         if (eval(cond, env)) {
             return eval(then_arm, env);
@@ -142,7 +148,49 @@ mlisp::List build_env()
         return Node{};
     });
 
-    auto m = std::map<std::string, mlisp::Node>{
+    auto lambda_proc = proc([] (List args, List env) {
+        auto largs = car(args).to_list();
+        auto lbody = cadr(args);
+
+        // validate largs (must be list of symbols)
+        for (auto xxx = largs; xxx; xxx = cdr(xxx)) {
+            auto arg = car(xxx);
+            if (!arg.is_symbol()) {
+                throw EvalError("lambda: " + std::to_string(arg) + " is not a symbol");
+            }
+        }
+
+        if (cdr(cdr(args))) {
+            throw EvalError("lambda: too many args");
+        }
+
+        return proc([largs, lbody] (List args, List env) {
+            auto syms = largs;
+            while (syms) {
+                assert(car(syms).is_symbol());
+
+                if (!args) {
+                    EvalError("Proc: too few args");
+                }
+
+                auto sym = car(syms);
+                auto val = car(args);
+
+                env = cons(sym, cons(val, env));
+
+                syms = cdr(syms);
+                args = cdr(args);
+            }
+
+            if (args) {
+                EvalError("Proc: too many args");
+            }
+
+            return eval(lbody, env);
+        });
+    });
+
+    auto m = std::map<std::string, Node>{
         { "nil", {} },
         { "car", car_proc },
         { "cdr", cdr_proc },
@@ -156,6 +204,7 @@ mlisp::List build_env()
         { "zero?", zeroq_proc },
         { "if", if_proc },
         { "print", print_proc },
+        { "lambda", lambda_proc },
     };
 
     List env;
@@ -200,10 +249,10 @@ int main(int argc, char *argv[])
                 std::cout << "expr: " << expr << std::endl;
                 std::cout << "eval: " << evaluator.evaluate(expr) << std::endl;
             }
-            catch (mlisp::ParseError& e) {
+            catch (ParseError& e) {
                 std::cout << e.what() << std::endl;
             }
-            catch (mlisp::EvalError& e) {
+            catch (EvalError& e) {
                 std::cout << e.what() << std::endl;
             }
         }

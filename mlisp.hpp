@@ -56,6 +56,9 @@ namespace mlisp {
         Number to_number() const;
         Symbol to_symbol() const;
 
+        bool is_list() const;
+        bool is_symbol() const;
+
     private:
         typedef detail::NodeData Data;
         Node(std::shared_ptr<Data const>) noexcept;

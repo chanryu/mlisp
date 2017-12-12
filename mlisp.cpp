@@ -284,6 +284,21 @@ mlisp::Node::to_symbol() const
     return { symbol_data };
 }
 
+bool
+mlisp::Node::is_list() const
+{
+    if (!data_) {
+        return true;
+    }
+    return !!dynamic_cast<List::Data const *>(data_.get());
+}
+
+bool
+mlisp::Node::is_symbol() const
+{
+    return !!dynamic_cast<Symbol::Data const *>(data_.get());
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // List
 
