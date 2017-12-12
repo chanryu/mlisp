@@ -36,21 +36,19 @@ List build_env()
         return cons(head, tail);
     });
 
-    auto block_proc = proc([] (List args, List env) {
+    auto do_proc = proc([] (List args, List env) {
         Node result;
-        while (args) {
-            result = eval(eval(car(args), env), env);
-            args = cdr(args);
+        for (; args; args = cdr(args)) {
+            result = eval(car(args), env);
         }
         return result;
     });
 
     auto plus_proc = proc([] (List args, List env) {
         auto result = 0.0;
-        while (args) {
+        for (; args; args = cdr(args)) {
             auto arg = eval(car(args), env);
             result += arg.to_number().value();
-            args = cdr(args);
         }
         return number(result);
     });
@@ -69,6 +67,7 @@ List build_env()
                 args = cdr(args);
             }
         } else {
+            // unary -
             result = -result;
         }
 
@@ -77,10 +76,9 @@ List build_env()
 
     auto mult_proc = proc([] (List args, List env) {
         auto result = 1.0;
-        while (args) {
+        for (; args; args = cdr(args)) {
             auto arg = eval(car(args), env);
             result *= arg.to_number().value();
-            args = cdr(args);
         }
         return number(result);
     });
@@ -91,11 +89,9 @@ List build_env()
         }
 
         auto result = eval(car(args), env).to_number().value();
-        args = cdr(args);
-        while (args) {
+        for (args = cdr(args); args; args = cdr(args)) {
             auto arg = eval(car(args), env);
             result /= arg.to_number().value();
-            args = cdr(args);
         }
         return number(result);
     });
@@ -168,16 +164,13 @@ List build_env()
             auto syms = largs;
             while (syms) {
                 assert(car(syms).is_symbol());
-
                 if (!args) {
                     EvalError("Proc: too few args");
                 }
 
                 auto sym = car(syms);
                 auto val = car(args);
-
                 env = cons(sym, cons(val, env));
-
                 syms = cdr(syms);
                 args = cdr(args);
             }
@@ -195,7 +188,7 @@ List build_env()
         { "car", car_proc },
         { "cdr", cdr_proc },
         { "cons", cons_proc },
-        { "block", block_proc },
+        { "do", do_proc },
         { "+", plus_proc },
         { "-", minus_proc },
         { "*", mult_proc },
