@@ -521,7 +521,7 @@ struct mlisp::Env {
 };
 
 std::shared_ptr<Env>
-mlisp::make_env(std::shared_ptr<Env> base_env, std::map<std::string, Node> vars)
+mlisp::make_env(std::shared_ptr<Env> base_env)
 {
     auto env = std::make_shared<Env>();
     env->base = base_env;
@@ -538,6 +538,19 @@ mlisp::set(std::shared_ptr<Env> env, std::string name, Node value)
     }
 
     env->vars[name] = value;
+}
+
+bool
+mlisp::update(std::shared_ptr<Env> env, std::string const& name, Node node)
+{
+    assert(env);
+
+    auto i = env->vars.find(name);
+    if (i != env->vars.end()) {
+        i->second = node;
+        return true;
+    }
+    return false;
 }
 
 bool

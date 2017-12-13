@@ -175,9 +175,9 @@ namespace mlisp {
 
     // Env & eval
 
-    std::shared_ptr<Env> make_env(std::shared_ptr<Env> base_env = nullptr,
-                                  std::map<std::string, Node> vars = {});
+    std::shared_ptr<Env> make_env(std::shared_ptr<Env> base_env);
     void set(std::shared_ptr<Env>, std::string, Node);
+    bool update(std::shared_ptr<Env>, std::string const&, Node);
     bool lookup(std::shared_ptr<Env>, std::string const&, Node&);
 
     Node eval(Node expr, std::shared_ptr<Env> env); // throws EvalError
