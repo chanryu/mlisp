@@ -1,6 +1,6 @@
 #include <cassert>
+#include <fstream>
 #include <sstream>
-#include <map>
 
 #include "mlisp.hpp"
 
@@ -51,9 +51,11 @@ std::shared_ptr<Env> build_env()
     });
 
     auto do_proc = proc([] (List args, std::shared_ptr<Env> env) {
+        env = make_env(env);
         Node result;
-        for (; args; args = cdr(args)) {
+        while (args) {
             result = eval(car(args), env);
+            args = cdr(args);
         }
         return result;
     });
@@ -159,11 +161,11 @@ std::shared_ptr<Env> build_env()
     });
 
     auto lambda_proc = proc([] (List args, std::shared_ptr<Env> env) {
-        auto largs = car(args).to_list();
-        auto lbody = cadr(args);
+        auto formal_args = car(args).to_list();
+        auto lambda_body = cadr(args);
 
-        // validate largs (must be list of symbols)
-        for (auto xxx = largs; xxx; xxx = cdr(xxx)) {
+        // validate formal_args (must be list of symbols)
+        for (auto xxx = formal_args; xxx; xxx = cdr(xxx)) {
             auto arg = car(xxx);
             if (!arg.is_symbol()) {
                 throw EvalError("lambda: " + std::to_string(arg) + " is not a symbol");
@@ -174,11 +176,11 @@ std::shared_ptr<Env> build_env()
             throw EvalError("lambda: too many args");
         }
 
-        return proc([largs, lbody] (List args, std::shared_ptr<Env> env) {
+        return proc([formal_args, lambda_body] (List args, std::shared_ptr<Env> env) {
 
-            env = make_env(env);
+            auto lambda_env = make_env(env);
 
-            auto syms = largs;
+            auto syms = formal_args;
             while (syms) {
                 assert(car(syms).is_symbol());
                 if (!args) {
@@ -187,7 +189,7 @@ std::shared_ptr<Env> build_env()
 
                 auto sym = car(syms).to_symbol();
                 auto val = car(args);
-                set(env, sym.name(), val);
+                set(lambda_env, sym.name(), val);
                 syms = cdr(syms);
                 args = cdr(args);
             }
@@ -196,7 +198,49 @@ std::shared_ptr<Env> build_env()
                 EvalError("Proc: too many args");
             }
 
-            return eval(lbody, env);
+            return eval(lambda_body, lambda_env);
+        });
+    });
+
+    auto closure_proc = proc([] (List args, std::shared_ptr<Env> env) {
+        auto formal_args = car(args).to_list();
+        auto closure_body = cadr(args);
+
+        // validate formal_args (must be list of symbols)
+        for (auto xxx = formal_args; xxx; xxx = cdr(xxx)) {
+            auto arg = car(xxx);
+            if (!arg.is_symbol()) {
+                throw EvalError("closure: " + std::to_string(arg) + " is not a symbol");
+            }
+        }
+
+        if (cdr(cdr(args))) {
+            throw EvalError("closure: too many args");
+        }
+
+        return proc([formal_args, closure_body, env] (List args, std::shared_ptr<Env>) {
+
+            auto closure_env = make_env(env);
+
+            auto syms = formal_args;
+            while (syms) {
+                assert(car(syms).is_symbol());
+                if (!args) {
+                    EvalError("Proc: too few args");
+                }
+
+                auto sym = car(syms).to_symbol();
+                auto val = car(args);
+                set(closure_env, sym.name(), val);
+                syms = cdr(syms);
+                args = cdr(args);
+            }
+
+            if (args) {
+                EvalError("Proc: too many args");
+            }
+
+            return eval(closure_body, closure_env);
         });
     });
 
@@ -216,6 +260,7 @@ std::shared_ptr<Env> build_env()
         { "if", if_proc },
         { "print", print_proc },
         { "lambda", lambda_proc },
+        { "closure", closure_proc },
     };
 
     auto env = make_env(nullptr);
@@ -226,19 +271,16 @@ std::shared_ptr<Env> build_env()
     return env;
 }
 
-int main(int argc, char *argv[])
+int repl()
 {
-    using namespace mlisp;
-
     auto parser = Parser{};
+    auto env = build_env();
 
     auto readline = [] {
         std::string line;
         std::getline(std::cin, line);
         return line;
     };
-
-    auto evaluator = NodeEvaluator{ build_env() };
 
     while (true) {
         if (parser.clean()) {
@@ -258,7 +300,7 @@ int main(int argc, char *argv[])
                     break;
                 }
                 std::cout << "expr: " << expr << std::endl;
-                std::cout << "eval: " << evaluator.evaluate(expr) << std::endl;
+                std::cout << "eval: " << eval(expr, env) << std::endl;
             }
             catch (ParseError& e) {
                 std::cout << e.what() << std::endl;
@@ -267,7 +309,7 @@ int main(int argc, char *argv[])
                 std::cout << e.what() << std::endl;
             }
         }
-        
+
         if (std::cin.eof()) {
             break;
         }
@@ -277,4 +319,42 @@ int main(int argc, char *argv[])
     std::cout << "Bye." << std::endl;
 
     return parser.clean() ? 0 : -1;
+}
+
+int main(int argc, char *argv[])
+{
+    using namespace mlisp;
+
+    if (argc > 1) {
+        std::ifstream ifs(argv[1]);
+        if (!ifs.is_open()) {
+            return -1;
+        }
+
+        try {
+            auto parser = Parser{};
+            auto env = build_env();
+
+            Node node;
+            while (parser.parse(ifs, node)) {
+                eval(node, env);
+            }
+
+            if (!parser.clean()) {
+                return -1;
+            }
+        }
+        catch (ParseError& e) {
+            std::cout << e.what() << std::endl;
+            return -1;
+        }
+        catch (EvalError& e) {
+            std::cout << e.what() << std::endl;
+            return -1;
+        }
+
+        return 0;
+    }
+
+    return repl();
 }

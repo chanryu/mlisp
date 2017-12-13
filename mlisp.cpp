@@ -490,60 +490,6 @@ mlisp::Parser::clean() const noexcept
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// NodeEvaluator
-
-mlisp::NodeEvaluator::NodeEvaluator(std::shared_ptr<Env> env) : env_(env)
-{
-}
-
-mlisp::Node
-mlisp::NodeEvaluator::evaluate(Node expr)
-{
-    expr.accept(*this);
-
-    return result_;
-}
-
-void
-mlisp::NodeEvaluator::visit(List list)
-{
-    auto cmd = eval(car(list), env_);
-    auto proc = cmd.to_proc();
-
-    result_ = proc(cdr(list), env_);
-}
-
-void
-mlisp::NodeEvaluator::visit(Proc proc)
-{
-    assert(false);
-}
-
-void
-mlisp::NodeEvaluator::visit(Number number)
-{
-    result_ = number;
-}
-
-void
-mlisp::NodeEvaluator::visit(Symbol symbol)
-{
-    if (symbol.name() == MLISP_BUILTIN_QUOTE) {
-        static auto quote_proc = proc([] (List args, std::shared_ptr<Env>) {
-            return car(args);
-        });
-        result_ = quote_proc;
-        return;
-    }
-
-    if (lookup(env_, symbol.name(), result_)) {
-        return;
-    }
-
-    throw EvalError("Unknown symbol: " + symbol.name());
-}
-
-////////////////////////////////////////////////////////////////////////////////
 // Env
 
 struct mlisp::Env {
@@ -584,6 +530,67 @@ mlisp::lookup(std::shared_ptr<Env> env, std::string const& name, Node& node)
 
 ////////////////////////////////////////////////////////////////////////////////
 // eval
+
+namespace {
+    class NodeEvaluator: NodeVisitor {
+    public:
+        explicit NodeEvaluator(std::shared_ptr<Env> env) : env_(env)
+        {
+        }
+
+        Node evaluate(Node expr)
+        {
+            if (expr) {
+                expr.accept(*this);
+            }
+            else {
+                result_ = List{};
+            }
+
+            return result_;
+        }
+
+    private:
+        void visit(List list) override
+        {
+            auto cmd = eval(car(list), env_);
+            auto proc = cmd.to_proc();
+
+            result_ = proc(cdr(list), env_);
+        }
+
+        void visit(Proc proc) override
+        {
+            assert(false);
+        }
+
+        void visit(Number number) override
+        {
+            result_ = number;
+        }
+
+        void visit(Symbol symbol) override
+        {
+            if (symbol.name() == MLISP_BUILTIN_QUOTE) {
+                static auto quote_proc = proc([] (List args, std::shared_ptr<Env>) {
+                    return car(args);
+                });
+                result_ = quote_proc;
+                return;
+            }
+
+            if (lookup(env_, symbol.name(), result_)) {
+                return;
+            }
+
+            throw EvalError("Unknown symbol: " + symbol.name());
+        }
+
+    private:
+        std::shared_ptr<Env> env_;
+        Node result_;
+    };
+}
 
 mlisp::Node
 mlisp::eval(Node expr, std::shared_ptr<Env> env)
@@ -649,13 +656,18 @@ namespace {
                     node.accept(*this);
                 }
                 else {
-                    ostream_ << "nil";
+                    visit(List{});
                 }
             }
 
         private:
             void visit(List list) override
             {
+                if (list) {
+                    ostream_ << "nil";
+                    return;
+                }
+
                 auto quoted = false;
 
                 try {

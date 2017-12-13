@@ -149,7 +149,12 @@ namespace mlisp {
         virtual void visit(Number) = 0;
         virtual void visit(Symbol) = 0;
     };
-    
+}
+
+namespace mlisp {
+
+    // parser
+
     class Parser {
     public:
         bool parse(std::istream& istream, Node& expr);
@@ -168,27 +173,12 @@ namespace mlisp {
 
 namespace mlisp {
 
+    // Env & eval
+
     std::shared_ptr<Env> make_env(std::shared_ptr<Env> base_env = nullptr,
                                   std::map<std::string, Node> vars = {});
     void set(std::shared_ptr<Env>, std::string, Node);
     bool lookup(std::shared_ptr<Env>, std::string const&, Node&);
-
-    class NodeEvaluator: NodeVisitor {
-    public:
-        explicit NodeEvaluator(std::shared_ptr<Env> env);
-
-        Node evaluate(Node expr);
-
-    private:
-        void visit(List list) override;
-        void visit(Proc proc) override;
-        void visit(Number number) override;
-        void visit(Symbol symbol) override;
-
-    private:
-        std::shared_ptr<Env> env_;
-        Node result_;
-    };
 
     Node eval(Node expr, std::shared_ptr<Env> env); // throws EvalError
 }
