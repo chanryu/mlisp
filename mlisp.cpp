@@ -21,16 +21,38 @@ namespace {
         return c == '\'';
     }
 
-    void skip_spaces(std::istream& istream) noexcept
+    void skip_whitespaces_and_comments(std::istream& istream)
     {
-        while (is_space(istream.peek())) {
-            istream.get();
+        auto in_comment = false;
+
+        while (true) {
+            auto c = istream.peek();
+            if (c == EOF) {
+                break;
+            }
+
+            if (in_comment) {
+                istream.get();
+                if (c == '\n') {
+                    in_comment = false;
+                }
+            }
+            else if (c == ';') {
+                istream.get();
+                in_comment = true;
+            }
+            else if (is_space(c)) {
+                istream.get();
+            }
+            else {
+                break;
+            }
         }
     }
 
     bool parse_token(std::istream& istream, std::string& token) noexcept
     {
-        skip_spaces(istream);
+        skip_whitespaces_and_comments(istream);
         token.clear();
 
         char c;
