@@ -96,6 +96,7 @@ namespace {
         return c == '.' || (c >= '0' && c <= '9');
     }
 
+    char const* const MLISP_KEYWORD_NIL = "nil";
     char const* const MLISP_BUILTIN_QUOTE = "mlisp-built-in:quote";
 }
 
@@ -546,6 +547,11 @@ void
 mlisp::set(std::shared_ptr<Env> env, std::string name, Node value)
 {
     assert(env);
+
+    if (name == MLISP_KEYWORD_NIL) {
+        throw EvalError("`nil' cannot be redefined.");
+    }
+
     env->vars[name] = value;
 }
 
@@ -608,19 +614,23 @@ namespace {
 
         void visit(Symbol symbol) override
         {
-            if (symbol.name() == MLISP_BUILTIN_QUOTE) {
+            if (symbol.name() == MLISP_KEYWORD_NIL) {
+                result_ = Node{};
+            }
+            else if (symbol.name() == MLISP_BUILTIN_QUOTE) {
                 static auto quote_proc = proc([] (List args, std::shared_ptr<Env>) {
                     return car(args);
                 });
                 result_ = quote_proc;
-                return;
             }
-
-            if (lookup(env_, symbol.name(), result_)) {
-                return;
+            else {
+                Node value;
+                if (lookup(env_, symbol.name(), value)) {
+                    result_ = value;
+                } else {
+                    throw EvalError("Unknown symbol: " + symbol.name());
+                }
             }
-
-            throw EvalError("Unknown symbol: " + symbol.name());
         }
 
     private:

@@ -245,7 +245,6 @@ std::shared_ptr<Env> build_env()
     });
 
     auto m = std::map<std::string, Node>{
-        { "nil", {} },
         { "car", car_proc },
         { "cdr", cdr_proc },
         { "cons", cons_proc },
