@@ -581,7 +581,7 @@ namespace {
                 expr.accept(*this);
             }
             else {
-                result_ = List{};
+                result_ = Node{};
             }
 
             return result_;
@@ -680,88 +680,83 @@ mlisp::symbol(std::string name) noexcept
 namespace {
     using namespace mlisp;
 
-    void print_node(std::ostream& ostream, Node const& node, bool is_head) {
+    class NodePrinter: NodeVisitor {
+    public:
+        NodePrinter(std::ostream& ostream, bool is_head)
+            : ostream_(ostream), is_head_(is_head) { }
 
-        class NodePrinter: NodeVisitor {
-        public:
-            NodePrinter(std::ostream& ostream, bool is_head)
-                : ostream_(ostream), is_head_(is_head) { }
-
-            void print(Node const& node)
-            {
-                if (node) {
-                    node.accept(*this);
-                }
-                else {
-                    visit(List{});
-                }
+        void print(Node const& node)
+        {
+            if (node) {
+                node.accept(*this);
             }
-
-        private:
-            void visit(List list) override
-            {
-                if (list) {
-                    ostream_ << "nil";
-                    return;
-                }
-
-                auto quoted = false;
-
-                try {
-                    auto symbol = car(list).to_symbol();
-                    if (symbol.name() == MLISP_BUILTIN_QUOTE) {
-                        ostream_ << "'";
-                        quoted = true;
-                    }
-                }
-                catch (EvalError&) {
-                    // ignore and continue
-                }
-
-                if (!quoted && is_head_) {
-                    ostream_ << '(';
-                }
-                if (!quoted) {
-                    auto head = car(list);
-                    print_node(ostream_, head, true);
-                }
-                auto tail = cdr(list);
-                if (tail) {
-                    if (!quoted) {
-                        ostream_ << ' ';
-                    }
-                    print_node(ostream_, tail, false);
-                }                
-                if (!quoted && is_head_) {
-                    ostream_ << ')';
-                }
+            else {
+                ostream_ << "nil";
             }
+        }
 
-            void visit(Proc proc) override
-            {
-                ostream_ << "<#proc>";
-            }
+    private:
+        void visit(List list) override
+        {
+            auto quoted = false;
 
-            void visit(Number number) override
-            {
-                ostream_ << number.value();
-            }
-
-            void visit(Symbol symbol) override
-            {
+            try {
+                auto symbol = car(list).to_symbol();
                 if (symbol.name() == MLISP_BUILTIN_QUOTE) {
-                    ostream_ << "quote";
-                }
-                else {
-                    ostream_ << symbol.name();
+                    ostream_ << "'";
+                    quoted = true;
                 }
             }
+            catch (EvalError&) {
+                // ignore and continue
+            }
 
-        private:
-            std::ostream& ostream_;
-            bool is_head_;
-        };
-        
+            if (!quoted && is_head_) {
+                ostream_ << '(';
+            }
+            if (!quoted) {
+                auto head = car(list);
+                NodePrinter{ostream_, true}.print(head);
+            }
+            auto tail = cdr(list);
+            if (tail) {
+                if (!quoted) {
+                    ostream_ << ' ';
+                }
+                NodePrinter{ostream_, false}.print(tail);
+            }
+            if (!quoted && is_head_) {
+                ostream_ << ')';
+            }
+        }
+
+        void visit(Proc proc) override
+        {
+            ostream_ << "<#proc>";
+        }
+
+        void visit(Number number) override
+        {
+            ostream_ << number.value();
+        }
+
+        void visit(Symbol symbol) override
+        {
+            if (symbol.name() == MLISP_BUILTIN_QUOTE) {
+                ostream_ << "quote";
+            }
+            else {
+                ostream_ << symbol.name();
+            }
+        }
+
+    private:
+        std::ostream& ostream_;
+        bool is_head_;
+    };
+
+    void print_node(std::ostream& ostream, Node const& node, bool is_head)
+    {
         NodePrinter{ostream, is_head}.print(node);
     }
 }
