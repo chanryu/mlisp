@@ -60,6 +60,7 @@ namespace mlisp {
         Symbol to_symbol() const;
 
         bool is_list() const;
+        bool is_proc() const;
         bool is_symbol() const;
 
     private:

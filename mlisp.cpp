@@ -317,6 +317,12 @@ mlisp::Node::is_list() const
 }
 
 bool
+mlisp::Node::is_proc() const
+{
+    return !!dynamic_cast<Proc::Data const *>(data_.get());
+}
+
+bool
 mlisp::Node::is_symbol() const
 {
     return !!dynamic_cast<Symbol::Data const *>(data_.get());

@@ -174,7 +174,7 @@ std::shared_ptr<Env> build_env()
         return Node{};
     });
 
-    auto lambda_proc = proc([] (List args, std::shared_ptr<Env> env) {
+    auto lambda_proc = proc([] (List args, std::shared_ptr<Env>) {
         auto formal_args = car(args).to_list();
         auto lambda_body = cadr(args);
 
@@ -258,6 +258,15 @@ std::shared_ptr<Env> build_env()
         });
     });
 
+    auto def_proc = proc([] (List args, std::shared_ptr<Env> env) {
+        auto sym = car(args).to_symbol();
+        auto val = eval(cons(symbol("lambda"), cdr(args)), env);
+        assert(val.is_proc());
+        set(env, sym.name(), val);
+        return val;
+    });
+
+
     auto env = make_env(nullptr);
 
     set(env, "car", car_proc);
@@ -280,6 +289,7 @@ std::shared_ptr<Env> build_env()
 
     set(env, "lambda", lambda_proc);
     set(env, "closure", closure_proc);
+    set(env, "def", def_proc);
 
     return env;
 }
