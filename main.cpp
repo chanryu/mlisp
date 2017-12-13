@@ -11,23 +11,23 @@ Node cadr(List list)
     return car(cdr(list));
 }
 
-List build_env()
+std::shared_ptr<Env> build_env()
 {
-    auto car_proc = proc([] (List args, List env) {
+    auto car_proc = proc([] (List args, std::shared_ptr<Env> env) {
         if (cdr(args)) {
             throw EvalError("car: too many args given");
         }
         return car(eval(car(args), env).to_list());
     });
 
-    auto cdr_proc = proc([] (List args, List env) {
+    auto cdr_proc = proc([] (List args, std::shared_ptr<Env> env) {
         if (cdr(args)) {
             throw EvalError("cdr: too many args given");
         }
         return cdr(eval(car(args), env).to_list());
     });
 
-    auto cons_proc = proc([] (List args, List env) {
+    auto cons_proc = proc([] (List args, std::shared_ptr<Env> env) {
         auto head = eval(car(args), env);
         if (!cdr(args)) {
             throw EvalError("cons: not enough args");
@@ -36,7 +36,21 @@ List build_env()
         return cons(head, tail);
     });
 
-    auto do_proc = proc([] (List args, List env) {
+    auto set_proc = proc([] (List args, std::shared_ptr<Env> env) {
+        if (!args || !cdr(args)) {
+            throw EvalError("set: too few parameters");
+        }
+        if (cdr(cdr(args))) {
+            throw EvalError("set: too many parameters");
+        }
+
+        auto name = eval(car(args), env).to_symbol().name();
+        auto value = eval(cadr(args), env);
+        set(env, name, value);
+        return value;
+    });
+
+    auto do_proc = proc([] (List args, std::shared_ptr<Env> env) {
         Node result;
         for (; args; args = cdr(args)) {
             result = eval(car(args), env);
@@ -44,7 +58,7 @@ List build_env()
         return result;
     });
 
-    auto plus_proc = proc([] (List args, List env) {
+    auto plus_proc = proc([] (List args, std::shared_ptr<Env> env) {
         auto result = 0.0;
         for (; args; args = cdr(args)) {
             auto arg = eval(car(args), env);
@@ -53,7 +67,7 @@ List build_env()
         return number(result);
     });
 
-    auto minus_proc = proc([] (List args, List env) {
+    auto minus_proc = proc([] (List args, std::shared_ptr<Env> env) {
         if (!args) {
             throw EvalError("-: too few parameters");
         }
@@ -74,7 +88,7 @@ List build_env()
         return number(result);
     });
 
-    auto mult_proc = proc([] (List args, List env) {
+    auto mult_proc = proc([] (List args, std::shared_ptr<Env> env) {
         auto result = 1.0;
         for (; args; args = cdr(args)) {
             auto arg = eval(car(args), env);
@@ -83,7 +97,7 @@ List build_env()
         return number(result);
     });
 
-    auto devide_proc = proc([] (List args, List env) {
+    auto devide_proc = proc([] (List args, std::shared_ptr<Env> env) {
         if (!args || !cdr(args)) {
             throw EvalError("/: too few parameters");
         }
@@ -96,7 +110,7 @@ List build_env()
         return number(result);
     });
 
-    auto nilq_proc = proc([] (List args, List env) {
+    auto nilq_proc = proc([] (List args, std::shared_ptr<Env> env) {
         Node result;
         if (!eval(car(args), env)) {
             result = symbol("t");
@@ -104,7 +118,7 @@ List build_env()
         return result;
     });
 
-    auto zeroq_proc = proc([] (List args, List env) {
+    auto zeroq_proc = proc([] (List args, std::shared_ptr<Env> env) {
         Node result;
         if (eval(car(args), env).to_number().value() == 0) {
             result = symbol("t");
@@ -112,7 +126,7 @@ List build_env()
         return result;
     });
 
-    auto if_proc = proc([] (List args, List env) {
+    auto if_proc = proc([] (List args, std::shared_ptr<Env> env) {
         auto cond = car(args);
         if (!cdr(args)) {
             throw EvalError("if: too few arguments");
@@ -129,7 +143,7 @@ List build_env()
         }
     });
 
-    auto print_proc = proc([] (List args, List env) {
+    auto print_proc = proc([] (List args, std::shared_ptr<Env> env) {
         auto first = true;
         while (args) {
             if (first) {
@@ -144,7 +158,7 @@ List build_env()
         return Node{};
     });
 
-    auto lambda_proc = proc([] (List args, List env) {
+    auto lambda_proc = proc([] (List args, std::shared_ptr<Env> env) {
         auto largs = car(args).to_list();
         auto lbody = cadr(args);
 
@@ -160,7 +174,10 @@ List build_env()
             throw EvalError("lambda: too many args");
         }
 
-        return proc([largs, lbody] (List args, List env) {
+        return proc([largs, lbody] (List args, std::shared_ptr<Env> env) {
+
+            env = make_env(env);
+
             auto syms = largs;
             while (syms) {
                 assert(car(syms).is_symbol());
@@ -168,9 +185,9 @@ List build_env()
                     EvalError("Proc: too few args");
                 }
 
-                auto sym = car(syms);
+                auto sym = car(syms).to_symbol();
                 auto val = car(args);
-                env = cons(sym, cons(val, env));
+                set(env, sym.name(), val);
                 syms = cdr(syms);
                 args = cdr(args);
             }
@@ -188,6 +205,7 @@ List build_env()
         { "car", car_proc },
         { "cdr", cdr_proc },
         { "cons", cons_proc },
+        { "set", set_proc },
         { "do", do_proc },
         { "+", plus_proc },
         { "-", minus_proc },
@@ -200,9 +218,9 @@ List build_env()
         { "lambda", lambda_proc },
     };
 
-    List env;
+    auto env = make_env(nullptr);
     for (auto const& pair: m) {
-        env = cons(symbol(pair.first), cons(pair.second, env));
+        set(env, pair.first, pair.second);
     }
 
     return env;

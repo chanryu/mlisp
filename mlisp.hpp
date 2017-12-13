@@ -1,4 +1,5 @@
 #include <iostream>
+#include <map>
 #include <memory>
 #include <stack>
 #include <stdexcept>
@@ -21,7 +22,9 @@ namespace mlisp {
     class Number;
     class Symbol;
 
-    using Func = std::function<Node(List, List)>;
+    struct Env;
+    using EnvRef = std::shared_ptr<Env>;
+    using Func = std::function<Node(List, std::shared_ptr<Env>)>;
 
     Node car(List) noexcept;
     List cdr(List) noexcept;
@@ -93,7 +96,7 @@ namespace mlisp {
     public:
         Proc(Proc const&) noexcept;
 
-        Node operator()(List, List) const;
+        Node operator()(List, std::shared_ptr<Env>) const;
 
     private:
         friend class Node;
@@ -164,9 +167,15 @@ namespace mlisp {
 }
 
 namespace mlisp {
+
+    std::shared_ptr<Env> make_env(std::shared_ptr<Env> base_env = nullptr,
+                                  std::map<std::string, Node> vars = {});
+    void set(std::shared_ptr<Env>, std::string, Node);
+    bool lookup(std::shared_ptr<Env>, std::string const&, Node&);
+
     class NodeEvaluator: NodeVisitor {
     public:
-        explicit NodeEvaluator(List env);
+        explicit NodeEvaluator(std::shared_ptr<Env> env);
 
         Node evaluate(Node expr);
 
@@ -177,11 +186,11 @@ namespace mlisp {
         void visit(Symbol symbol) override;
 
     private:
-        List env_;
+        std::shared_ptr<Env> env_;
         Node result_;
     };
 
-    Node eval(Node expr, List env); // throws EvalError
+    Node eval(Node expr, std::shared_ptr<Env> env); // throws EvalError
 }
 
 namespace mlisp {

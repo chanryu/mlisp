@@ -342,7 +342,7 @@ mlisp::Proc::Proc(std::shared_ptr<Data const> data) noexcept
 }
 
 mlisp::Node
-mlisp::Proc::operator()(List args, List env) const
+mlisp::Proc::operator()(List args, std::shared_ptr<Env> env) const
 {
     if (data_->func) {
         return data_->func(args, env);
@@ -492,7 +492,7 @@ mlisp::Parser::clean() const noexcept
 ////////////////////////////////////////////////////////////////////////////////
 // NodeEvaluator
 
-mlisp::NodeEvaluator::NodeEvaluator(List env) : env_(env)
+mlisp::NodeEvaluator::NodeEvaluator(std::shared_ptr<Env> env) : env_(env)
 {
 }
 
@@ -529,28 +529,64 @@ void
 mlisp::NodeEvaluator::visit(Symbol symbol)
 {
     if (symbol.name() == MLISP_BUILTIN_QUOTE) {
-        static auto quote_proc = proc([] (List args, List) {
+        static auto quote_proc = proc([] (List args, std::shared_ptr<Env>) {
             return car(args);
         });
         result_ = quote_proc;
         return;
     }
 
-    for (auto env = env_; env; env = cdr(env)) {
-        if (symbol == car(env)) {
-            result_ = car(cdr(env));
-            return;
-        }
+    if (lookup(env_, symbol.name(), result_)) {
+        return;
     }
 
     throw EvalError("Unknown symbol: " + symbol.name());
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Env
+
+struct mlisp::Env {
+    std::shared_ptr<Env> base;
+    std::map<std::string, Node> vars;
+};
+
+std::shared_ptr<Env>
+mlisp::make_env(std::shared_ptr<Env> base_env, std::map<std::string, Node> vars)
+{
+    auto env = std::make_shared<Env>();
+    env->base = base_env;
+    return env;
+}
+
+void
+mlisp::set(std::shared_ptr<Env> env, std::string name, Node value)
+{
+    assert(env);
+    env->vars[name] = value;
+}
+
+bool
+mlisp::lookup(std::shared_ptr<Env> env, std::string const& name, Node& node)
+{
+    while (env) {
+        auto i = env->vars.find(name);
+        if (i != env->vars.end()) {
+            node = i->second;
+            return true;
+        }
+        env = env->base;
+    }
+
+    return false;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
 // eval
 
 mlisp::Node
-mlisp::eval(Node expr, List env)
+mlisp::eval(Node expr, std::shared_ptr<Env> env)
 {
     return NodeEvaluator(env).evaluate(expr);
 }
