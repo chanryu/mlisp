@@ -332,15 +332,14 @@ int main(int argc, char *argv[])
         }
 
         try {
-            auto parser = Parser{};
             auto env = build_env();
 
             Node node;
-            while (parser.parse(ifs, node)) {
+            while (read(ifs, node)) {
                 eval(node, env);
             }
 
-            if (!parser.clean()) {
+            if (!ifs.eof()) {
                 return -1;
             }
         }
