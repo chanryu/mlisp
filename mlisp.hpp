@@ -157,7 +157,7 @@ namespace mlisp {
 
     class Parser {
     public:
-        bool parse(std::istream& istream, Node& expr);
+        bool parse(std::istream&, Node&);
         bool clean() const noexcept;
 
     private:
@@ -169,6 +169,8 @@ namespace mlisp {
         };
         std::stack<Context> stack_;
     };
+
+    bool read(std::istream&, Node&);
 }
 
 namespace mlisp {

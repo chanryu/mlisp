@@ -511,6 +511,21 @@ mlisp::Parser::clean() const noexcept
     return stack_.empty();
 }
 
+bool
+mlisp::read(std::istream& istream, Node& expr)
+{
+    if (istream.good()) {
+        auto pos = istream.tellg();
+        if (Parser{}.parse(istream, expr)) {
+            return true;
+        }
+        istream.clear();
+        istream.seekg(pos);
+    }
+
+    return false;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Env
 
