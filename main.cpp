@@ -36,6 +36,20 @@ std::shared_ptr<Env> build_env()
         return cons(head, tail);
     });
 
+    auto setq_proc = proc([] (List args, std::shared_ptr<Env> env) {
+        if (!args || !cdr(args)) {
+            throw EvalError("setq: too few parameters");
+        }
+        if (cdr(cdr(args))) {
+            throw EvalError("setq: too many parameters");
+        }
+
+        auto name = car(args).to_symbol().name();
+        auto value = eval(cadr(args), env);
+        set(env, name, value);
+        return value;
+    });
+
     auto set_proc = proc([] (List args, std::shared_ptr<Env> env) {
         if (!args || !cdr(args)) {
             throw EvalError("set: too few parameters");
@@ -244,28 +258,28 @@ std::shared_ptr<Env> build_env()
         });
     });
 
-    auto m = std::map<std::string, Node>{
-        { "car", car_proc },
-        { "cdr", cdr_proc },
-        { "cons", cons_proc },
-        { "set", set_proc },
-        { "do", do_proc },
-        { "+", plus_proc },
-        { "-", minus_proc },
-        { "*", mult_proc },
-        { "/", devide_proc },
-        { "nil?", nilq_proc },
-        { "zero?", zeroq_proc },
-        { "if", if_proc },
-        { "print", print_proc },
-        { "lambda", lambda_proc },
-        { "closure", closure_proc },
-    };
-
     auto env = make_env(nullptr);
-    for (auto const& pair: m) {
-        set(env, pair.first, pair.second);
-    }
+
+    set(env, "car", car_proc);
+    set(env, "cdr", cdr_proc);
+    set(env, "cons", cons_proc);
+    set(env, "set", set_proc);
+    set(env, "setq", setq_proc);
+    set(env, "do", do_proc);
+
+    set(env, "+", plus_proc);
+    set(env, "-", minus_proc);
+    set(env, "*", mult_proc);
+    set(env, "/", devide_proc);
+
+    set(env, "nil?", nilq_proc);
+    set(env, "zero?", zeroq_proc);
+
+    set(env, "if", if_proc);
+    set(env, "print", print_proc);
+
+    set(env, "lambda", lambda_proc);
+    set(env, "closure", closure_proc);
 
     return env;
 }
