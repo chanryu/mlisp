@@ -128,8 +128,6 @@ namespace mlisp {
     public:
         Symbol(Symbol const&) noexcept;
 
-        bool operator == (Node const&) noexcept;
-
         std::string const& name() const;
 
     private:

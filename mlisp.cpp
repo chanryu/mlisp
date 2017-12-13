@@ -405,21 +405,6 @@ mlisp::Symbol::Symbol(std::shared_ptr<Data const> data) noexcept
 {
 }
 
-bool
-mlisp::Symbol::operator == (Node const& rhs) noexcept
-{
-    if (rhs) {
-        try {
-            auto sym = rhs.to_symbol();
-            return name() == sym.name();
-        }
-        catch (EvalError& e) {
-            return false;
-        }
-    }
-    return false;
-}
-
 std::string const&
 mlisp::Symbol::name() const
 {
