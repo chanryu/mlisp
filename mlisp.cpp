@@ -50,21 +50,22 @@ namespace {
         }
     }
 
-    bool parse_token(std::istream& istream, std::string& token) noexcept
+    std::string get_token(std::istream& istream) noexcept
     {
+        std::string token;
+
         skip_whitespaces_and_comments(istream);
-        token.clear();
 
         char c;
         while (istream.get(c)) {
             if (is_space(c)) {
                 assert(!token.empty());
-                return true;
+                return token;
             }
 
             if (is_quote(c)) {
                 token.push_back(c);
-                return true;
+                return token;
             }
 
             if (is_paren(c)) {
@@ -74,12 +75,12 @@ namespace {
                 else {
                     istream.unget();
                 }
-                return true;
+                return token;
             }
             token.push_back(c);
         }
 
-        return !token.empty();
+        return token;
     }
 
     bool is_number(std::string const& token)
@@ -122,7 +123,7 @@ struct mlisp::detail::ListData: public mlisp::detail::NodeData {
             std::static_pointer_cast<ListData const>(shared_from_this())
         });
     }
-    
+
     Node const head;
     List const tail;
 };
@@ -148,7 +149,7 @@ struct mlisp::detail::ProcData: public mlisp::detail::NodeData {
 // NumberData
 
 struct mlisp::detail::NumberData: public mlisp::detail::NodeData {
-    
+
     explicit NumberData(double v) noexcept : value{v} { }
 
     void accept(NodeVisitor& visitor) const override
@@ -157,15 +158,32 @@ struct mlisp::detail::NumberData: public mlisp::detail::NodeData {
             std::static_pointer_cast<NumberData const>(shared_from_this())
         });
     }
-    
+
     double const value;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+// StringData
+
+struct mlisp::detail::StringData: public mlisp::detail::NodeData {
+
+    explicit StringData(std::string t) noexcept : text{std::move(t)} { }
+
+    void accept(NodeVisitor& visitor) const override
+    {
+        visitor.visit(String{
+            std::static_pointer_cast<StringData const>(shared_from_this())
+        });
+    }
+
+    std::string const text;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 // SymbolData
 
 struct mlisp::detail::SymbolData: public mlisp::detail::NodeData {
-    
+
     explicit SymbolData(std::string n) noexcept : name{std::move(n)} { }
 
     void accept(NodeVisitor& visitor) const override
@@ -174,7 +192,7 @@ struct mlisp::detail::SymbolData: public mlisp::detail::NodeData {
             std::static_pointer_cast<SymbolData const>(shared_from_this())
         });
     }
-    
+
     std::string const name;
 };
 
@@ -202,6 +220,11 @@ mlisp::Node::Node(Proc const& proc) noexcept
 
 mlisp::Node::Node(Number const& number) noexcept
     : data_{number.data_}
+{
+}
+
+mlisp::Node::Node(String const& string) noexcept
+    : data_{string.data_}
 {
 }
 
@@ -238,6 +261,13 @@ mlisp::Node::operator = (Proc const& rhs) noexcept
 
 mlisp::Node&
 mlisp::Node::operator = (Number const& rhs) noexcept
+{
+    data_ = rhs.data_;
+    return *this;
+}
+
+mlisp::Node&
+mlisp::Node::operator = (String const& rhs) noexcept
 {
     data_ = rhs.data_;
     return *this;
@@ -297,6 +327,16 @@ mlisp::Node::to_number() const
     return { number_data };
 }
 
+mlisp::String
+mlisp::Node::to_string() const
+{
+    auto string_data = std::dynamic_pointer_cast<String::Data const>(data_);
+    if (!string_data) {
+        throw EvalError(std::to_string(*this) + " is not a string");
+    }
+    return { string_data };
+}
+
 mlisp::Symbol
 mlisp::Node::to_symbol() const
 {
@@ -320,6 +360,12 @@ bool
 mlisp::Node::is_proc() const
 {
     return !!dynamic_cast<Proc::Data const *>(data_.get());
+}
+
+bool
+mlisp::Node::is_string() const
+{
+    return !!dynamic_cast<String::Data const *>(data_.get());
 }
 
 bool
@@ -399,6 +445,25 @@ mlisp::Number::value() const
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// String
+
+mlisp::String::String(String const& other) noexcept
+    : data_{other.data_}
+{
+}
+
+mlisp::String::String(std::shared_ptr<Data const> data) noexcept
+    : data_{data}
+{
+}
+
+std::string const&
+mlisp::String::text() const
+{
+    return data_->text;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Symbol
 
 mlisp::Symbol::Symbol(Symbol const& other) noexcept
@@ -424,9 +489,13 @@ mlisp::Symbol::name() const
 bool
 mlisp::Parser::parse(std::istream& istream, Node& expr)
 {
-    std::string token;
+    while (true) {
 
-    while (parse_token(istream, token)) {
+        auto token = get_token(istream);
+
+        if (token.empty()) {
+            break;
+        }
 
         if (token == "'") {
             stack_.push({ Context::Type::quote, {}, true });
@@ -601,6 +670,11 @@ namespace {
             result_ = number;
         }
 
+        void visit(String string) override
+        {
+            result_ = string;
+        }
+
         void visit(Symbol symbol) override
         {
             if (symbol.name() == MLISP_KEYWORD_NIL) {
@@ -665,6 +739,12 @@ mlisp::Number
 mlisp::number(double value) noexcept
 {
     return Number{ std::make_shared<Number::Data>(value) };
+}
+
+mlisp::String
+mlisp::string(std::string text) noexcept
+{
+    return String{ std::make_shared<String::Data>(std::move(text)) };
 }
 
 mlisp::Symbol
@@ -737,6 +817,11 @@ namespace {
         void visit(Number number) override
         {
             ostream_ << number.value();
+        }
+
+        void visit(String string) override
+        {
+            ostream_ << string.text();
         }
 
         void visit(Symbol symbol) override

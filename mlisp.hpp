@@ -13,6 +13,7 @@ namespace mlisp {
         struct ListData;
         struct ProcData;
         struct NumberData;
+        struct StringData;
         struct SymbolData;
     }
 
@@ -20,6 +21,7 @@ namespace mlisp {
     class List;
     class Proc;
     class Number;
+    class String;
     class Symbol;
 
     struct Env;
@@ -31,9 +33,17 @@ namespace mlisp {
     List cons(Node head, List tail) noexcept;
     Proc proc(Func) noexcept;
     Number number(double) noexcept;
+    String string(std::string) noexcept;
     Symbol symbol(std::string) noexcept;
 
-    class NodeVisitor;
+    class NodeVisitor {
+    public:
+        virtual void visit(List) = 0;
+        virtual void visit(Proc) = 0;
+        virtual void visit(Number) = 0;
+        virtual void visit(String) = 0;
+        virtual void visit(Symbol) = 0;
+    };
 
     class Node final {
     public:
@@ -42,12 +52,14 @@ namespace mlisp {
         Node(List const&) noexcept;
         Node(Proc const&) noexcept;
         Node(Number const&) noexcept;
+        Node(String const&) noexcept;
         Node(Symbol const&) noexcept;
 
         Node& operator = (Node const&) noexcept;
         Node& operator = (List const&) noexcept;
         Node& operator = (Proc const&) noexcept;
         Node& operator = (Number const&) noexcept;
+        Node& operator = (String const&) noexcept;
         Node& operator = (Symbol const&) noexcept;
 
         operator bool() const noexcept;
@@ -57,10 +69,12 @@ namespace mlisp {
         List to_list() const;
         Proc to_proc() const;
         Number to_number() const;
+        String to_string() const;
         Symbol to_symbol() const;
 
         bool is_list() const;
         bool is_proc() const;
+        bool is_string() const;
         bool is_symbol() const;
 
     private:
@@ -125,6 +139,22 @@ namespace mlisp {
         std::shared_ptr<Data const> data_;
     };
 
+    class String final {
+    public:
+        String(String const&) noexcept;
+
+        std::string const& text() const;
+
+    private:
+        friend class Node;
+        friend struct detail::StringData;
+        friend String string(std::string) noexcept;
+
+        typedef detail::StringData Data;
+        String(std::shared_ptr<Data const>) noexcept;
+        std::shared_ptr<Data const> data_;
+    };
+
     class Symbol final {
     public:
         Symbol(Symbol const&) noexcept;
@@ -139,14 +169,6 @@ namespace mlisp {
         typedef detail::SymbolData Data;
         Symbol(std::shared_ptr<Data const>) noexcept;
         std::shared_ptr<Data const> data_;
-    };
-
-    class NodeVisitor {
-    public:
-        virtual void visit(List) = 0;
-        virtual void visit(Proc) = 0;
-        virtual void visit(Number) = 0;
-        virtual void visit(Symbol) = 0;
     };
 }
 
