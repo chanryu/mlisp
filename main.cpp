@@ -6,28 +6,28 @@
 
 using namespace mlisp;
 
-Node cadr(Cons list)
+Object cadr(Cons list)
 {
     return car(cdr(list));
 }
 
 EnvPtr build_env()
 {
-    auto car_proc = procedure([] (Cons args, EnvPtr env) {
+    auto car_proc = proc([] (Cons args, EnvPtr env) {
         if (cdr(args)) {
             throw EvalError("car: too many args given");
         }
         return car(eval(car(args), env).to_cons());
     });
 
-    auto cdr_proc = procedure([] (Cons args, EnvPtr env) {
+    auto cdr_proc = proc([] (Cons args, EnvPtr env) {
         if (cdr(args)) {
             throw EvalError("cdr: too many args given");
         }
         return cdr(eval(car(args), env).to_cons());
     });
 
-    auto cons_proc = procedure([] (Cons args, EnvPtr env) {
+    auto cons_proc = proc([] (Cons args, EnvPtr env) {
         auto head = eval(car(args), env);
         if (!cdr(args)) {
             throw EvalError("cons: not enough args");
@@ -36,8 +36,8 @@ EnvPtr build_env()
         return cons(head, tail);
     });
 
-    auto list_proc = procedure([] (Cons args, EnvPtr env) {
-        std::vector<Node> objs;
+    auto list_proc = proc([] (Cons args, EnvPtr env) {
+        std::vector<Object> objs;
         for (; args; args = cdr(args)) {
             objs.push_back(eval(car(args), env));
         }
@@ -50,7 +50,7 @@ EnvPtr build_env()
         return list;
     });
 
-    auto setq_proc = procedure([] (Cons args, EnvPtr env) {
+    auto setq_proc = proc([] (Cons args, EnvPtr env) {
         if (!args || !cdr(args)) {
             throw EvalError("setq: too few parameters");
         }
@@ -64,7 +64,7 @@ EnvPtr build_env()
         return value;
     });
 
-    auto set_proc = procedure([] (Cons args, EnvPtr env) {
+    auto set_proc = proc([] (Cons args, EnvPtr env) {
         if (!args || !cdr(args)) {
             throw EvalError("set: too few parameters");
         }
@@ -78,9 +78,9 @@ EnvPtr build_env()
         return value;
     });
 
-    auto do_proc = procedure([] (Cons args, EnvPtr env) {
+    auto do_proc = proc([] (Cons args, EnvPtr env) {
         env = make_env(env);
-        Node result;
+        Object result;
         while (args) {
             result = eval(car(args), env);
             args = cdr(args);
@@ -88,7 +88,7 @@ EnvPtr build_env()
         return result;
     });
 
-    auto plus_proc = procedure([] (Cons args, EnvPtr env) {
+    auto plus_proc = proc([] (Cons args, EnvPtr env) {
         auto result = 0.0;
         for (; args; args = cdr(args)) {
             auto arg = eval(car(args), env);
@@ -97,7 +97,7 @@ EnvPtr build_env()
         return number(result);
     });
 
-    auto minus_proc = procedure([] (Cons args, EnvPtr env) {
+    auto minus_proc = proc([] (Cons args, EnvPtr env) {
         if (!args) {
             throw EvalError("-: too few parameters");
         }
@@ -118,7 +118,7 @@ EnvPtr build_env()
         return number(result);
     });
 
-    auto mult_proc = procedure([] (Cons args, EnvPtr env) {
+    auto mult_proc = proc([] (Cons args, EnvPtr env) {
         auto result = 1.0;
         for (; args; args = cdr(args)) {
             auto arg = eval(car(args), env);
@@ -127,7 +127,7 @@ EnvPtr build_env()
         return number(result);
     });
 
-    auto devide_proc = procedure([] (Cons args, EnvPtr env) {
+    auto devide_proc = proc([] (Cons args, EnvPtr env) {
         if (!args || !cdr(args)) {
             throw EvalError("/: too few parameters");
         }
@@ -140,23 +140,23 @@ EnvPtr build_env()
         return number(result);
     });
 
-    auto nilq_proc = procedure([] (Cons args, EnvPtr env) {
-        Node result;
+    auto nilq_proc = proc([] (Cons args, EnvPtr env) {
+        Object result;
         if (!eval(car(args), env)) {
             result = symbol("t");
         }
         return result;
     });
 
-    auto zeroq_proc = procedure([] (Cons args, EnvPtr env) {
-        Node result;
+    auto zeroq_proc = proc([] (Cons args, EnvPtr env) {
+        Object result;
         if (eval(car(args), env).to_number().value() == 0) {
             result = symbol("t");
         }
         return result;
     });
 
-    auto if_proc = procedure([] (Cons args, EnvPtr env) {
+    auto if_proc = proc([] (Cons args, EnvPtr env) {
         auto cond = car(args);
         if (!cdr(args)) {
             throw EvalError("if: too few arguments");
@@ -173,7 +173,7 @@ EnvPtr build_env()
         }
     });
 
-    auto print_proc = procedure([] (Cons args, EnvPtr env) {
+    auto print_proc = proc([] (Cons args, EnvPtr env) {
         auto first = true;
         while (args) {
             if (first) {
@@ -185,10 +185,10 @@ EnvPtr build_env()
             args = cdr(args);
         }
         std::cout << std::endl;
-        return Node{};
+        return Object{};
     });
 
-    auto lambda_proc = procedure([] (Cons args, EnvPtr) {
+    auto lambda_proc = proc([] (Cons args, EnvPtr) {
         auto formal_args = car(args).to_cons();
         auto lambda_body = cadr(args);
 
@@ -204,7 +204,7 @@ EnvPtr build_env()
             throw EvalError("lambda: too many args");
         }
 
-        return procedure([formal_args, lambda_body] (Cons args, EnvPtr env) {
+        return proc([formal_args, lambda_body] (Cons args, EnvPtr env) {
 
             auto lambda_env = make_env(env);
 
@@ -230,7 +230,7 @@ EnvPtr build_env()
         });
     });
 
-    auto closure_proc = procedure([] (Cons args, EnvPtr env) {
+    auto closure_proc = proc([] (Cons args, EnvPtr env) {
         auto formal_args = car(args).to_cons();
         auto closure_body = cadr(args);
 
@@ -246,7 +246,7 @@ EnvPtr build_env()
             throw EvalError("closure: too many args");
         }
 
-        return procedure([formal_args, closure_body, env] (Cons args, EnvPtr) {
+        return proc([formal_args, closure_body, env] (Cons args, EnvPtr) {
 
             auto closure_env = make_env(env);
 
@@ -272,10 +272,10 @@ EnvPtr build_env()
         });
     });
 
-    auto def_proc = procedure([] (Cons args, EnvPtr env) {
+    auto def_proc = proc([] (Cons args, EnvPtr env) {
         auto sym = car(args).to_symbol();
         auto val = eval(cons(symbol("lambda"), cdr(args)), env);
-        assert(val.is_procedure());
+        assert(val.is_proc());
         set(env, sym.name(), val);
         return val;
     });
@@ -333,7 +333,7 @@ int repl()
 
         while (!is.eof()) {
             try {
-                Node expr;
+                Object expr;
                 if (!parser.parse(is, expr)) {
                     break;
                 }
@@ -369,7 +369,7 @@ int run_file(const char* filename)
         auto parser = Parser{};
         auto env = build_env();
 
-        Node expr;
+        Object expr;
         while (parser.parse(ifs, expr)) {
             eval(expr, env);
         }

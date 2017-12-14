@@ -103,41 +103,41 @@ namespace {
 ////////////////////////////////////////////////////////////////////////////////
 // NodeData
 
-struct mlisp::detail::NodeData: public std::enable_shared_from_this<NodeData> {
-    virtual ~NodeData() {}
-    virtual void accept(NodeVisitor&) const = 0;
+struct mlisp::detail::ObjectData: public std::enable_shared_from_this<ObjectData> {
+    virtual ~ObjectData() {}
+    virtual void accept(ObjectVisitor&) const = 0;
 };
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // ConsData
 
-struct mlisp::detail::ConsData: public mlisp::detail::NodeData {
+struct mlisp::detail::ConsData: public mlisp::detail::ObjectData {
 
-    ConsData(Node h, Cons t) noexcept : head{h}, tail{t} { }
+    ConsData(Object h, Cons t) noexcept : head{h}, tail{t} { }
 
-    void accept(NodeVisitor& visitor) const override
+    void accept(ObjectVisitor& visitor) const override
     {
         visitor.visit(Cons{
             std::static_pointer_cast<ConsData const>(shared_from_this())
         });
     }
 
-    Node const head;
+    Object const head;
     Cons const tail;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-// ProcedureData
+// ProcData
 
-struct mlisp::detail::ProcedureData: public mlisp::detail::NodeData {
+struct mlisp::detail::ProcData: public mlisp::detail::ObjectData {
 
-    explicit ProcedureData(Func f) noexcept : func{f} { }
+    explicit ProcData(Func f) noexcept : func{f} { }
 
-    void accept(NodeVisitor& visitor) const override
+    void accept(ObjectVisitor& visitor) const override
     {
-        visitor.visit(Procedure{
-            std::static_pointer_cast<ProcedureData const>(shared_from_this())
+        visitor.visit(Proc{
+            std::static_pointer_cast<ProcData const>(shared_from_this())
         });
     }
 
@@ -147,11 +147,11 @@ struct mlisp::detail::ProcedureData: public mlisp::detail::NodeData {
 ////////////////////////////////////////////////////////////////////////////////
 // NumberData
 
-struct mlisp::detail::NumberData: public mlisp::detail::NodeData {
+struct mlisp::detail::NumberData: public mlisp::detail::ObjectData {
 
     explicit NumberData(double v) noexcept : value{v} { }
 
-    void accept(NodeVisitor& visitor) const override
+    void accept(ObjectVisitor& visitor) const override
     {
         visitor.visit(Number{
             std::static_pointer_cast<NumberData const>(shared_from_this())
@@ -164,11 +164,11 @@ struct mlisp::detail::NumberData: public mlisp::detail::NodeData {
 ////////////////////////////////////////////////////////////////////////////////
 // StringData
 
-struct mlisp::detail::StringData: public mlisp::detail::NodeData {
+struct mlisp::detail::StringData: public mlisp::detail::ObjectData {
 
     explicit StringData(std::string t) noexcept : text{std::move(t)} { }
 
-    void accept(NodeVisitor& visitor) const override
+    void accept(ObjectVisitor& visitor) const override
     {
         visitor.visit(String{
             std::static_pointer_cast<StringData const>(shared_from_this())
@@ -181,11 +181,11 @@ struct mlisp::detail::StringData: public mlisp::detail::NodeData {
 ////////////////////////////////////////////////////////////////////////////////
 // SymbolData
 
-struct mlisp::detail::SymbolData: public mlisp::detail::NodeData {
+struct mlisp::detail::SymbolData: public mlisp::detail::ObjectData {
 
     explicit SymbolData(std::string n) noexcept : name{std::move(n)} { }
 
-    void accept(NodeVisitor& visitor) const override
+    void accept(ObjectVisitor& visitor) const override
     {
         visitor.visit(Symbol{
             std::static_pointer_cast<SymbolData const>(shared_from_this())
@@ -196,96 +196,96 @@ struct mlisp::detail::SymbolData: public mlisp::detail::NodeData {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-// Node
+// Object
 
-mlisp::Node::Node() noexcept
+mlisp::Object::Object() noexcept
 {
 }
 
-mlisp::Node::Node(Node const& other) noexcept
+mlisp::Object::Object(Object const& other) noexcept
     : data_{other.data_}
 {
 }
 
-mlisp::Node::Node(Cons const& list) noexcept
+mlisp::Object::Object(Cons const& list) noexcept
     : data_{list.data_}
 {
 }
 
-mlisp::Node::Node(Number const& number) noexcept
+mlisp::Object::Object(Proc const& proc) noexcept
+    : data_{proc.data_}
+{
+}
+
+mlisp::Object::Object(Number const& number) noexcept
     : data_{number.data_}
 {
 }
 
-mlisp::Node::Node(String const& string) noexcept
+mlisp::Object::Object(String const& string) noexcept
     : data_{string.data_}
 {
 }
 
-mlisp::Node::Node(Symbol const& symbol) noexcept
+mlisp::Object::Object(Symbol const& symbol) noexcept
     : data_{symbol.data_}
 {
 }
 
-mlisp::Node::Node(Procedure const& proc) noexcept
-: data_{proc.data_}
-{
-}
-
-mlisp::Node::Node(std::shared_ptr<Data const> data) noexcept
+mlisp::Object::Object(std::shared_ptr<Data const> data) noexcept
     : data_{data}
 {
 }
 
-mlisp::Node&
-mlisp::Node::operator = (Node const& rhs) noexcept
+mlisp::Object&
+mlisp::Object::operator = (Object const& rhs) noexcept
 {
     data_ = rhs.data_;
     return *this;
 }
 
-mlisp::Node&
-mlisp::Node::operator = (Cons const& rhs) noexcept
+mlisp::Object&
+mlisp::Object::operator = (Cons const& rhs) noexcept
 {
     data_ = rhs.data_;
     return *this;
 }
 
-mlisp::Node&
-mlisp::Node::operator = (Number const& rhs) noexcept
+mlisp::Object&
+mlisp::Object::operator = (Proc const& rhs) noexcept
 {
     data_ = rhs.data_;
     return *this;
 }
 
-mlisp::Node&
-mlisp::Node::operator = (String const& rhs) noexcept
+mlisp::Object&
+mlisp::Object::operator = (Number const& rhs) noexcept
 {
     data_ = rhs.data_;
     return *this;
 }
 
-mlisp::Node&
-mlisp::Node::operator = (Symbol const& rhs) noexcept
+mlisp::Object&
+mlisp::Object::operator = (String const& rhs) noexcept
 {
     data_ = rhs.data_;
     return *this;
 }
 
-mlisp::Node&
-mlisp::Node::operator = (Procedure const& rhs) noexcept
+mlisp::Object&
+mlisp::Object::operator = (Symbol const& rhs) noexcept
 {
     data_ = rhs.data_;
     return *this;
 }
 
-mlisp::Node::operator bool() const noexcept
+mlisp::Object::operator bool() const noexcept
 {
     return !!data_;
 }
 
 void
-mlisp::Node::accept(NodeVisitor& visitor) const
+mlisp::Object::accept(ObjectVisitor& visitor) const
 {
     if (data_) {
         data_->accept(visitor);
@@ -293,7 +293,7 @@ mlisp::Node::accept(NodeVisitor& visitor) const
 }
 
 mlisp::Cons
-mlisp::Node::to_cons() const
+mlisp::Object::to_cons() const
 {
     if (!data_) {
         return {}; // nil
@@ -306,8 +306,18 @@ mlisp::Node::to_cons() const
     return { list_data };
 }
 
+mlisp::Proc
+mlisp::Object::to_proc() const
+{
+    auto proc_data = std::dynamic_pointer_cast<Proc::Data const>(data_);
+    if (!proc_data) {
+        throw EvalError(std::to_string(*this) + " is not a procedure");
+    }
+    return { proc_data };
+}
+
 mlisp::Number
-mlisp::Node::to_number() const
+mlisp::Object::to_number() const
 {
     auto number_data = std::dynamic_pointer_cast<Number::Data const>(data_);
     if (!number_data) {
@@ -317,7 +327,7 @@ mlisp::Node::to_number() const
 }
 
 mlisp::String
-mlisp::Node::to_string() const
+mlisp::Object::to_string() const
 {
     auto string_data = std::dynamic_pointer_cast<String::Data const>(data_);
     if (!string_data) {
@@ -327,7 +337,7 @@ mlisp::Node::to_string() const
 }
 
 mlisp::Symbol
-mlisp::Node::to_symbol() const
+mlisp::Object::to_symbol() const
 {
     auto symbol_data = std::dynamic_pointer_cast<Symbol::Data const>(data_);
     if (!symbol_data) {
@@ -336,18 +346,8 @@ mlisp::Node::to_symbol() const
     return { symbol_data };
 }
 
-mlisp::Procedure
-mlisp::Node::to_procedure() const
-{
-    auto proc_data = std::dynamic_pointer_cast<Procedure::Data const>(data_);
-    if (!proc_data) {
-        throw EvalError(std::to_string(*this) + " is not a procedure");
-    }
-    return { proc_data };
-}
-
 bool
-mlisp::Node::is_cons() const
+mlisp::Object::is_cons() const
 {
     if (!data_) {
         return true;
@@ -356,31 +356,31 @@ mlisp::Node::is_cons() const
 }
 
 bool
-mlisp::Node::is_number() const
+mlisp::Object::is_proc() const
+{
+    return !!dynamic_cast<Proc::Data const *>(data_.get());
+}
+
+bool
+mlisp::Object::is_number() const
 {
     return !!dynamic_cast<Number::Data const *>(data_.get());
 }
 
 bool
-mlisp::Node::is_string() const
+mlisp::Object::is_string() const
 {
     return !!dynamic_cast<String::Data const *>(data_.get());
 }
 
 bool
-mlisp::Node::is_symbol() const
+mlisp::Object::is_symbol() const
 {
     return !!dynamic_cast<Symbol::Data const *>(data_.get());
 }
 
-bool
-mlisp::Node::is_procedure() const
-{
-    return !!dynamic_cast<Procedure::Data const *>(data_.get());
-}
-
 ////////////////////////////////////////////////////////////////////////////////
-// Cons
+// ConsCell
 
 mlisp::Cons::Cons() noexcept
 {
@@ -411,18 +411,18 @@ mlisp::Cons::operator bool() const noexcept
 ////////////////////////////////////////////////////////////////////////////////
 // Procedure
 
-mlisp::Procedure::Procedure(Procedure const& other) noexcept
+mlisp::Proc::Proc(Proc const& other) noexcept
     : data_{other.data_}
 {
 }
 
-mlisp::Procedure::Procedure(std::shared_ptr<Data const> data) noexcept
+mlisp::Proc::Proc(std::shared_ptr<Data const> data) noexcept
     : data_{data}
 {
 }
 
-mlisp::Node
-mlisp::Procedure::operator()(Cons args, EnvPtr env) const
+mlisp::Object
+mlisp::Proc::operator()(Cons args, EnvPtr env) const
 {
     if (data_->func) {
         return data_->func(args, env);
@@ -492,7 +492,7 @@ mlisp::Symbol::name() const
 // Parser
 
 bool
-mlisp::Parser::parse(std::istream& istream, Node& expr)
+mlisp::Parser::parse(std::istream& istream, Object& expr)
 {
     while (true) {
 
@@ -512,7 +512,7 @@ mlisp::Parser::parse(std::istream& istream, Node& expr)
             continue;
         }
 
-        Node node;
+        Object obj;
 
         if (token == ")") {
 
@@ -536,33 +536,33 @@ mlisp::Parser::parse(std::istream& istream, Node& expr)
                     break;
                 }
             }
-            node = list;
+            obj = list;
         }
         else if (is_number(token)) {
-            node = number(std::stod(token));
+            obj = number(std::stod(token));
         }
         else {
-            node = symbol(std::move(token));
+            obj = symbol(std::move(token));
         }
 
         while (true) {
             if (stack_.empty()) {
-                expr = node;
+                expr = obj;
                 return true;
             }
 
             if (stack_.top().type == Context::Type::quote) {
                 stack_.pop();
-                node = cons(symbol(MLISP_BUILTIN_QUOTE), cons(node, {}));
+                obj = cons(symbol(MLISP_BUILTIN_QUOTE), cons(obj, {}));
                 continue;
             }
 
             if (stack_.top().head_empty) {
-                stack_.top().head = node;
+                stack_.top().head = obj;
                 stack_.top().head_empty = false;
             }
             else {
-                stack_.push({ Context::Type::list, node, false });
+                stack_.push({ Context::Type::list, obj, false });
             }
             break;
         }
@@ -582,7 +582,7 @@ mlisp::Parser::clean() const noexcept
 
 struct mlisp::Env {
     EnvPtr base;
-    std::map<std::string, Node> vars;
+    std::map<std::string, Object> vars;
 };
 
 EnvPtr
@@ -594,32 +594,32 @@ mlisp::make_env(EnvPtr base_env)
 }
 
 void
-mlisp::set(EnvPtr env, std::string name, Node value)
+mlisp::set(EnvPtr env, std::string name, Object value)
 {
     assert(env);
     env->vars[name] = value;
 }
 
 bool
-mlisp::update(EnvPtr env, std::string const& name, Node node)
+mlisp::update(EnvPtr env, std::string const& name, Object value)
 {
     assert(env);
 
     auto i = env->vars.find(name);
     if (i != env->vars.end()) {
-        i->second = node;
+        i->second = value;
         return true;
     }
     return false;
 }
 
 bool
-mlisp::lookup(EnvPtr env, std::string const& name, Node& node)
+mlisp::lookup(EnvPtr env, std::string const& name, Object& value)
 {
     while (env) {
         auto i = env->vars.find(name);
         if (i != env->vars.end()) {
-            node = i->second;
+            value = i->second;
             return true;
         }
         env = env->base;
@@ -633,19 +633,19 @@ mlisp::lookup(EnvPtr env, std::string const& name, Node& node)
 // eval
 
 namespace {
-    class NodeEvaluator: NodeVisitor {
+    class Evaluator: ObjectVisitor {
     public:
-        explicit NodeEvaluator(EnvPtr env) : env_(env)
+        explicit Evaluator(EnvPtr env) : env_(env)
         {
         }
 
-        Node evaluate(Node expr)
+        Object evaluate(Object expr)
         {
             if (expr) {
                 expr.accept(*this);
             }
             else {
-                result_ = Node{};
+                result_ = Object{};
             }
 
             return result_;
@@ -655,63 +655,63 @@ namespace {
         void visit(Cons list) override
         {
             auto cmd = eval(car(list), env_);
-            auto proc = cmd.to_procedure();
+            auto proc = cmd.to_proc();
 
             result_ = proc(cdr(list), env_);
         }
 
-        void visit(Number number) override
+        void visit(Number num) override
         {
-            result_ = number;
+            result_ = num;
         }
 
-        void visit(String string) override
+        void visit(String str) override
         {
-            result_ = string;
+            result_ = str;
         }
 
-        void visit(Symbol symbol) override
+        void visit(Symbol sym) override
         {
-            if (symbol.name() == MLISP_BUILTIN_QUOTE) {
-                static auto quote_proc = procedure([] (Cons args, EnvPtr) {
+            if (sym.name() == MLISP_BUILTIN_QUOTE) {
+                static auto quote_proc = proc([] (Cons args, EnvPtr) {
                     return car(args);
                 });
                 result_ = quote_proc;
             }
             else {
-                Node value;
-                if (lookup(env_, symbol.name(), value)) {
+                Object value;
+                if (lookup(env_, sym.name(), value)) {
                     result_ = value;
                 } else {
-                    throw EvalError("Unknown symbol: " + symbol.name());
+                    throw EvalError("Unknown symbol: " + sym.name());
                 }
             }
         }
 
-        void visit(Procedure proc) override
+        void visit(Proc proc) override
         {
             assert(false);
         }
 
     private:
         EnvPtr env_;
-        Node result_;
+        Object result_;
     };
 }
 
-mlisp::Node
-mlisp::eval(Node expr, EnvPtr env)
+mlisp::Object
+mlisp::eval(Object expr, EnvPtr env)
 {
-    return NodeEvaluator(env).evaluate(expr);
+    return Evaluator(env).evaluate(expr);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Built-ins
 
-mlisp::Node
+mlisp::Object
 mlisp::car(Cons list) noexcept
 {
-    return list.data_ ? list.data_->head : Node{};
+    return list.data_ ? list.data_->head : Object{};
 }
 
 mlisp::Cons
@@ -721,15 +721,15 @@ mlisp::cdr(Cons list) noexcept
 }
 
 mlisp::Cons
-mlisp::cons(Node head, Cons tail) noexcept
+mlisp::cons(Object head, Cons tail) noexcept
 {
     return Cons{ std::make_shared<Cons::Data>(head, tail) };
 }
 
-mlisp::Procedure
-mlisp::procedure(Func func) noexcept
+mlisp::Proc
+mlisp::proc(Func func) noexcept
 {
-    return Procedure{ std::make_shared<Procedure::Data>(func) };
+    return Proc{ std::make_shared<Proc::Data>(func) };
 }
 
 mlisp::Number
@@ -756,15 +756,15 @@ mlisp::symbol(std::string name) noexcept
 namespace {
     using namespace mlisp;
 
-    class NodePrinter: NodeVisitor {
+    class Printer: ObjectVisitor {
     public:
-        NodePrinter(std::ostream& ostream, bool is_head)
+        Printer(std::ostream& ostream, bool is_head)
             : ostream_(ostream), is_head_(is_head) { }
 
-        void print(Node const& node)
+        void print(Object const& obj)
         {
-            if (node) {
-                node.accept(*this);
+            if (obj) {
+                obj.accept(*this);
             }
             else {
                 ostream_ << "nil";
@@ -792,41 +792,41 @@ namespace {
             }
             if (!quoted) {
                 auto head = car(list);
-                NodePrinter{ostream_, true}.print(head);
+                Printer{ostream_, true}.print(head);
             }
             auto tail = cdr(list);
             if (tail) {
                 if (!quoted) {
                     ostream_ << ' ';
                 }
-                NodePrinter{ostream_, false}.print(tail);
+                Printer{ostream_, false}.print(tail);
             }
             if (!quoted && is_head_) {
                 ostream_ << ')';
             }
         }
 
-        void visit(Number number) override
+        void visit(Number num) override
         {
-            ostream_ << number.value();
+            ostream_ << num.value();
         }
 
-        void visit(String string) override
+        void visit(String str) override
         {
-            ostream_ << string.text();
+            ostream_ << str.text();
         }
 
-        void visit(Symbol symbol) override
+        void visit(Symbol sym) override
         {
-            if (symbol.name() == MLISP_BUILTIN_QUOTE) {
+            if (sym.name() == MLISP_BUILTIN_QUOTE) {
                 ostream_ << "quote";
             }
             else {
-                ostream_ << symbol.name();
+                ostream_ << sym.name();
             }
         }
 
-        void visit(Procedure proc) override
+        void visit(Proc proc) override
         {
             ostream_ << "<#procedure>";
         }
@@ -838,22 +838,20 @@ namespace {
 }
 
 std::ostream&
-mlisp::operator << (std::ostream& ostream, mlisp::Node const& node)
+mlisp::operator << (std::ostream& ostream, mlisp::Object const& obj)
 {
-    NodePrinter{ostream, true}.print(node);
+    Printer{ostream, true}.print(obj);
     return ostream;
 }
 
 std::ostream&
-mlisp::operator << (std::ostream& ostream, mlisp::Cons const& list)
+mlisp::operator << (std::ostream& ostream, mlisp::Cons const& ccl)
 {
-    return ostream << Node{ list };
+    return ostream << Object{ ccl };
 }
 
 std::string
-std::to_string(mlisp::Node const& node)
+std::to_string(mlisp::Object const& obj)
 {
-    ostringstream ss;
-    ss << node;
-    return ss.str();
+    return (ostringstream{} << obj).str();
 }
