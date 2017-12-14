@@ -168,8 +168,6 @@ namespace mlisp {
         };
         std::stack<Context> stack_;
     };
-
-    bool read(std::istream&, Node&);
 }
 
 namespace mlisp {

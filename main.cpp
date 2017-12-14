@@ -36,6 +36,20 @@ std::shared_ptr<Env> build_env()
         return cons(head, tail);
     });
 
+    auto list_proc = proc([] (List args, std::shared_ptr<Env> env) {
+        std::vector<Node> objs;
+        for (; args; args = cdr(args)) {
+            objs.push_back(eval(car(args), env));
+        }
+
+        List list;
+        while (!objs.empty()) {
+            list = cons(objs.back(), list);
+            objs.pop_back();
+        }
+        return list;
+    });
+
     auto setq_proc = proc([] (List args, std::shared_ptr<Env> env) {
         if (!args || !cdr(args)) {
             throw EvalError("setq: too few parameters");
@@ -272,6 +286,7 @@ std::shared_ptr<Env> build_env()
     set(env, "car", car_proc);
     set(env, "cdr", cdr_proc);
     set(env, "cons", cons_proc);
+    set(env, "list", list_proc);
     set(env, "set", set_proc);
     set(env, "setq", setq_proc);
     set(env, "do", do_proc);
@@ -322,8 +337,7 @@ int repl()
                 if (!parser.parse(is, expr)) {
                     break;
                 }
-                std::cout << "expr: " << expr << std::endl;
-                std::cout << "eval: " << eval(expr, env) << std::endl;
+                std::cout << eval(expr, env) << std::endl;
             }
             catch (ParseError& e) {
                 std::cout << e.what() << std::endl;
@@ -355,11 +369,12 @@ int main(int argc, char *argv[])
         }
 
         try {
+            auto parser = Parser{};
             auto env = build_env();
 
-            Node node;
-            while (read(ifs, node)) {
-                eval(node, env);
+            Node expr;
+            while (parser.parse(ifs, expr)) {
+                eval(expr, env);
             }
 
             if (!ifs.eof()) {
