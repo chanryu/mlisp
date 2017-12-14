@@ -6,43 +6,43 @@
 
 using namespace mlisp;
 
-Node cadr(List list)
+Node cadr(Cons list)
 {
     return car(cdr(list));
 }
 
-std::shared_ptr<Env> build_env()
+EnvPtr build_env()
 {
-    auto car_proc = proc([] (List args, std::shared_ptr<Env> env) {
+    auto car_proc = procedure([] (Cons args, EnvPtr env) {
         if (cdr(args)) {
             throw EvalError("car: too many args given");
         }
-        return car(eval(car(args), env).to_list());
+        return car(eval(car(args), env).to_cons());
     });
 
-    auto cdr_proc = proc([] (List args, std::shared_ptr<Env> env) {
+    auto cdr_proc = procedure([] (Cons args, EnvPtr env) {
         if (cdr(args)) {
             throw EvalError("cdr: too many args given");
         }
-        return cdr(eval(car(args), env).to_list());
+        return cdr(eval(car(args), env).to_cons());
     });
 
-    auto cons_proc = proc([] (List args, std::shared_ptr<Env> env) {
+    auto cons_proc = procedure([] (Cons args, EnvPtr env) {
         auto head = eval(car(args), env);
         if (!cdr(args)) {
             throw EvalError("cons: not enough args");
         }
-        auto tail = eval(cadr(args), env).to_list();
+        auto tail = eval(cadr(args), env).to_cons();
         return cons(head, tail);
     });
 
-    auto list_proc = proc([] (List args, std::shared_ptr<Env> env) {
+    auto list_proc = procedure([] (Cons args, EnvPtr env) {
         std::vector<Node> objs;
         for (; args; args = cdr(args)) {
             objs.push_back(eval(car(args), env));
         }
 
-        List list;
+        Cons list;
         while (!objs.empty()) {
             list = cons(objs.back(), list);
             objs.pop_back();
@@ -50,7 +50,7 @@ std::shared_ptr<Env> build_env()
         return list;
     });
 
-    auto setq_proc = proc([] (List args, std::shared_ptr<Env> env) {
+    auto setq_proc = procedure([] (Cons args, EnvPtr env) {
         if (!args || !cdr(args)) {
             throw EvalError("setq: too few parameters");
         }
@@ -64,7 +64,7 @@ std::shared_ptr<Env> build_env()
         return value;
     });
 
-    auto set_proc = proc([] (List args, std::shared_ptr<Env> env) {
+    auto set_proc = procedure([] (Cons args, EnvPtr env) {
         if (!args || !cdr(args)) {
             throw EvalError("set: too few parameters");
         }
@@ -78,7 +78,7 @@ std::shared_ptr<Env> build_env()
         return value;
     });
 
-    auto do_proc = proc([] (List args, std::shared_ptr<Env> env) {
+    auto do_proc = procedure([] (Cons args, EnvPtr env) {
         env = make_env(env);
         Node result;
         while (args) {
@@ -88,7 +88,7 @@ std::shared_ptr<Env> build_env()
         return result;
     });
 
-    auto plus_proc = proc([] (List args, std::shared_ptr<Env> env) {
+    auto plus_proc = procedure([] (Cons args, EnvPtr env) {
         auto result = 0.0;
         for (; args; args = cdr(args)) {
             auto arg = eval(car(args), env);
@@ -97,7 +97,7 @@ std::shared_ptr<Env> build_env()
         return number(result);
     });
 
-    auto minus_proc = proc([] (List args, std::shared_ptr<Env> env) {
+    auto minus_proc = procedure([] (Cons args, EnvPtr env) {
         if (!args) {
             throw EvalError("-: too few parameters");
         }
@@ -118,7 +118,7 @@ std::shared_ptr<Env> build_env()
         return number(result);
     });
 
-    auto mult_proc = proc([] (List args, std::shared_ptr<Env> env) {
+    auto mult_proc = procedure([] (Cons args, EnvPtr env) {
         auto result = 1.0;
         for (; args; args = cdr(args)) {
             auto arg = eval(car(args), env);
@@ -127,7 +127,7 @@ std::shared_ptr<Env> build_env()
         return number(result);
     });
 
-    auto devide_proc = proc([] (List args, std::shared_ptr<Env> env) {
+    auto devide_proc = procedure([] (Cons args, EnvPtr env) {
         if (!args || !cdr(args)) {
             throw EvalError("/: too few parameters");
         }
@@ -140,7 +140,7 @@ std::shared_ptr<Env> build_env()
         return number(result);
     });
 
-    auto nilq_proc = proc([] (List args, std::shared_ptr<Env> env) {
+    auto nilq_proc = procedure([] (Cons args, EnvPtr env) {
         Node result;
         if (!eval(car(args), env)) {
             result = symbol("t");
@@ -148,7 +148,7 @@ std::shared_ptr<Env> build_env()
         return result;
     });
 
-    auto zeroq_proc = proc([] (List args, std::shared_ptr<Env> env) {
+    auto zeroq_proc = procedure([] (Cons args, EnvPtr env) {
         Node result;
         if (eval(car(args), env).to_number().value() == 0) {
             result = symbol("t");
@@ -156,7 +156,7 @@ std::shared_ptr<Env> build_env()
         return result;
     });
 
-    auto if_proc = proc([] (List args, std::shared_ptr<Env> env) {
+    auto if_proc = procedure([] (Cons args, EnvPtr env) {
         auto cond = car(args);
         if (!cdr(args)) {
             throw EvalError("if: too few arguments");
@@ -173,7 +173,7 @@ std::shared_ptr<Env> build_env()
         }
     });
 
-    auto print_proc = proc([] (List args, std::shared_ptr<Env> env) {
+    auto print_proc = procedure([] (Cons args, EnvPtr env) {
         auto first = true;
         while (args) {
             if (first) {
@@ -188,8 +188,8 @@ std::shared_ptr<Env> build_env()
         return Node{};
     });
 
-    auto lambda_proc = proc([] (List args, std::shared_ptr<Env>) {
-        auto formal_args = car(args).to_list();
+    auto lambda_proc = procedure([] (Cons args, EnvPtr) {
+        auto formal_args = car(args).to_cons();
         auto lambda_body = cadr(args);
 
         // validate formal_args (must be list of symbols)
@@ -204,7 +204,7 @@ std::shared_ptr<Env> build_env()
             throw EvalError("lambda: too many args");
         }
 
-        return proc([formal_args, lambda_body] (List args, std::shared_ptr<Env> env) {
+        return procedure([formal_args, lambda_body] (Cons args, EnvPtr env) {
 
             auto lambda_env = make_env(env);
 
@@ -212,7 +212,7 @@ std::shared_ptr<Env> build_env()
             while (syms) {
                 assert(car(syms).is_symbol());
                 if (!args) {
-                    EvalError("Proc: too few args");
+                    EvalError("Procedure: too few args");
                 }
 
                 auto sym = car(syms).to_symbol();
@@ -223,15 +223,15 @@ std::shared_ptr<Env> build_env()
             }
 
             if (args) {
-                EvalError("Proc: too many args");
+                EvalError("Procedure: too many args");
             }
 
             return eval(lambda_body, lambda_env);
         });
     });
 
-    auto closure_proc = proc([] (List args, std::shared_ptr<Env> env) {
-        auto formal_args = car(args).to_list();
+    auto closure_proc = procedure([] (Cons args, EnvPtr env) {
+        auto formal_args = car(args).to_cons();
         auto closure_body = cadr(args);
 
         // validate formal_args (must be list of symbols)
@@ -246,7 +246,7 @@ std::shared_ptr<Env> build_env()
             throw EvalError("closure: too many args");
         }
 
-        return proc([formal_args, closure_body, env] (List args, std::shared_ptr<Env>) {
+        return procedure([formal_args, closure_body, env] (Cons args, EnvPtr) {
 
             auto closure_env = make_env(env);
 
@@ -254,7 +254,7 @@ std::shared_ptr<Env> build_env()
             while (syms) {
                 assert(car(syms).is_symbol());
                 if (!args) {
-                    EvalError("Proc: too few args");
+                    EvalError("Procedure: too few args");
                 }
 
                 auto sym = car(syms).to_symbol();
@@ -265,17 +265,17 @@ std::shared_ptr<Env> build_env()
             }
 
             if (args) {
-                EvalError("Proc: too many args");
+                EvalError("Procedure: too many args");
             }
 
             return eval(closure_body, closure_env);
         });
     });
 
-    auto def_proc = proc([] (List args, std::shared_ptr<Env> env) {
+    auto def_proc = procedure([] (Cons args, EnvPtr env) {
         auto sym = car(args).to_symbol();
         auto val = eval(cons(symbol("lambda"), cdr(args)), env);
-        assert(val.is_proc());
+        assert(val.is_procedure());
         set(env, sym.name(), val);
         return val;
     });

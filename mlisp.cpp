@@ -97,8 +97,7 @@ namespace {
         return c == '.' || (c >= '0' && c <= '9');
     }
 
-    char const* const MLISP_KEYWORD_NIL = "nil";
-    char const* const MLISP_BUILTIN_QUOTE = "mlisp-built-in:quote";
+    char const* const MLISP_BUILTIN_QUOTE = "~$~#~mlisp:built-in:quote~#~$~";
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -111,34 +110,34 @@ struct mlisp::detail::NodeData: public std::enable_shared_from_this<NodeData> {
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// ListData
+// ConsData
 
-struct mlisp::detail::ListData: public mlisp::detail::NodeData {
+struct mlisp::detail::ConsData: public mlisp::detail::NodeData {
 
-    ListData(Node h, List t) noexcept : head{h}, tail{t} { }
+    ConsData(Node h, Cons t) noexcept : head{h}, tail{t} { }
 
     void accept(NodeVisitor& visitor) const override
     {
-        visitor.visit(List{
-            std::static_pointer_cast<ListData const>(shared_from_this())
+        visitor.visit(Cons{
+            std::static_pointer_cast<ConsData const>(shared_from_this())
         });
     }
 
     Node const head;
-    List const tail;
+    Cons const tail;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-// ProcData
+// ProcedureData
 
-struct mlisp::detail::ProcData: public mlisp::detail::NodeData {
+struct mlisp::detail::ProcedureData: public mlisp::detail::NodeData {
 
-    explicit ProcData(Func f) noexcept : func{f} { }
+    explicit ProcedureData(Func f) noexcept : func{f} { }
 
     void accept(NodeVisitor& visitor) const override
     {
-        visitor.visit(Proc{
-            std::static_pointer_cast<ProcData const>(shared_from_this())
+        visitor.visit(Procedure{
+            std::static_pointer_cast<ProcedureData const>(shared_from_this())
         });
     }
 
@@ -208,13 +207,8 @@ mlisp::Node::Node(Node const& other) noexcept
 {
 }
 
-mlisp::Node::Node(List const& list) noexcept
+mlisp::Node::Node(Cons const& list) noexcept
     : data_{list.data_}
-{
-}
-
-mlisp::Node::Node(Proc const& proc) noexcept
-    : data_{proc.data_}
 {
 }
 
@@ -233,6 +227,11 @@ mlisp::Node::Node(Symbol const& symbol) noexcept
 {
 }
 
+mlisp::Node::Node(Procedure const& proc) noexcept
+: data_{proc.data_}
+{
+}
+
 mlisp::Node::Node(std::shared_ptr<Data const> data) noexcept
     : data_{data}
 {
@@ -246,14 +245,7 @@ mlisp::Node::operator = (Node const& rhs) noexcept
 }
 
 mlisp::Node&
-mlisp::Node::operator = (List const& rhs) noexcept
-{
-    data_ = rhs.data_;
-    return *this;
-}
-
-mlisp::Node&
-mlisp::Node::operator = (Proc const& rhs) noexcept
+mlisp::Node::operator = (Cons const& rhs) noexcept
 {
     data_ = rhs.data_;
     return *this;
@@ -280,6 +272,13 @@ mlisp::Node::operator = (Symbol const& rhs) noexcept
     return *this;
 }
 
+mlisp::Node&
+mlisp::Node::operator = (Procedure const& rhs) noexcept
+{
+    data_ = rhs.data_;
+    return *this;
+}
+
 mlisp::Node::operator bool() const noexcept
 {
     return !!data_;
@@ -293,28 +292,18 @@ mlisp::Node::accept(NodeVisitor& visitor) const
     }
 }
 
-mlisp::List
-mlisp::Node::to_list() const
+mlisp::Cons
+mlisp::Node::to_cons() const
 {
     if (!data_) {
         return {}; // nil
     }
 
-    auto list_data = std::dynamic_pointer_cast<List::Data const>(data_);
+    auto list_data = std::dynamic_pointer_cast<Cons::Data const>(data_);
     if (!list_data) {
         throw EvalError(std::to_string(*this) + " is not a list");
     }
     return { list_data };
-}
-
-mlisp::Proc
-mlisp::Node::to_proc() const
-{
-    auto proc_data = std::dynamic_pointer_cast<Proc::Data const>(data_);
-    if (!proc_data) {
-        throw EvalError(std::to_string(*this) + " is not a procedure");
-    }
-    return { proc_data };
 }
 
 mlisp::Number
@@ -347,19 +336,29 @@ mlisp::Node::to_symbol() const
     return { symbol_data };
 }
 
+mlisp::Procedure
+mlisp::Node::to_procedure() const
+{
+    auto proc_data = std::dynamic_pointer_cast<Procedure::Data const>(data_);
+    if (!proc_data) {
+        throw EvalError(std::to_string(*this) + " is not a procedure");
+    }
+    return { proc_data };
+}
+
 bool
-mlisp::Node::is_list() const
+mlisp::Node::is_cons() const
 {
     if (!data_) {
         return true;
     }
-    return !!dynamic_cast<List::Data const *>(data_.get());
+    return !!dynamic_cast<Cons::Data const *>(data_.get());
 }
 
 bool
-mlisp::Node::is_proc() const
+mlisp::Node::is_number() const
 {
-    return !!dynamic_cast<Proc::Data const *>(data_.get());
+    return !!dynamic_cast<Number::Data const *>(data_.get());
 }
 
 bool
@@ -374,50 +373,56 @@ mlisp::Node::is_symbol() const
     return !!dynamic_cast<Symbol::Data const *>(data_.get());
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// List
+bool
+mlisp::Node::is_procedure() const
+{
+    return !!dynamic_cast<Procedure::Data const *>(data_.get());
+}
 
-mlisp::List::List() noexcept
+////////////////////////////////////////////////////////////////////////////////
+// Cons
+
+mlisp::Cons::Cons() noexcept
 {
 }
 
-mlisp::List::List(List const& other) noexcept
+mlisp::Cons::Cons(Cons const& other) noexcept
     : data_{other.data_}
 {
 }
 
-mlisp::List::List(std::shared_ptr<Data const> data) noexcept
+mlisp::Cons::Cons(std::shared_ptr<Data const> data) noexcept
     : data_{data}
 {
 }
 
-mlisp::List&
-mlisp::List::operator = (List const& rhs) noexcept
+mlisp::Cons&
+mlisp::Cons::operator = (Cons const& rhs) noexcept
 {
     data_ = rhs.data_;
     return *this;
 }
 
-mlisp::List::operator bool() const noexcept
+mlisp::Cons::operator bool() const noexcept
 {
     return !!data_;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Proc
+// Procedure
 
-mlisp::Proc::Proc(Proc const& other) noexcept
+mlisp::Procedure::Procedure(Procedure const& other) noexcept
     : data_{other.data_}
 {
 }
 
-mlisp::Proc::Proc(std::shared_ptr<Data const> data) noexcept
+mlisp::Procedure::Procedure(std::shared_ptr<Data const> data) noexcept
     : data_{data}
 {
 }
 
 mlisp::Node
-mlisp::Proc::operator()(List args, std::shared_ptr<Env> env) const
+mlisp::Procedure::operator()(Cons args, EnvPtr env) const
 {
     if (data_->func) {
         return data_->func(args, env);
@@ -511,7 +516,7 @@ mlisp::Parser::parse(std::istream& istream, Node& expr)
 
         if (token == ")") {
 
-            List list;
+            Cons list;
             while (true) {
                 if (stack_.empty() ||
                     stack_.top().type == Context::Type::quote) {
@@ -576,12 +581,12 @@ mlisp::Parser::clean() const noexcept
 // Env
 
 struct mlisp::Env {
-    std::shared_ptr<Env> base;
+    EnvPtr base;
     std::map<std::string, Node> vars;
 };
 
-std::shared_ptr<Env>
-mlisp::make_env(std::shared_ptr<Env> base_env)
+EnvPtr
+mlisp::make_env(EnvPtr base_env)
 {
     auto env = std::make_shared<Env>();
     env->base = base_env;
@@ -589,19 +594,14 @@ mlisp::make_env(std::shared_ptr<Env> base_env)
 }
 
 void
-mlisp::set(std::shared_ptr<Env> env, std::string name, Node value)
+mlisp::set(EnvPtr env, std::string name, Node value)
 {
     assert(env);
-
-    if (name == MLISP_KEYWORD_NIL) {
-        throw EvalError("`nil' cannot be redefined.");
-    }
-
     env->vars[name] = value;
 }
 
 bool
-mlisp::update(std::shared_ptr<Env> env, std::string const& name, Node node)
+mlisp::update(EnvPtr env, std::string const& name, Node node)
 {
     assert(env);
 
@@ -614,7 +614,7 @@ mlisp::update(std::shared_ptr<Env> env, std::string const& name, Node node)
 }
 
 bool
-mlisp::lookup(std::shared_ptr<Env> env, std::string const& name, Node& node)
+mlisp::lookup(EnvPtr env, std::string const& name, Node& node)
 {
     while (env) {
         auto i = env->vars.find(name);
@@ -635,7 +635,7 @@ mlisp::lookup(std::shared_ptr<Env> env, std::string const& name, Node& node)
 namespace {
     class NodeEvaluator: NodeVisitor {
     public:
-        explicit NodeEvaluator(std::shared_ptr<Env> env) : env_(env)
+        explicit NodeEvaluator(EnvPtr env) : env_(env)
         {
         }
 
@@ -652,17 +652,12 @@ namespace {
         }
 
     private:
-        void visit(List list) override
+        void visit(Cons list) override
         {
             auto cmd = eval(car(list), env_);
-            auto proc = cmd.to_proc();
+            auto proc = cmd.to_procedure();
 
             result_ = proc(cdr(list), env_);
-        }
-
-        void visit(Proc proc) override
-        {
-            assert(false);
         }
 
         void visit(Number number) override
@@ -677,11 +672,8 @@ namespace {
 
         void visit(Symbol symbol) override
         {
-            if (symbol.name() == MLISP_KEYWORD_NIL) {
-                result_ = Node{};
-            }
-            else if (symbol.name() == MLISP_BUILTIN_QUOTE) {
-                static auto quote_proc = proc([] (List args, std::shared_ptr<Env>) {
+            if (symbol.name() == MLISP_BUILTIN_QUOTE) {
+                static auto quote_proc = procedure([] (Cons args, EnvPtr) {
                     return car(args);
                 });
                 result_ = quote_proc;
@@ -696,14 +688,19 @@ namespace {
             }
         }
 
+        void visit(Procedure proc) override
+        {
+            assert(false);
+        }
+
     private:
-        std::shared_ptr<Env> env_;
+        EnvPtr env_;
         Node result_;
     };
 }
 
 mlisp::Node
-mlisp::eval(Node expr, std::shared_ptr<Env> env)
+mlisp::eval(Node expr, EnvPtr env)
 {
     return NodeEvaluator(env).evaluate(expr);
 }
@@ -712,27 +709,27 @@ mlisp::eval(Node expr, std::shared_ptr<Env> env)
 // Built-ins
 
 mlisp::Node
-mlisp::car(List list) noexcept
+mlisp::car(Cons list) noexcept
 {
     return list.data_ ? list.data_->head : Node{};
 }
 
-mlisp::List
-mlisp::cdr(List list) noexcept
+mlisp::Cons
+mlisp::cdr(Cons list) noexcept
 {
-    return list.data_ ? list.data_->tail : List{};
+    return list.data_ ? list.data_->tail : Cons{};
 }
 
-mlisp::List
-mlisp::cons(Node head, List tail) noexcept
+mlisp::Cons
+mlisp::cons(Node head, Cons tail) noexcept
 {
-    return List{ std::make_shared<List::Data>(head, tail) };
+    return Cons{ std::make_shared<Cons::Data>(head, tail) };
 }
 
-mlisp::Proc
-mlisp::proc(Func func) noexcept
+mlisp::Procedure
+mlisp::procedure(Func func) noexcept
 {
-    return Proc{ std::make_shared<Proc::Data>(func) };
+    return Procedure{ std::make_shared<Procedure::Data>(func) };
 }
 
 mlisp::Number
@@ -775,7 +772,7 @@ namespace {
         }
 
     private:
-        void visit(List list) override
+        void visit(Cons list) override
         {
             auto quoted = false;
 
@@ -809,11 +806,6 @@ namespace {
             }
         }
 
-        void visit(Proc proc) override
-        {
-            ostream_ << "<#proc>";
-        }
-
         void visit(Number number) override
         {
             ostream_ << number.value();
@@ -834,26 +826,26 @@ namespace {
             }
         }
 
+        void visit(Procedure proc) override
+        {
+            ostream_ << "<#procedure>";
+        }
+
     private:
         std::ostream& ostream_;
         bool is_head_;
     };
-
-    void print_node(std::ostream& ostream, Node const& node, bool is_head)
-    {
-        NodePrinter{ostream, is_head}.print(node);
-    }
 }
 
 std::ostream&
 mlisp::operator << (std::ostream& ostream, mlisp::Node const& node)
 {
-    print_node(ostream, node, true);
+    NodePrinter{ostream, true}.print(node);
     return ostream;
 }
 
 std::ostream&
-mlisp::operator << (std::ostream& ostream, mlisp::List const& list)
+mlisp::operator << (std::ostream& ostream, mlisp::Cons const& list)
 {
     return ostream << Node{ list };
 }

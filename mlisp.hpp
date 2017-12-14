@@ -10,72 +10,74 @@ namespace mlisp {
 
     namespace detail {
         struct NodeData;
-        struct ListData;
-        struct ProcData;
+        struct ConsData;
         struct NumberData;
         struct StringData;
         struct SymbolData;
+        struct ProcedureData;
     }
 
     class Node;
-    class List;
-    class Proc;
+    class Cons;
+    class Procedure;
     class Number;
     class String;
     class Symbol;
 
     struct Env;
-    using EnvRef = std::shared_ptr<Env>;
-    using Func = std::function<Node(List, std::shared_ptr<Env>)>;
+    using EnvPtr = std::shared_ptr<Env>;
+    using Func = std::function<Node(Cons, EnvPtr)>;
 
-    Node car(List) noexcept;
-    List cdr(List) noexcept;
-    List cons(Node head, List tail) noexcept;
-    Proc proc(Func) noexcept;
+    Cons cons(Node, Cons) noexcept;
     Number number(double) noexcept;
     String string(std::string) noexcept;
     Symbol symbol(std::string) noexcept;
+    Procedure procedure(Func) noexcept;
+
+    Node car(Cons) noexcept;
+    Cons cdr(Cons) noexcept;
 
     class NodeVisitor {
     public:
-        virtual void visit(List) = 0;
-        virtual void visit(Proc) = 0;
+        virtual void visit(Cons) = 0;
         virtual void visit(Number) = 0;
         virtual void visit(String) = 0;
         virtual void visit(Symbol) = 0;
+        virtual void visit(Procedure) = 0;
     };
 
     class Node final {
     public:
         Node() noexcept;
         Node(Node const&) noexcept;
-        Node(List const&) noexcept;
-        Node(Proc const&) noexcept;
+        Node(Cons const&) noexcept;
         Node(Number const&) noexcept;
         Node(String const&) noexcept;
         Node(Symbol const&) noexcept;
+        Node(Procedure const&) noexcept;
 
         Node& operator = (Node const&) noexcept;
-        Node& operator = (List const&) noexcept;
-        Node& operator = (Proc const&) noexcept;
+        Node& operator = (Cons const&) noexcept;
         Node& operator = (Number const&) noexcept;
         Node& operator = (String const&) noexcept;
         Node& operator = (Symbol const&) noexcept;
+        Node& operator = (Procedure const&) noexcept;
 
         operator bool() const noexcept;
 
         void accept(NodeVisitor&) const;
 
-        List to_list() const;
-        Proc to_proc() const;
+        Cons to_cons() const;
         Number to_number() const;
         String to_string() const;
         Symbol to_symbol() const;
+        Procedure to_procedure() const;
 
-        bool is_list() const;
-        bool is_proc() const;
+        bool is_cons() const;
+        bool is_number() const;
         bool is_string() const;
         bool is_symbol() const;
+        bool is_procedure() const;
 
     private:
         typedef detail::NodeData Data;
@@ -86,40 +88,40 @@ namespace mlisp {
         bool operator == (Node const&) noexcept = delete;
     };
 
-    class List final {
+    class Cons final {
     public:
-        List() noexcept;
-        List(List const&) noexcept;
+        Cons() noexcept;
+        Cons(Cons const&) noexcept;
 
-        List& operator = (List const&) noexcept;
+        Cons& operator = (Cons const&) noexcept;
 
         operator bool() const noexcept;
 
     private:
         friend class Node;
-        friend struct detail::ListData;
-        friend Node car(List list) noexcept;
-        friend List cdr(List list) noexcept;
-        friend List cons(Node head, List tail) noexcept;
+        friend struct detail::ConsData;
+        friend Cons cons(Node, Cons) noexcept;
+        friend Node car(Cons) noexcept;
+        friend Cons cdr(Cons) noexcept;
 
-        typedef detail::ListData Data;
-        List(std::shared_ptr<Data const>) noexcept;
+        typedef detail::ConsData Data;
+        Cons(std::shared_ptr<Data const>) noexcept;
         std::shared_ptr<Data const> data_;
     };
 
-    class Proc final {
+    class Procedure final {
     public:
-        Proc(Proc const&) noexcept;
+        Procedure(Procedure const&) noexcept;
 
-        Node operator()(List, std::shared_ptr<Env>) const;
+        Node operator()(Cons, EnvPtr) const;
 
     private:
         friend class Node;
-        friend struct detail::ProcData;
-        friend Proc proc(Func) noexcept;
+        friend struct detail::ProcedureData;
+        friend Procedure procedure(Func) noexcept;
 
-        typedef detail::ProcData Data;
-        Proc(std::shared_ptr<Data const>) noexcept;
+        typedef detail::ProcedureData Data;
+        Procedure(std::shared_ptr<Data const>) noexcept;
         std::shared_ptr<Data const> data_;
     };
 
@@ -196,18 +198,18 @@ namespace mlisp {
 
     // Env & eval
 
-    std::shared_ptr<Env> make_env(std::shared_ptr<Env> base_env);
-    void set(std::shared_ptr<Env>, std::string, Node);
-    bool update(std::shared_ptr<Env>, std::string const&, Node);
-    bool lookup(std::shared_ptr<Env>, std::string const&, Node&);
+    EnvPtr make_env(EnvPtr base_env);
+    void set(EnvPtr, std::string, Node);
+    bool update(EnvPtr, std::string const&, Node);
+    bool lookup(EnvPtr, std::string const&, Node&);
 
-    Node eval(Node expr, std::shared_ptr<Env> env); // throws EvalError
+    Node eval(Node expr, EnvPtr env); // throws EvalError
 }
 
 namespace mlisp {
     // printing helper
     std::ostream& operator << (std::ostream& os, Node const&);
-    std::ostream& operator << (std::ostream& os, List const&);
+    std::ostream& operator << (std::ostream& os, Cons const&);
 }
 
 namespace std {
