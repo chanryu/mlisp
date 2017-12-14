@@ -358,40 +358,45 @@ int repl()
     return parser.clean() ? 0 : -1;
 }
 
+int run_file(const char* filename)
+{
+    std::ifstream ifs(filename);
+    if (!ifs.is_open()) {
+        return -1;
+    }
+
+    try {
+        auto parser = Parser{};
+        auto env = build_env();
+
+        Node expr;
+        while (parser.parse(ifs, expr)) {
+            eval(expr, env);
+        }
+
+        if (!ifs.eof()) {
+            return -1;
+        }
+    }
+    catch (ParseError& e) {
+        std::cout << e.what() << std::endl;
+        return -1;
+    }
+    catch (EvalError& e) {
+        std::cout << e.what() << std::endl;
+        return -1;
+    }
+
+    return 0;
+}
+
 int main(int argc, char *argv[])
 {
     using namespace mlisp;
 
-    if (argc > 1) {
-        std::ifstream ifs(argv[1]);
-        if (!ifs.is_open()) {
-            return -1;
-        }
-
-        try {
-            auto parser = Parser{};
-            auto env = build_env();
-
-            Node expr;
-            while (parser.parse(ifs, expr)) {
-                eval(expr, env);
-            }
-
-            if (!ifs.eof()) {
-                return -1;
-            }
-        }
-        catch (ParseError& e) {
-            std::cout << e.what() << std::endl;
-            return -1;
-        }
-        catch (EvalError& e) {
-            std::cout << e.what() << std::endl;
-            return -1;
-        }
-
-        return 0;
+    if (argc == 1) {
+        return repl();
     }
 
-    return repl();
+    return run_file(argv[1]);
 }
