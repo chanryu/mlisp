@@ -232,11 +232,6 @@ mlisp::Object::Object(Symbol const& symbol) noexcept
 {
 }
 
-mlisp::Object::Object(std::shared_ptr<Data const> data) noexcept
-    : data_{data}
-{
-}
-
 mlisp::Object&
 mlisp::Object::operator = (Object const& rhs) noexcept
 {

@@ -59,7 +59,6 @@ namespace mlisp {
         friend Optional<Symbol> to_symbol(Object) noexcept;
 
     private:
-        Object(std::shared_ptr<Data const>) noexcept;
         std::shared_ptr<Data const> data_;
 
     private:
