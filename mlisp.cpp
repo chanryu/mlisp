@@ -101,25 +101,25 @@ namespace {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// NodeData
+// Object::Data
 
-struct mlisp::detail::ObjectData: public std::enable_shared_from_this<ObjectData> {
-    virtual ~ObjectData() {}
+struct mlisp::Object::Data: std::enable_shared_from_this<Object::Data> {
+    virtual ~Data() {}
     virtual void accept(ObjectVisitor&) const = 0;
 };
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// ConsData
+// Cons::Data
 
-struct mlisp::detail::ConsData: public mlisp::detail::ObjectData {
+struct mlisp::Cons::Data: public mlisp::Object::Data {
 
-    ConsData(Object h, Cons t) noexcept : head{h}, tail{t} { }
+    Data(Object h, Cons t) noexcept : head{h}, tail{t} { }
 
     void accept(ObjectVisitor& visitor) const override
     {
         visitor.visit(Cons{
-            std::static_pointer_cast<ConsData const>(shared_from_this())
+            std::static_pointer_cast<Data const>(shared_from_this())
         });
     }
 
@@ -128,16 +128,16 @@ struct mlisp::detail::ConsData: public mlisp::detail::ObjectData {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-// ProcData
+// Proc::Data
 
-struct mlisp::detail::ProcData: public mlisp::detail::ObjectData {
+struct mlisp::Proc::Data: public mlisp::Object::Data {
 
-    explicit ProcData(Func f) noexcept : func{f} { }
+    explicit Data(Func f) noexcept : func{f} { }
 
     void accept(ObjectVisitor& visitor) const override
     {
         visitor.visit(Proc{
-            std::static_pointer_cast<ProcData const>(shared_from_this())
+            std::static_pointer_cast<Data const>(shared_from_this())
         });
     }
 
@@ -145,16 +145,16 @@ struct mlisp::detail::ProcData: public mlisp::detail::ObjectData {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-// NumberData
+// Number::Data
 
-struct mlisp::detail::NumberData: public mlisp::detail::ObjectData {
+struct mlisp::Number::Data: public mlisp::Object::Data {
 
-    explicit NumberData(double v) noexcept : value{v} { }
+    explicit Data(double v) noexcept : value{v} { }
 
     void accept(ObjectVisitor& visitor) const override
     {
         visitor.visit(Number{
-            std::static_pointer_cast<NumberData const>(shared_from_this())
+            std::static_pointer_cast<Data const>(shared_from_this())
         });
     }
 
@@ -162,16 +162,16 @@ struct mlisp::detail::NumberData: public mlisp::detail::ObjectData {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-// StringData
+// String::Data
 
-struct mlisp::detail::StringData: public mlisp::detail::ObjectData {
+struct mlisp::String::Data: public mlisp::Object::Data {
 
-    explicit StringData(std::string t) noexcept : text{std::move(t)} { }
+    explicit Data(std::string t) noexcept : text{std::move(t)} { }
 
     void accept(ObjectVisitor& visitor) const override
     {
         visitor.visit(String{
-            std::static_pointer_cast<StringData const>(shared_from_this())
+            std::static_pointer_cast<Data const>(shared_from_this())
         });
     }
 
@@ -179,16 +179,16 @@ struct mlisp::detail::StringData: public mlisp::detail::ObjectData {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-// SymbolData
+// Symbol::Data
 
-struct mlisp::detail::SymbolData: public mlisp::detail::ObjectData {
+struct mlisp::Symbol::Data: public mlisp::Object::Data {
 
-    explicit SymbolData(std::string n) noexcept : name{std::move(n)} { }
+    explicit Data(std::string n) noexcept : name{std::move(n)} { }
 
     void accept(ObjectVisitor& visitor) const override
     {
         visitor.visit(Symbol{
-            std::static_pointer_cast<SymbolData const>(shared_from_this())
+            std::static_pointer_cast<Data const>(shared_from_this())
         });
     }
 
@@ -292,97 +292,15 @@ mlisp::Object::accept(ObjectVisitor& visitor) const
     }
 }
 
-mlisp::Cons
-mlisp::Object::to_cons() const
-{
-    if (!data_) {
-        return {}; // nil
-    }
-
-    auto list_data = std::dynamic_pointer_cast<Cons::Data const>(data_);
-    if (!list_data) {
-        throw EvalError(std::to_string(*this) + " is not a list");
-    }
-    return { list_data };
-}
-
-mlisp::Proc
-mlisp::Object::to_proc() const
-{
-    auto proc_data = std::dynamic_pointer_cast<Proc::Data const>(data_);
-    if (!proc_data) {
-        throw EvalError(std::to_string(*this) + " is not a procedure");
-    }
-    return { proc_data };
-}
-
-mlisp::Number
-mlisp::Object::to_number() const
-{
-    auto number_data = std::dynamic_pointer_cast<Number::Data const>(data_);
-    if (!number_data) {
-        throw EvalError(std::to_string(*this) + " is not a number");
-    }
-    return { number_data };
-}
-
-mlisp::String
-mlisp::Object::to_string() const
-{
-    auto string_data = std::dynamic_pointer_cast<String::Data const>(data_);
-    if (!string_data) {
-        throw EvalError(std::to_string(*this) + " is not a string");
-    }
-    return { string_data };
-}
-
-mlisp::Symbol
-mlisp::Object::to_symbol() const
-{
-    auto symbol_data = std::dynamic_pointer_cast<Symbol::Data const>(data_);
-    if (!symbol_data) {
-        throw EvalError(std::to_string(*this) + " is not a symbol");
-    }
-    return { symbol_data };
-}
-
-bool
-mlisp::Object::is_cons() const
-{
-    if (!data_) {
-        return true;
-    }
-    return !!dynamic_cast<Cons::Data const *>(data_.get());
-}
-
-bool
-mlisp::Object::is_proc() const
-{
-    return !!dynamic_cast<Proc::Data const *>(data_.get());
-}
-
-bool
-mlisp::Object::is_number() const
-{
-    return !!dynamic_cast<Number::Data const *>(data_.get());
-}
-
-bool
-mlisp::Object::is_string() const
-{
-    return !!dynamic_cast<String::Data const *>(data_.get());
-}
-
-bool
-mlisp::Object::is_symbol() const
-{
-    return !!dynamic_cast<Symbol::Data const *>(data_.get());
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 // ConsCell
 
 mlisp::Cons::Cons() noexcept
+{
+}
+
+mlisp::Cons::Cons(Object head, Cons tail) noexcept
+    : data_{ std::make_shared<Data>(head, tail) }
 {
 }
 
@@ -411,6 +329,11 @@ mlisp::Cons::operator bool() const noexcept
 ////////////////////////////////////////////////////////////////////////////////
 // Procedure
 
+mlisp::Proc::Proc(Func func) noexcept
+    : data_{ std::make_shared<Data>(func) }
+{
+}
+
 mlisp::Proc::Proc(Proc const& other) noexcept
     : data_{other.data_}
 {
@@ -433,6 +356,11 @@ mlisp::Proc::operator()(Cons args, EnvPtr env) const
 ////////////////////////////////////////////////////////////////////////////////
 // Number
 
+mlisp::Number::Number(double value) noexcept
+    : data_{ std::make_shared<Data>(value) }
+{
+}
+
 mlisp::Number::Number(Number const& other) noexcept
     : data_{other.data_}
 {
@@ -452,6 +380,11 @@ mlisp::Number::value() const
 ////////////////////////////////////////////////////////////////////////////////
 // String
 
+mlisp::String::String(std::string text) noexcept
+    : data_{ std::make_shared<Data>(std::move(text)) }
+{
+}
+
 mlisp::String::String(String const& other) noexcept
     : data_{other.data_}
 {
@@ -470,6 +403,11 @@ mlisp::String::text() const
 
 ////////////////////////////////////////////////////////////////////////////////
 // Symbol
+
+mlisp::Symbol::Symbol(std::string name) noexcept
+    : data_{ std::make_shared<Data>(std::move(name)) }
+{
+}
 
 mlisp::Symbol::Symbol(Symbol const& other) noexcept
     : data_{other.data_}
@@ -515,7 +453,6 @@ mlisp::Parser::parse(std::istream& istream, Object& expr)
         Object obj;
 
         if (token == ")") {
-
             Cons list;
             while (true) {
                 if (stack_.empty() ||
@@ -530,7 +467,7 @@ mlisp::Parser::parse(std::istream& istream, Object& expr)
                     assert(!list);
                 }
                 else {
-                    list = cons(c.head, list);
+                    list = Cons{ c.head, list };
                 }
                 if (c.type == Context::Type::paren) {
                     break;
@@ -539,10 +476,10 @@ mlisp::Parser::parse(std::istream& istream, Object& expr)
             obj = list;
         }
         else if (is_number(token)) {
-            obj = number(std::stod(token));
+            obj = Number{ std::stod(token) };
         }
         else {
-            obj = symbol(std::move(token));
+            obj = Symbol{ std::move(token) };
         }
 
         while (true) {
@@ -553,7 +490,7 @@ mlisp::Parser::parse(std::istream& istream, Object& expr)
 
             if (stack_.top().type == Context::Type::quote) {
                 stack_.pop();
-                obj = cons(symbol(MLISP_BUILTIN_QUOTE), cons(obj, {}));
+                obj = Cons{ Symbol{ MLISP_BUILTIN_QUOTE }, Cons{ obj, {} } };
                 continue;
             }
 
@@ -655,9 +592,13 @@ namespace {
         void visit(Cons list) override
         {
             auto cmd = eval(car(list), env_);
-            auto proc = cmd.to_proc();
+            auto proc = to_proc(cmd);
 
-            result_ = proc(cdr(list), env_);
+            if (proc) {
+                result_ = (*proc)(cdr(list), env_);
+            } else {
+                throw EvalError(std::to_string(cmd) + " is not a symbol.");
+            }
         }
 
         void visit(Number num) override
@@ -673,7 +614,7 @@ namespace {
         void visit(Symbol sym) override
         {
             if (sym.name() == MLISP_BUILTIN_QUOTE) {
-                static auto quote_proc = proc([] (Cons args, EnvPtr) {
+                static auto quote_proc = make_proc([] (Cons args, EnvPtr) {
                     return car(args);
                 });
                 result_ = quote_proc;
@@ -720,36 +661,6 @@ mlisp::cdr(Cons list) noexcept
     return list.data_ ? list.data_->tail : Cons{};
 }
 
-mlisp::Cons
-mlisp::cons(Object head, Cons tail) noexcept
-{
-    return Cons{ std::make_shared<Cons::Data>(head, tail) };
-}
-
-mlisp::Proc
-mlisp::proc(Func func) noexcept
-{
-    return Proc{ std::make_shared<Proc::Data>(func) };
-}
-
-mlisp::Number
-mlisp::number(double value) noexcept
-{
-    return Number{ std::make_shared<Number::Data>(value) };
-}
-
-mlisp::String
-mlisp::string(std::string text) noexcept
-{
-    return String{ std::make_shared<String::Data>(std::move(text)) };
-}
-
-mlisp::Symbol
-mlisp::symbol(std::string name) noexcept
-{
-    return Symbol{ std::make_shared<Symbol::Data>(std::move(name)) };
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 // Printer
 
@@ -775,16 +686,11 @@ namespace {
         void visit(Cons list) override
         {
             auto quoted = false;
+            auto symbol = to_symbol(car(list));
 
-            try {
-                auto symbol = car(list).to_symbol();
-                if (symbol.name() == MLISP_BUILTIN_QUOTE) {
-                    ostream_ << "'";
-                    quoted = true;
-                }
-            }
-            catch (EvalError&) {
-                // ignore and continue
+            if (symbol && symbol->name() == MLISP_BUILTIN_QUOTE) {
+                ostream_ << "'";
+                quoted = true;
             }
 
             if (!quoted && is_head_) {
@@ -854,4 +760,66 @@ std::string
 std::to_string(mlisp::Object const& obj)
 {
     return (ostringstream{} << obj).str();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Optional, to_xxx
+
+mlisp::Optional<Cons>
+mlisp::to_cons(Object obj) noexcept
+{
+    if (!obj.data_) {
+        return Optional<Cons>{{}}; // nil
+    }
+
+    auto data = std::dynamic_pointer_cast<Cons::Data const>(obj.data_);
+    if (data) {
+        return { Cons{ data } };
+    }
+
+    return {};
+}
+
+mlisp::Optional<Proc>
+mlisp::to_proc(Object obj) noexcept
+{
+    auto data = std::dynamic_pointer_cast<Proc::Data const>(obj.data_);
+    if (data) {
+        return { Proc{ data } };
+    }
+
+    return {};
+}
+
+mlisp::Optional<Number>
+mlisp::to_number(Object obj) noexcept
+{
+    auto data = std::dynamic_pointer_cast<Number::Data const>(obj.data_);
+    if (data) {
+        return { Number{ data } };
+    }
+
+    return {};
+}
+
+mlisp::Optional<String>
+mlisp::to_string(Object obj) noexcept
+{
+    auto data = std::dynamic_pointer_cast<String::Data const>(obj.data_);
+    if (data) {
+        return { String{ data } };
+    }
+
+    return {};
+}
+
+mlisp::Optional<Symbol>
+mlisp::to_symbol(Object obj) noexcept
+{
+    auto data = std::dynamic_pointer_cast<Symbol::Data const>(obj.data_);
+    if (data) {
+        return { Symbol{ data } };
+    }
+
+    return {};
 }

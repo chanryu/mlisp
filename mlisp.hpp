@@ -8,15 +8,6 @@
 
 namespace mlisp {
 
-    namespace detail {
-        struct ObjectData;
-        struct ConsData;
-        struct ProcData;
-        struct NumberData;
-        struct StringData;
-        struct SymbolData;
-    }
-
     class Object;
     class Cons;
     class Proc;
@@ -27,12 +18,6 @@ namespace mlisp {
     struct Env;
     using EnvPtr = std::shared_ptr<Env>;
     using Func = std::function<Object(Cons, EnvPtr)>;
-
-    Cons cons(Object, Cons) noexcept;
-    Proc proc(Func) noexcept;
-    Number number(double) noexcept;
-    String string(std::string) noexcept;
-    Symbol symbol(std::string) noexcept;
 
     Object car(Cons) noexcept;
     Cons cdr(Cons) noexcept;
@@ -46,15 +31,17 @@ namespace mlisp {
         virtual void visit(Proc) = 0;
     };
 
+    template <typename T> class Optional;
+
     class Object final {
     public:
         Object() noexcept;
         Object(Object const&) noexcept;
         Object(Cons const&) noexcept;
+        Object(Proc const&) noexcept;
         Object(Number const&) noexcept;
         Object(String const&) noexcept;
         Object(Symbol const&) noexcept;
-        Object(Proc const&) noexcept;
 
         Object& operator = (Object const&) noexcept;
         Object& operator = (Cons const&) noexcept;
@@ -67,20 +54,14 @@ namespace mlisp {
 
         void accept(ObjectVisitor&) const;
 
-        Cons to_cons() const;
-        Proc to_proc() const;
-        Number to_number() const;
-        String to_string() const;
-        Symbol to_symbol() const;
-
-        bool is_cons() const;
-        bool is_proc() const;
-        bool is_number() const;
-        bool is_string() const;
-        bool is_symbol() const;
+        struct Data;
+        friend Optional<Cons> to_cons(Object) noexcept;
+        friend Optional<Proc> to_proc(Object) noexcept;
+        friend Optional<Number> to_number(Object) noexcept;
+        friend Optional<String> to_string(Object) noexcept;
+        friend Optional<Symbol> to_symbol(Object) noexcept;
 
     private:
-        typedef detail::ObjectData Data;
         Object(std::shared_ptr<Data const>) noexcept;
         std::shared_ptr<Data const> data_;
 
@@ -91,84 +72,89 @@ namespace mlisp {
     class Cons final {
     public:
         Cons() noexcept;
+        Cons(Object head, Cons tail) noexcept;
         Cons(Cons const&) noexcept;
 
         Cons& operator = (Cons const&) noexcept;
 
         operator bool() const noexcept;
 
-    private:
+    public:
+        struct Data;
         friend class Object;
-        friend struct detail::ConsData;
-        friend Cons cons(Object, Cons) noexcept;
         friend Object car(Cons) noexcept;
         friend Cons cdr(Cons) noexcept;
+        friend Optional<Cons> to_cons(Object) noexcept;
 
-        typedef detail::ConsData Data;
+    private:
         Cons(std::shared_ptr<Data const>) noexcept;
         std::shared_ptr<Data const> data_;
     };
 
     class Proc final {
     public:
+        explicit Proc(Func) noexcept;
         Proc(Proc const&) noexcept;
 
         Object operator()(Cons, EnvPtr) const;
 
-    private:
+    public:
+        struct Data;
         friend class Object;
-        friend struct detail::ProcData;
-        friend Proc proc(Func) noexcept;
+        friend Optional<Proc> to_proc(Object) noexcept;
 
-        typedef detail::ProcData Data;
+    private:
         Proc(std::shared_ptr<Data const>) noexcept;
         std::shared_ptr<Data const> data_;
     };
 
     class Number final {
     public:
+        explicit Number(double) noexcept;
         Number(Number const&) noexcept;
 
         double value() const;
 
-    private:
+    public:
+        struct Data;
         friend class Object;
-        friend struct detail::NumberData;
-        friend Number number(double) noexcept;
+        friend Optional<Number> to_number(Object) noexcept;
 
-        typedef detail::NumberData Data;
+    private:
         Number(std::shared_ptr<Data const>) noexcept;
         std::shared_ptr<Data const> data_;
     };
 
     class String final {
     public:
+        explicit String(std::string) noexcept;
         String(String const&) noexcept;
 
         std::string const& text() const;
 
-    private:
+    public:
+        struct Data;
         friend class Object;
-        friend struct detail::StringData;
-        friend String string(std::string) noexcept;
+        friend Optional<String> to_string(Object) noexcept;
 
-        typedef detail::StringData Data;
+    private:
         String(std::shared_ptr<Data const>) noexcept;
         std::shared_ptr<Data const> data_;
     };
 
     class Symbol final {
     public:
+        explicit Symbol(std::string) noexcept;
         Symbol(Symbol const&) noexcept;
 
         std::string const& name() const;
 
-    private:
+    public:
+        struct Data;
         friend class Object;
-        friend struct detail::SymbolData;
-        friend Symbol symbol(std::string) noexcept;
+        friend Optional<Symbol> to_symbol(Object) noexcept;
 
-        typedef detail::SymbolData Data;
+    private:
         Symbol(std::shared_ptr<Data const>) noexcept;
         std::shared_ptr<Data const> data_;
     };
@@ -217,6 +203,39 @@ namespace std {
 }
 
 namespace mlisp {
+    template <typename T>
+    class Optional {
+    public:
+        Optional() noexcept {}
+        Optional(T t) noexcept : t_ { std::make_shared<T>(t) } {}
+
+        operator bool() const noexcept
+        {
+            return !!t_;
+        }
+
+        T& operator *() const
+        {
+            return *t_;
+        }
+
+        T* operator ->() const
+        {
+            return t_.get();
+        }
+
+    private:
+        std::shared_ptr<T> t_;
+    };
+
+    Optional<Cons> to_cons(Object) noexcept;
+    Optional<Proc> to_proc(Object) noexcept;
+    Optional<Number> to_number(Object) noexcept;
+    Optional<String> to_string(Object) noexcept;
+    Optional<Symbol> to_symbol(Object) noexcept;
+}
+
+namespace mlisp {
     // exceptions
     namespace detail {
         template <int TAG>
@@ -230,10 +249,23 @@ namespace mlisp {
     }
 
     struct ParseError: detail::UniqueRuntimeError<0> {
-        using UniqueRuntimeError<0>::UniqueRuntimeError;
+        using UniqueRuntimeError::UniqueRuntimeError;
     };
 
     struct EvalError: detail::UniqueRuntimeError<1> {
-        using UniqueRuntimeError<1>::UniqueRuntimeError;
+        using UniqueRuntimeError::UniqueRuntimeError;
     };
+}
+
+namespace mlisp {
+
+    inline Cons make_cons(Object head, Cons tail) noexcept
+    {
+        return Cons{ head, tail };
+    }
+
+    inline Proc make_proc(Func func) noexcept
+    {
+        return Proc{ func };
+    }
 }
