@@ -9,7 +9,7 @@
 namespace mlisp {
 
     class Object;
-    class Cons;
+    class Pair;
     class Proc;
     class Number;
     class String;
@@ -17,18 +17,15 @@ namespace mlisp {
 
     struct Env;
     using EnvPtr = std::shared_ptr<Env>;
-    using Func = std::function<Object(Cons, EnvPtr)>;
-
-    Object car(Cons) noexcept;
-    Cons cdr(Cons) noexcept;
+    using Func = std::function<Object(Pair, EnvPtr)>;
 
     class ObjectVisitor {
     public:
-        virtual void visit(Cons) = 0;
+        virtual void visit(Pair) = 0;
+        virtual void visit(Proc) = 0;
         virtual void visit(Number) = 0;
         virtual void visit(String) = 0;
         virtual void visit(Symbol) = 0;
-        virtual void visit(Proc) = 0;
     };
 
     template <typename T> class Optional;
@@ -37,14 +34,14 @@ namespace mlisp {
     public:
         Object() noexcept;
         Object(Object const&) noexcept;
-        Object(Cons const&) noexcept;
+        Object(Pair const&) noexcept;
         Object(Proc const&) noexcept;
         Object(Number const&) noexcept;
         Object(String const&) noexcept;
         Object(Symbol const&) noexcept;
 
         Object& operator = (Object const&) noexcept;
-        Object& operator = (Cons const&) noexcept;
+        Object& operator = (Pair const&) noexcept;
         Object& operator = (Proc const&) noexcept;
         Object& operator = (Number const&) noexcept;
         Object& operator = (String const&) noexcept;
@@ -55,7 +52,7 @@ namespace mlisp {
         void accept(ObjectVisitor&) const;
 
         struct Data;
-        friend Optional<Cons> to_cons(Object) noexcept;
+        friend Optional<Pair> to_pair(Object) noexcept;
         friend Optional<Proc> to_proc(Object) noexcept;
         friend Optional<Number> to_number(Object) noexcept;
         friend Optional<String> to_string(Object) noexcept;
@@ -69,25 +66,26 @@ namespace mlisp {
         bool operator == (Object const&) noexcept = delete;
     };
 
-    class Cons final {
+    class Pair final {
     public:
-        Cons() noexcept;
-        Cons(Object head, Cons tail) noexcept;
-        Cons(Cons const&) noexcept;
-
-        Cons& operator = (Cons const&) noexcept;
+        Pair() noexcept;
+        Pair(Object head, Pair tail) noexcept;
+        Pair(Pair const&) noexcept;
 
         operator bool() const noexcept;
+
+        Object head() const;
+        Pair tail() const;
 
     public:
         struct Data;
         friend class Object;
-        friend Object car(Cons) noexcept;
-        friend Cons cdr(Cons) noexcept;
-        friend Optional<Cons> to_cons(Object) noexcept;
+        friend Object car(Pair) noexcept;
+        friend Pair cdr(Pair) noexcept;
+        friend Optional<Pair> to_pair(Object) noexcept;
 
     private:
-        Cons(std::shared_ptr<Data const>) noexcept;
+        Pair(std::shared_ptr<Data const>) noexcept;
         std::shared_ptr<Data const> data_;
     };
 
@@ -96,7 +94,7 @@ namespace mlisp {
         explicit Proc(Func) noexcept;
         Proc(Proc const&) noexcept;
 
-        Object operator()(Cons, EnvPtr) const;
+        Object operator()(Pair, EnvPtr) const;
 
     public:
         struct Data;
@@ -162,11 +160,11 @@ namespace mlisp {
 
 namespace mlisp {
 
-    // parser
+    // Parser
 
     class Parser {
     public:
-        bool parse(std::istream&, Object&);
+        Optional<Object> parse(std::istream&);
         bool clean() const noexcept;
 
     private:
@@ -193,9 +191,11 @@ namespace mlisp {
 }
 
 namespace mlisp {
-    // printing helper
+
+    // Overloaded ostream << operators
+
     std::ostream& operator << (std::ostream& os, Object const&);
-    std::ostream& operator << (std::ostream& os, Cons const&);
+    std::ostream& operator << (std::ostream& os, Pair const&);
 }
 
 namespace std {
@@ -203,32 +203,10 @@ namespace std {
 }
 
 namespace mlisp {
-    template <typename T>
-    class Optional {
-    public:
-        Optional() noexcept {}
-        Optional(T t) noexcept : t_ { std::make_shared<T>(t) } {}
 
-        operator bool() const noexcept
-        {
-            return !!t_;
-        }
+    // Casting functions
 
-        T& operator *() const
-        {
-            return *t_;
-        }
-
-        T* operator ->() const
-        {
-            return t_.get();
-        }
-
-    private:
-        std::shared_ptr<T> t_;
-    };
-
-    Optional<Cons> to_cons(Object) noexcept;
+    Optional<Pair> to_pair(Object) noexcept;
     Optional<Proc> to_proc(Object) noexcept;
     Optional<Number> to_number(Object) noexcept;
     Optional<String> to_string(Object) noexcept;
@@ -236,7 +214,9 @@ namespace mlisp {
 }
 
 namespace mlisp {
-    // exceptions
+
+    // Exceptions
+
     namespace detail {
         template <int TAG>
         class UniqueRuntimeError: public std::runtime_error {
@@ -259,13 +239,74 @@ namespace mlisp {
 
 namespace mlisp {
 
-    inline Cons make_cons(Object head, Cons tail) noexcept
+    // Convience wrappers
+
+    inline Pair make_pair(Object head, Pair tail) noexcept
     {
-        return Cons{ head, tail };
+        return Pair{ head, tail };
     }
 
     inline Proc make_proc(Func func) noexcept
     {
         return Proc{ func };
     }
+
+    inline Number make_number(double value) noexcept
+    {
+        return Number{ value };
+    }
+
+    inline String make_string(std::string text) noexcept
+    {
+        return String{ std::move(text) };
+    }
+
+    inline Symbol make_symbol(std::string name) noexcept
+    {
+        return Symbol{ std::move(name) };
+    }
+
+    inline Pair cons(Object head, Pair tail) noexcept
+    {
+        return make_pair(head, tail);
+    }
+
+    inline Object car(Pair pair) noexcept
+    {
+        return pair.head();
+    }
+
+    inline Pair cdr(Pair pair) noexcept
+    {
+        return pair.tail();
+    }
+}
+
+namespace mlisp {
+
+    // Optional template
+
+    template <typename T> class Optional {
+    public:
+        Optional() noexcept {}
+        Optional(T t) noexcept : t_ { std::make_shared<T>(t) } {}
+
+        operator bool() const noexcept
+        {
+            return !!t_;
+        }
+
+        T& operator *() const
+        {
+            return *t_;
+        }
+
+        T* operator ->() const
+        {
+            return t_.get();
+        }
+
+    private:
+        std::shared_ptr<T> t_;
+    };
 }

@@ -110,21 +110,21 @@ struct mlisp::Object::Data: std::enable_shared_from_this<Object::Data> {
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Cons::Data
+// Pair::Data
 
-struct mlisp::Cons::Data: public mlisp::Object::Data {
+struct mlisp::Pair::Data: public mlisp::Object::Data {
 
-    Data(Object h, Cons t) noexcept : head{h}, tail{t} { }
+    Data(Object h, Pair t) noexcept : head{h}, tail{t} { }
 
     void accept(ObjectVisitor& visitor) const override
     {
-        visitor.visit(Cons{
+        visitor.visit(Pair{
             std::static_pointer_cast<Data const>(shared_from_this())
         });
     }
 
     Object const head;
-    Cons const tail;
+    Pair const tail;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -207,7 +207,7 @@ mlisp::Object::Object(Object const& other) noexcept
 {
 }
 
-mlisp::Object::Object(Cons const& list) noexcept
+mlisp::Object::Object(Pair const& list) noexcept
     : data_{list.data_}
 {
 }
@@ -245,7 +245,7 @@ mlisp::Object::operator = (Object const& rhs) noexcept
 }
 
 mlisp::Object&
-mlisp::Object::operator = (Cons const& rhs) noexcept
+mlisp::Object::operator = (Pair const& rhs) noexcept
 {
     data_ = rhs.data_;
     return *this;
@@ -295,36 +295,42 @@ mlisp::Object::accept(ObjectVisitor& visitor) const
 ////////////////////////////////////////////////////////////////////////////////
 // ConsCell
 
-mlisp::Cons::Cons() noexcept
+mlisp::Pair::Pair() noexcept
 {
 }
 
-mlisp::Cons::Cons(Object head, Cons tail) noexcept
+mlisp::Pair::Pair(Object head, Pair tail) noexcept
     : data_{ std::make_shared<Data>(head, tail) }
 {
 }
 
-mlisp::Cons::Cons(Cons const& other) noexcept
+mlisp::Pair::Pair(Pair const& other) noexcept
     : data_{other.data_}
 {
 }
 
-mlisp::Cons::Cons(std::shared_ptr<Data const> data) noexcept
+mlisp::Pair::Pair(std::shared_ptr<Data const> data) noexcept
     : data_{data}
 {
 }
 
-mlisp::Cons&
-mlisp::Cons::operator = (Cons const& rhs) noexcept
-{
-    data_ = rhs.data_;
-    return *this;
-}
-
-mlisp::Cons::operator bool() const noexcept
+mlisp::Pair::operator bool() const noexcept
 {
     return !!data_;
 }
+
+mlisp::Object
+mlisp::Pair::head() const
+{
+    return data_ ? data_->head : Object{};
+}
+
+mlisp::Pair
+mlisp::Pair::tail() const
+{
+    return data_ ? data_->tail : Pair{};
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Procedure
@@ -345,7 +351,7 @@ mlisp::Proc::Proc(std::shared_ptr<Data const> data) noexcept
 }
 
 mlisp::Object
-mlisp::Proc::operator()(Cons args, EnvPtr env) const
+mlisp::Proc::operator()(Pair args, EnvPtr env) const
 {
     if (data_->func) {
         return data_->func(args, env);
@@ -429,8 +435,8 @@ mlisp::Symbol::name() const
 ////////////////////////////////////////////////////////////////////////////////
 // Parser
 
-bool
-mlisp::Parser::parse(std::istream& istream, Object& expr)
+mlisp::Optional<Object>
+mlisp::Parser::parse(std::istream& istream)
 {
     while (true) {
 
@@ -453,7 +459,7 @@ mlisp::Parser::parse(std::istream& istream, Object& expr)
         Object obj;
 
         if (token == ")") {
-            Cons list;
+            Pair list;
             while (true) {
                 if (stack_.empty() ||
                     stack_.top().type == Context::Type::quote) {
@@ -467,7 +473,7 @@ mlisp::Parser::parse(std::istream& istream, Object& expr)
                     assert(!list);
                 }
                 else {
-                    list = Cons{ c.head, list };
+                    list = cons(c.head, list);
                 }
                 if (c.type == Context::Type::paren) {
                     break;
@@ -476,7 +482,7 @@ mlisp::Parser::parse(std::istream& istream, Object& expr)
             obj = list;
         }
         else if (is_number(token)) {
-            obj = Number{ std::stod(token) };
+            obj = make_number(std::stod(token));
         }
         else {
             obj = Symbol{ std::move(token) };
@@ -484,13 +490,12 @@ mlisp::Parser::parse(std::istream& istream, Object& expr)
 
         while (true) {
             if (stack_.empty()) {
-                expr = obj;
-                return true;
+                return obj;
             }
 
             if (stack_.top().type == Context::Type::quote) {
                 stack_.pop();
-                obj = Cons{ Symbol{ MLISP_BUILTIN_QUOTE }, Cons{ obj, {} } };
+                obj = cons(Symbol{ MLISP_BUILTIN_QUOTE }, cons(obj, {}));
                 continue;
             }
 
@@ -505,7 +510,7 @@ mlisp::Parser::parse(std::istream& istream, Object& expr)
         }
     }
 
-    return false;
+    return {};
 }
 
 bool
@@ -589,7 +594,7 @@ namespace {
         }
 
     private:
-        void visit(Cons list) override
+        void visit(Pair list) override
         {
             auto cmd = eval(car(list), env_);
             auto proc = to_proc(cmd);
@@ -614,7 +619,7 @@ namespace {
         void visit(Symbol sym) override
         {
             if (sym.name() == MLISP_BUILTIN_QUOTE) {
-                static auto quote_proc = make_proc([] (Cons args, EnvPtr) {
+                static auto quote_proc = make_proc([] (Pair args, EnvPtr) {
                     return car(args);
                 });
                 result_ = quote_proc;
@@ -647,21 +652,6 @@ mlisp::eval(Object expr, EnvPtr env)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Built-ins
-
-mlisp::Object
-mlisp::car(Cons list) noexcept
-{
-    return list.data_ ? list.data_->head : Object{};
-}
-
-mlisp::Cons
-mlisp::cdr(Cons list) noexcept
-{
-    return list.data_ ? list.data_->tail : Cons{};
-}
-
-////////////////////////////////////////////////////////////////////////////////
 // Printer
 
 namespace {
@@ -683,7 +673,7 @@ namespace {
         }
 
     private:
-        void visit(Cons list) override
+        void visit(Pair list) override
         {
             auto quoted = false;
             auto symbol = to_symbol(car(list));
@@ -751,7 +741,7 @@ mlisp::operator << (std::ostream& ostream, mlisp::Object const& obj)
 }
 
 std::ostream&
-mlisp::operator << (std::ostream& ostream, mlisp::Cons const& ccl)
+mlisp::operator << (std::ostream& ostream, mlisp::Pair const& ccl)
 {
     return ostream << Object{ ccl };
 }
@@ -765,16 +755,16 @@ std::to_string(mlisp::Object const& obj)
 ////////////////////////////////////////////////////////////////////////////////
 // Optional, to_xxx
 
-mlisp::Optional<Cons>
-mlisp::to_cons(Object obj) noexcept
+mlisp::Optional<Pair>
+mlisp::to_pair(Object obj) noexcept
 {
     if (!obj.data_) {
-        return Optional<Cons>{{}}; // nil
+        return Optional<Pair>{{}}; // nil
     }
 
-    auto data = std::dynamic_pointer_cast<Cons::Data const>(obj.data_);
+    auto data = std::dynamic_pointer_cast<Pair::Data const>(obj.data_);
     if (data) {
-        return { Cons{ data } };
+        return { Pair{ data } };
     }
 
     return {};

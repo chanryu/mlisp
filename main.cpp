@@ -11,9 +11,9 @@ bool is_symbol(Object obj)
     return !!to_symbol(obj);
 }
 
-Cons to_list(Object obj, char const* cmd)
+Pair to_list(Object obj, char const* cmd)
 {
-    auto list = to_cons(obj);
+    auto list = to_pair(obj);
     if (!list) {
         throw EvalError(cmd + (": " + std::to_string(obj)) + " is not a list.");
     }
@@ -29,7 +29,7 @@ Number to_number(Object obj, char const* cmd)
     return *number;
 }
 
-Cons to_formal_args(Object obj, char const* cmd)
+Pair to_formal_args(Object obj, char const* cmd)
 {
     auto args = to_list(obj, cmd);
 
@@ -43,7 +43,7 @@ Cons to_formal_args(Object obj, char const* cmd)
     return args;
 }
 
-Object cadr(Cons list)
+Object cadr(Pair list)
 {
     return car(cdr(list));
 }
@@ -52,21 +52,21 @@ EnvPtr build_env()
 {
     auto env = make_env(nullptr);
 
-    set(env, "car", make_proc([] (Cons args, EnvPtr env) {
+    set(env, "car", make_proc([] (Pair args, EnvPtr env) {
         if (cdr(args)) {
             throw EvalError("car: too many args given");
         }
         return car(to_list(eval(car(args), env), "car"));
     }));
 
-    set(env, "cdr", make_proc([] (Cons args, EnvPtr env) {
+    set(env, "cdr", make_proc([] (Pair args, EnvPtr env) {
         if (cdr(args)) {
             throw EvalError("cdr: too many args given");
         }
         return cdr(to_list(eval(car(args), env), "cdr"));
     }));
 
-    set(env, "cons", make_proc([] (Cons args, EnvPtr env) {
+    set(env, "cons", make_proc([] (Pair args, EnvPtr env) {
         if (!cdr(args)) {
             throw EvalError("cons: not enough args");
         }
@@ -74,24 +74,24 @@ EnvPtr build_env()
         auto head = eval(car(args), env);
         auto tail = to_list(eval(cadr(args), env), "cons");
 
-        return make_cons(head, tail);
+        return cons(head, tail);
     }));
 
-    set(env, "list", make_proc([] (Cons args, EnvPtr env) {
+    set(env, "list", make_proc([] (Pair args, EnvPtr env) {
         std::vector<Object> objs;
         for (; args; args = cdr(args)) {
             objs.push_back(eval(car(args), env));
         }
 
-        Cons list;
+        Pair list;
         while (!objs.empty()) {
-            list = make_cons(objs.back(), list);
+            list = cons(objs.back(), list);
             objs.pop_back();
         }
         return list;
     }));
 
-    set(env, "set", make_proc([] (Cons args, EnvPtr env) {
+    set(env, "set", make_proc([] (Pair args, EnvPtr env) {
         if (!args || !cdr(args)) {
             throw EvalError("set: too few parameters");
         }
@@ -111,7 +111,7 @@ EnvPtr build_env()
         return value;
     }));
 
-    set(env, "setq", make_proc([] (Cons args, EnvPtr env) {
+    set(env, "setq", make_proc([] (Pair args, EnvPtr env) {
         if (!args || !cdr(args)) {
             throw EvalError("setq: too few parameters");
         }
@@ -131,7 +131,7 @@ EnvPtr build_env()
         return value;
     }));
 
-    set(env, "do", make_proc([] (Cons args, EnvPtr env) {
+    set(env, "do", make_proc([] (Pair args, EnvPtr env) {
         env = make_env(env);
         Object result;
         while (args) {
@@ -141,16 +141,16 @@ EnvPtr build_env()
         return result;
     }));
 
-    set(env, "+", make_proc([] (Cons args, EnvPtr env) {
+    set(env, "+", make_proc([] (Pair args, EnvPtr env) {
         auto result = 0.0;
         for (; args; args = cdr(args)) {
             auto arg = eval(car(args), env);
             result += to_number(arg, "+").value();
         }
-        return Number{ result };
+        return make_number(result);
     }));
 
-    set(env, "-", make_proc([] (Cons args, EnvPtr env) {
+    set(env, "-", make_proc([] (Pair args, EnvPtr env) {
         if (!args) {
             throw EvalError("-: too few parameters");
         }
@@ -168,19 +168,20 @@ EnvPtr build_env()
             result = -result;
         }
 
-        return Number{ result };
+        return make_number(result);
     }));
 
-    set(env, "*", make_proc([] (Cons args, EnvPtr env) {
+    set(env, "*", make_proc([] (Pair args, EnvPtr env) {
         auto result = 1.0;
         for (; args; args = cdr(args)) {
             auto arg = eval(car(args), env);
             result *= to_number(arg, "*").value();
         }
-        return Number{ result };
+
+        return make_number(result);
     }));
 
-    set(env, "/", make_proc([] (Cons args, EnvPtr env) {
+    set(env, "/", make_proc([] (Pair args, EnvPtr env) {
         if (!args || !cdr(args)) {
             throw EvalError("/: too few parameters");
         }
@@ -190,10 +191,11 @@ EnvPtr build_env()
             auto arg = eval(car(args), env);
             result /= to_number(arg, "/").value();
         }
-        return Number{ result };
+
+        return make_number(result);
     }));
 
-    set(env, "nil?", make_proc([] (Cons args, EnvPtr env) {
+    set(env, "nil?", make_proc([] (Pair args, EnvPtr env) {
         Object result;
         if (!eval(car(args), env)) {
             result = Symbol{ "t" };
@@ -201,7 +203,7 @@ EnvPtr build_env()
         return result;
     }));
 
-    set(env, "zero?", make_proc([] (Cons args, EnvPtr env) {
+    set(env, "zero?", make_proc([] (Pair args, EnvPtr env) {
         Object result;
         if (to_number(eval(car(args), env), "zero?").value() == 0) {
             result = Symbol{ "t" };
@@ -209,7 +211,7 @@ EnvPtr build_env()
         return result;
     }));
 
-    set(env, "if", make_proc([] (Cons args, EnvPtr env) {
+    set(env, "if", make_proc([] (Pair args, EnvPtr env) {
         auto cond = car(args);
         if (!cdr(args)) {
             throw EvalError("if: too few arguments");
@@ -226,7 +228,7 @@ EnvPtr build_env()
         }
     }));
 
-    set(env, "print", make_proc([] (Cons args, EnvPtr env) {
+    set(env, "print", make_proc([] (Pair args, EnvPtr env) {
         auto first = true;
         while (args) {
             if (first) {
@@ -241,7 +243,7 @@ EnvPtr build_env()
         return Object{};
     }));
 
-    set(env, "lambda", make_proc([] (Cons args, EnvPtr) {
+    set(env, "lambda", make_proc([] (Pair args, EnvPtr) {
 
         if (cdr(cdr(args))) {
             throw EvalError("lambda: too many args");
@@ -250,7 +252,7 @@ EnvPtr build_env()
         auto formal_args = to_formal_args(car(args), "lambda");
         auto lambda_body = cadr(args);
 
-        return make_proc([formal_args, lambda_body] (Cons args, EnvPtr env) {
+        return make_proc([formal_args, lambda_body] (Pair args, EnvPtr env) {
 
             auto lambda_env = make_env(env);
 
@@ -276,7 +278,7 @@ EnvPtr build_env()
         });
     }));
 
-    set(env, "closure", make_proc([] (Cons args, EnvPtr env) {
+    set(env, "closure", make_proc([] (Pair args, EnvPtr env) {
         if (cdr(cdr(args))) {
             throw EvalError("closure: too many args");
         }
@@ -284,7 +286,7 @@ EnvPtr build_env()
         auto formal_args = to_formal_args(car(args), "closure");
         auto closure_body = cadr(args);
 
-        return make_proc([formal_args, closure_body, env] (Cons args, EnvPtr) {
+        return make_proc([formal_args, closure_body, env] (Pair args, EnvPtr) {
 
             auto closure_env = make_env(env);
 
@@ -310,13 +312,13 @@ EnvPtr build_env()
         });
     }));
 
-    set(env, "def", make_proc([] (Cons args, EnvPtr env) {
+    set(env, "def", make_proc([] (Pair args, EnvPtr env) {
         auto sym = to_symbol(car(args));
         if (!sym) {
             EvalError("def: " + std::to_string(car(args)) +
                       " is not a symbol.");
         }
-        auto val = eval(make_cons(Symbol{ "lambda" }, cdr(args)), env);
+        auto val = eval(cons(Symbol{ "lambda" }, cdr(args)), env);
         set(env, sym->name(), val);
         return val;
     }));
@@ -348,11 +350,11 @@ int repl()
 
         while (!is.eof()) {
             try {
-                Object expr;
-                if (!parser.parse(is, expr)) {
+                auto expr = parser.parse(is);
+                if (!expr) {
                     break;
                 }
-                std::cout << eval(expr, env) << std::endl;
+                std::cout << eval(*expr, env) << std::endl;
             }
             catch (ParseError& e) {
                 std::cout << e.what() << std::endl;
@@ -384,9 +386,13 @@ int run_file(const char* filename)
         auto parser = Parser{};
         auto env = build_env();
 
-        Object expr;
-        while (parser.parse(ifs, expr)) {
-            eval(expr, env);
+        while (true) {
+            auto expr = parser.parse(ifs);
+            if (!expr) {
+                break;
+            }
+
+            eval(*expr, env);
         }
 
         if (!ifs.eof()) {
