@@ -165,6 +165,9 @@ namespace mlisp {
         Optional<Node> parse(std::istream&);
         bool clean() const noexcept;
 
+    protected:
+        virtual std::string translate(std::string token) const;
+
     private:
         struct Context {
             enum class Type { quote, paren, list };
@@ -189,6 +192,7 @@ namespace mlisp {
         void set(std::string const&, Node);
         bool update(std::string const&, Node);
         Optional<Node> lookup(std::string const&) const;
+        Optional<Node> shallow_lookup(std::string const&) const;
 
     private:
         struct Data;

@@ -77,16 +77,40 @@ namespace {
                 }
                 return token;
             }
+
+            if (c == '"') {
+                if (token.empty()) {
+                    token.push_back(c);
+                    auto escaped = false;
+                    while (istream.get(c)) {
+                        token.push_back(c);
+                        if (escaped) {
+                            escaped = false;
+                        }
+                        else if (c == '\\') {
+                            escaped = true;
+                        }
+                        else if (c == '"') {
+                            break;
+                        }
+                    }
+                    return token;
+                }
+                else {
+                    istream.unget();
+                }
+                return token;
+            }
+
             token.push_back(c);
         }
 
         return token;
     }
 
-    bool is_number(std::string const& token)
+    bool is_number_token(std::string const& token)
     {
         assert(!token.empty());
-
         char c = token[0];
         if (c == '-') {
             if (token.size() == 1) {
@@ -95,6 +119,12 @@ namespace {
             c = token[1];
         }
         return c == '.' || (c >= '0' && c <= '9');
+    }
+
+    bool is_string_token(std::string const& token)
+    {
+        assert(!token.empty());
+        return token[0] == '"';
     }
 
     char const* const MLISP_BUILTIN_NIL = "nil";
@@ -485,8 +515,11 @@ mlisp::Parser::parse(std::istream& istream)
             }
             node = list;
         }
-        else if (is_number(token)) {
+        else if (is_number_token(token)) {
             node = make_number(std::stod(token));
+        }
+        else if (is_string_token(token)) {
+            node = make_string(translate(std::move(token)));
         }
         else {
             node = make_symbol(std::move(token));
@@ -521,6 +554,36 @@ bool
 mlisp::Parser::clean() const noexcept
 {
     return stack_.empty();
+}
+
+std::string
+mlisp::Parser::translate(std::string token) const
+{
+    assert(token.length() >= 2);
+    assert(token.front() == '"' && token.back() == '"');
+
+    std::string text;
+
+    auto escaped = false;
+    for (size_t i = 1; i < token.size() - 1; ++i) {
+        auto c = token[i];
+        if (escaped) {
+            escaped = false;
+            // FIXME: more escaped chars
+            if (c == 'n') {
+                c = '\n';
+            }
+            text.push_back(c);
+        }
+        else if (c == '\\') {
+            escaped = true;
+        }
+        else {
+            text.push_back(c);
+        }
+    }
+
+    return text;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -563,15 +626,23 @@ mlisp::Env::update(std::string const& name, Node value)
 mlisp::Optional<Node>
 mlisp::Env::lookup(std::string const& name) const
 {
-    Optional<Node> value;
     for (auto data = data_; data; data = data->base) {
         auto i = data->vars.find(name);
         if (i != data->vars.end()) {
-            value = i->second;
-            break;
+            return i->second;
         }
     }
-    return value;
+    return {};
+}
+
+mlisp::Optional<Node>
+mlisp::Env::shallow_lookup(std::string const& name) const
+{
+    auto i = data_->vars.find(name);
+    if (i != data_->vars.end()) {
+        return i->second;
+    }
+    return {};
 }
 
 
@@ -581,9 +652,7 @@ mlisp::Env::lookup(std::string const& name) const
 namespace {
     class Evaluator: NodeVisitor {
     public:
-        explicit Evaluator(Env env) : env_(env)
-        {
-        }
+        explicit Evaluator(Env env) : env_(env) { }
 
         Node evaluate(Node expr)
         {
@@ -714,7 +783,7 @@ namespace {
 
         void visit(String str) override
         {
-            ostream_ << str.text();
+            ostream_ << '"' << str.text() << '"';
         }
 
         void visit(Symbol sym) override
