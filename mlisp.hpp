@@ -8,19 +8,19 @@
 
 namespace mlisp {
 
-    class Object;
-    class Pair;
+    class Node;
+    class List;
     class Proc;
     class Number;
     class String;
     class Symbol;
 
     class Env;
-    using Func = std::function<Object(Pair, Env)>;
+    using Func = std::function<Node(List, Env)>;
 
     class ObjectVisitor {
     public:
-        virtual void visit(Pair) = 0;
+        virtual void visit(List) = 0;
         virtual void visit(Proc) = 0;
         virtual void visit(Number) = 0;
         virtual void visit(String) = 0;
@@ -29,61 +29,61 @@ namespace mlisp {
 
     template <typename T> class Optional;
 
-    class Object final {
+    class Node final {
     public:
-        Object() noexcept;
-        Object(Object const&) noexcept;
-        Object(Pair const&) noexcept;
-        Object(Proc const&) noexcept;
-        Object(Number const&) noexcept;
-        Object(String const&) noexcept;
-        Object(Symbol const&) noexcept;
+        Node() noexcept;
+        Node(Node const&) noexcept;
+        Node(List const&) noexcept;
+        Node(Proc const&) noexcept;
+        Node(Number const&) noexcept;
+        Node(String const&) noexcept;
+        Node(Symbol const&) noexcept;
 
-        Object& operator = (Object const&) noexcept;
-        Object& operator = (Pair const&) noexcept;
-        Object& operator = (Proc const&) noexcept;
-        Object& operator = (Number const&) noexcept;
-        Object& operator = (String const&) noexcept;
-        Object& operator = (Symbol const&) noexcept;
+        Node& operator = (Node const&) noexcept;
+        Node& operator = (List const&) noexcept;
+        Node& operator = (Proc const&) noexcept;
+        Node& operator = (Number const&) noexcept;
+        Node& operator = (String const&) noexcept;
+        Node& operator = (Symbol const&) noexcept;
 
         operator bool() const noexcept;
 
         void accept(ObjectVisitor&) const;
 
         struct Data;
-        friend Optional<Pair> to_pair(Object) noexcept;
-        friend Optional<Proc> to_proc(Object) noexcept;
-        friend Optional<Number> to_number(Object) noexcept;
-        friend Optional<String> to_string(Object) noexcept;
-        friend Optional<Symbol> to_symbol(Object) noexcept;
+        friend Optional<List> to_list(Node) noexcept;
+        friend Optional<Proc> to_proc(Node) noexcept;
+        friend Optional<Number> to_number(Node) noexcept;
+        friend Optional<String> to_string(Node) noexcept;
+        friend Optional<Symbol> to_symbol(Node) noexcept;
 
     private:
         std::shared_ptr<Data const> data_;
 
     private:
-        bool operator == (Object const&) noexcept = delete;
+        bool operator == (Node const&) noexcept = delete;
     };
 
-    class Pair final {
+    class List final {
     public:
-        Pair() noexcept;
-        Pair(Object head, Pair tail) noexcept;
-        Pair(Pair const&) noexcept;
+        List() noexcept;
+        List(Node head, List tail) noexcept;
+        List(List const&) noexcept;
 
         operator bool() const noexcept;
 
-        Object head() const;
-        Pair tail() const;
+        Node head() const;
+        List tail() const;
 
     public:
         struct Data;
-        friend class Object;
-        friend Object car(Pair) noexcept;
-        friend Pair cdr(Pair) noexcept;
-        friend Optional<Pair> to_pair(Object) noexcept;
+        friend class Node;
+        friend Node car(List) noexcept;
+        friend List cdr(List) noexcept;
+        friend Optional<List> to_list(Node) noexcept;
 
     private:
-        Pair(std::shared_ptr<Data const>) noexcept;
+        List(std::shared_ptr<Data const>) noexcept;
         std::shared_ptr<Data const> data_;
     };
 
@@ -92,12 +92,12 @@ namespace mlisp {
         explicit Proc(Func) noexcept;
         Proc(Proc const&) noexcept;
 
-        Object operator()(Pair, Env) const;
+        Node operator()(List, Env) const;
 
     public:
         struct Data;
-        friend class Object;
-        friend Optional<Proc> to_proc(Object) noexcept;
+        friend class Node;
+        friend Optional<Proc> to_proc(Node) noexcept;
 
     private:
         Proc(std::shared_ptr<Data const>) noexcept;
@@ -113,8 +113,8 @@ namespace mlisp {
 
     public:
         struct Data;
-        friend class Object;
-        friend Optional<Number> to_number(Object) noexcept;
+        friend class Node;
+        friend Optional<Number> to_number(Node) noexcept;
 
     private:
         Number(std::shared_ptr<Data const>) noexcept;
@@ -130,8 +130,8 @@ namespace mlisp {
 
     public:
         struct Data;
-        friend class Object;
-        friend Optional<String> to_string(Object) noexcept;
+        friend class Node;
+        friend Optional<String> to_string(Node) noexcept;
 
     private:
         String(std::shared_ptr<Data const>) noexcept;
@@ -147,8 +147,8 @@ namespace mlisp {
 
     public:
         struct Data;
-        friend class Object;
-        friend Optional<Symbol> to_symbol(Object) noexcept;
+        friend class Node;
+        friend Optional<Symbol> to_symbol(Node) noexcept;
 
     private:
         Symbol(std::shared_ptr<Data const>) noexcept;
@@ -162,14 +162,14 @@ namespace mlisp {
 
     class Parser {
     public:
-        Optional<Object> parse(std::istream&);
+        Optional<Node> parse(std::istream&);
         bool clean() const noexcept;
 
     private:
         struct Context {
             enum class Type { quote, paren, list };
             Type type;
-            Object head;
+            Node head;
             bool head_empty;
         };
         std::stack<Context> stack_;
@@ -186,39 +186,39 @@ namespace mlisp {
 
         Env derive_new() const;
 
-        void set(std::string const&, Object);
-        bool update(std::string const&, Object);
-        Optional<Object> lookup(std::string const&) const;
+        void set(std::string const&, Node);
+        bool update(std::string const&, Node);
+        Optional<Node> lookup(std::string const&) const;
 
     private:
         struct Data;
         std::shared_ptr<Data> data_;
     };
 
-    Object eval(Object expr, Env env); // throws EvalError
+    Node eval(Node expr, Env env); // throws EvalError
 }
 
 namespace mlisp {
 
     // Overloaded ostream << operators
 
-    std::ostream& operator << (std::ostream& os, Object const&);
-    std::ostream& operator << (std::ostream& os, Pair const&);
+    std::ostream& operator << (std::ostream& os, Node const&);
+    std::ostream& operator << (std::ostream& os, List const&);
 }
 
 namespace std {
-    string to_string(mlisp::Object const&);
+    string to_string(mlisp::Node const&);
 }
 
 namespace mlisp {
 
     // Casting functions
 
-    Optional<Pair> to_pair(Object) noexcept;
-    Optional<Proc> to_proc(Object) noexcept;
-    Optional<Number> to_number(Object) noexcept;
-    Optional<String> to_string(Object) noexcept;
-    Optional<Symbol> to_symbol(Object) noexcept;
+    Optional<List> to_list(Node) noexcept;
+    Optional<Proc> to_proc(Node) noexcept;
+    Optional<Number> to_number(Node) noexcept;
+    Optional<String> to_string(Node) noexcept;
+    Optional<Symbol> to_symbol(Node) noexcept;
 }
 
 namespace mlisp {
@@ -249,9 +249,9 @@ namespace mlisp {
 
     // Convience wrappers
 
-    inline Pair make_pair(Object head, Pair tail) noexcept
+    inline List make_pair(Node head, List tail) noexcept
     {
-        return Pair{ head, tail };
+        return List{ head, tail };
     }
 
     inline Proc make_proc(Func func) noexcept
@@ -274,19 +274,19 @@ namespace mlisp {
         return Symbol{ std::move(name) };
     }
 
-    inline Pair cons(Object head, Pair tail) noexcept
+    inline List cons(Node head, List tail) noexcept
     {
         return make_pair(head, tail);
     }
 
-    inline Object car(Pair pair) noexcept
+    inline Node car(List list) noexcept
     {
-        return pair.head();
+        return list.head();
     }
 
-    inline Pair cdr(Pair pair) noexcept
+    inline List cdr(List list) noexcept
     {
-        return pair.tail();
+        return list.tail();
     }
 }
 
