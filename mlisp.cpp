@@ -97,7 +97,8 @@ namespace {
         return c == '.' || (c >= '0' && c <= '9');
     }
 
-    char const* const MLISP_BUILTIN_QUOTE = "~$~#~mlisp:built-in:quote~#~$~";
+    char const* const MLISP_BUILTIN_NIL = "nil";
+    char const* const MLISP_BUILTIN_QUOTE = "quote";
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -620,11 +621,17 @@ namespace {
 
         void visit(Symbol sym) override
         {
-            if (sym.name() == MLISP_BUILTIN_QUOTE) {
-                thread_local auto quote_proc = make_proc([] (List args, Env) {
-                    return car(args);
-                });
-                result_ = quote_proc;
+            thread_local std::map<std::string, Node> builtin_symbols = {{
+                MLISP_BUILTIN_NIL, List{}
+            }, {
+                MLISP_BUILTIN_QUOTE, Proc{
+                    [](List args, Env) { return car(args); }
+                }
+            }};
+
+            auto i = builtin_symbols.find(sym.name());
+            if (i != builtin_symbols.end()) {
+                result_ = i->second;
             }
             else {
                 auto value = env_.lookup(sym.name());
@@ -669,7 +676,7 @@ namespace {
                 node.accept(*this);
             }
             else {
-                ostream_ << "nil";
+                ostream_ << MLISP_BUILTIN_NIL;
             }
         }
 
@@ -715,17 +722,12 @@ namespace {
 
         void visit(Symbol sym) override
         {
-            if (sym.name() == MLISP_BUILTIN_QUOTE) {
-                ostream_ << "quote";
-            }
-            else {
-                ostream_ << sym.name();
-            }
+            ostream_ << sym.name();
         }
 
         void visit(Proc proc) override
         {
-            ostream_ << "<#procedure>";
+            ostream_ << "<#proc>";
         }
 
     private:

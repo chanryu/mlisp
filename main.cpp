@@ -264,7 +264,7 @@ Env build_env()
                 }
 
                 auto sym = *to_symbol(car(syms));
-                auto val = car(args);
+                auto val = eval(car(args), env);
                 lambda_env.set(sym.name(), val);
                 syms = cdr(syms);
                 args = cdr(args);
@@ -285,10 +285,11 @@ Env build_env()
 
         auto formal_args = to_formal_args(car(args), "closure");
         auto closure_body = cadr(args);
+        auto closure_base_env = env;
 
-        return make_proc([formal_args, closure_body, env] (List args, Env) {
+        return make_proc([formal_args, closure_body, closure_base_env] (List args, Env env) {
 
-            auto closure_env = env.derive_new();
+            auto closure_env = closure_base_env.derive_new();
 
             auto syms = formal_args;
             while (syms) {
@@ -298,7 +299,7 @@ Env build_env()
                 }
 
                 auto sym = *to_symbol(car(syms));
-                auto val = car(args);
+                auto val = eval(car(args), env);
                 closure_env.set(sym.name(), val);
                 syms = cdr(syms);
                 args = cdr(args);
