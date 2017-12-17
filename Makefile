@@ -1,12 +1,31 @@
+BUILD := build
+
+#SRCS := $(shell find . -type f -name '*.cpp')
+SRCS := $(wildcard ./*.cpp)
+OBJS := $(patsubst ./%.cpp, $(BUILD)/%.o, $(SRCS))
+
+EXEC := mlisp
+
+CXXFLAGS += -Wall -DNDEBUG -pedantic -O2 -g -std=c++11
+
 .PHONY: clean
 
-CXXFLAGS += -Wall -pedantic -O2 -g -std=c++11
+$(EXEC): $(OBJS)
+	$(CXX) -o $@ $(OBJS)
 
-all: mlisp
+$(BUILD)/%.o: ./%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) -MD -MF $@.d -c -o $@ $<
+	@cp $@.d $@.P
+	@sed -e 's/#.*//' \
+	     -e 's/^[^:]*: *//' \
+	     -e 's/ *\\$$//' \
+	     -e '/^$$/ d' -e 's/$$/ :/' \
+	     < $@.d >> $@.P
+	@rm -f $@.d
 
-mlisp: mlisp.cpp mlisp.hpp main.cpp
-	$(CXX) $(CXXFLAGS) -o $@ mlisp.cpp main.cpp
+include $(shell find $(BUILD) -type f -name '*.P' 2> /dev/null)
 
 clean:
-	@rm -fv mlisp
-	@rm -rfv mlisp.dSYM
+	rm -f  $(EXEC)
+	rm -rf $(BUILD)

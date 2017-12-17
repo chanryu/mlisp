@@ -4,17 +4,17 @@
 #include "mlisp.hpp"
 
 namespace {
-    bool is_paren(char c) noexcept
+    inline bool is_paren(char c)
     {
         return c == '(' || c == ')';
     }
 
-    bool is_space(char c) noexcept
+    inline bool is_space(char c)
     {
         return c == ' ' || c == '\t' || c == '\r' || c == '\n';
     }
 
-    bool is_quote(char c) noexcept
+    inline bool is_quote(char c)
     {
         return c == '\'';
     }
