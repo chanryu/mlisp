@@ -406,8 +406,16 @@ mlisp::String::text() const
 // Symbol
 
 mlisp::Symbol::Symbol(std::string name) noexcept
-    : data_{ std::make_shared<Data>(std::move(name)) }
 {
+    thread_local std::map<std::string, std::shared_ptr<Data const>> symbols;
+
+    auto i = symbols.find(name);
+    if (i == symbols.end()) {
+        data_ = std::make_shared<Data const>(std::move(name));
+        symbols.insert(std::make_pair(data_->name, data_));
+    } else {
+        data_ = i->second;
+    }
 }
 
 mlisp::Symbol::Symbol(Symbol const& other) noexcept
