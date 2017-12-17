@@ -18,7 +18,7 @@ namespace mlisp {
     class Env;
     using Func = std::function<Node(List, Env)>;
 
-    class ObjectVisitor {
+    class NodeVisitor {
     public:
         virtual void visit(List) = 0;
         virtual void visit(Proc) = 0;
@@ -48,7 +48,7 @@ namespace mlisp {
 
         operator bool() const noexcept;
 
-        void accept(ObjectVisitor&) const;
+        void accept(NodeVisitor&);
 
         struct Data;
         friend Optional<List> to_list(Node) noexcept;
@@ -58,7 +58,7 @@ namespace mlisp {
         friend Optional<Symbol> to_symbol(Node) noexcept;
 
     private:
-        std::shared_ptr<Data const> data_;
+        std::shared_ptr<Data> data_;
 
     private:
         bool operator == (Node const&) noexcept = delete;
@@ -83,8 +83,8 @@ namespace mlisp {
         friend Optional<List> to_list(Node) noexcept;
 
     private:
-        List(std::shared_ptr<Data const>) noexcept;
-        std::shared_ptr<Data const> data_;
+        List(std::shared_ptr<Data>) noexcept;
+        std::shared_ptr<Data> data_;
     };
 
     class Proc final {
@@ -100,8 +100,8 @@ namespace mlisp {
         friend Optional<Proc> to_proc(Node) noexcept;
 
     private:
-        Proc(std::shared_ptr<Data const>) noexcept;
-        std::shared_ptr<Data const> data_;
+        Proc(std::shared_ptr<Data>) noexcept;
+        std::shared_ptr<Data> data_;
     };
 
     class Number final {
@@ -117,8 +117,8 @@ namespace mlisp {
         friend Optional<Number> to_number(Node) noexcept;
 
     private:
-        Number(std::shared_ptr<Data const>) noexcept;
-        std::shared_ptr<Data const> data_;
+        Number(std::shared_ptr<Data>) noexcept;
+        std::shared_ptr<Data> data_;
     };
 
     class String final {
@@ -134,8 +134,8 @@ namespace mlisp {
         friend Optional<String> to_string(Node) noexcept;
 
     private:
-        String(std::shared_ptr<Data const>) noexcept;
-        std::shared_ptr<Data const> data_;
+        String(std::shared_ptr<Data>) noexcept;
+        std::shared_ptr<Data> data_;
     };
 
     class Symbol final {
@@ -151,8 +151,8 @@ namespace mlisp {
         friend Optional<Symbol> to_symbol(Node) noexcept;
 
     private:
-        Symbol(std::shared_ptr<Data const>) noexcept;
-        std::shared_ptr<Data const> data_;
+        Symbol(std::shared_ptr<Data>) noexcept;
+        std::shared_ptr<Data> data_;
     };
 }
 

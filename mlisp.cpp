@@ -105,7 +105,7 @@ namespace {
 
 struct mlisp::Node::Data: std::enable_shared_from_this<Node::Data> {
     virtual ~Data() {}
-    virtual void accept(ObjectVisitor&) const = 0;
+    virtual void accept(NodeVisitor&) = 0;
 };
 
 
@@ -116,10 +116,10 @@ struct mlisp::List::Data: public mlisp::Node::Data {
 
     Data(Node h, List t) noexcept : head{h}, tail{t} { }
 
-    void accept(ObjectVisitor& visitor) const override
+    void accept(NodeVisitor& visitor) override
     {
         visitor.visit(List{
-            std::static_pointer_cast<Data const>(shared_from_this())
+            std::static_pointer_cast<Data>(shared_from_this())
         });
     }
 
@@ -134,10 +134,10 @@ struct mlisp::Proc::Data: public mlisp::Node::Data {
 
     explicit Data(Func f) noexcept : func{f} { }
 
-    void accept(ObjectVisitor& visitor) const override
+    void accept(NodeVisitor& visitor) override
     {
         visitor.visit(Proc{
-            std::static_pointer_cast<Data const>(shared_from_this())
+            std::static_pointer_cast<Data>(shared_from_this())
         });
     }
 
@@ -151,10 +151,10 @@ struct mlisp::Number::Data: public mlisp::Node::Data {
 
     explicit Data(double v) noexcept : value{v} { }
 
-    void accept(ObjectVisitor& visitor) const override
+    void accept(NodeVisitor& visitor) override
     {
         visitor.visit(Number{
-            std::static_pointer_cast<Data const>(shared_from_this())
+            std::static_pointer_cast<Data>(shared_from_this())
         });
     }
 
@@ -168,10 +168,10 @@ struct mlisp::String::Data: public mlisp::Node::Data {
 
     explicit Data(std::string t) noexcept : text{std::move(t)} { }
 
-    void accept(ObjectVisitor& visitor) const override
+    void accept(NodeVisitor& visitor) override
     {
         visitor.visit(String{
-            std::static_pointer_cast<Data const>(shared_from_this())
+            std::static_pointer_cast<Data>(shared_from_this())
         });
     }
 
@@ -185,10 +185,10 @@ struct mlisp::Symbol::Data: public mlisp::Node::Data {
 
     explicit Data(std::string n) noexcept : name{std::move(n)} { }
 
-    void accept(ObjectVisitor& visitor) const override
+    void accept(NodeVisitor& visitor) override
     {
         visitor.visit(Symbol{
-            std::static_pointer_cast<Data const>(shared_from_this())
+            std::static_pointer_cast<Data>(shared_from_this())
         });
     }
 
@@ -280,7 +280,7 @@ mlisp::Node::operator bool() const noexcept
 }
 
 void
-mlisp::Node::accept(ObjectVisitor& visitor) const
+mlisp::Node::accept(NodeVisitor& visitor)
 {
     if (data_) {
         data_->accept(visitor);
@@ -304,7 +304,7 @@ mlisp::List::List(List const& other) noexcept
 {
 }
 
-mlisp::List::List(std::shared_ptr<Data const> data) noexcept
+mlisp::List::List(std::shared_ptr<Data> data) noexcept
     : data_{data}
 {
 }
@@ -340,7 +340,7 @@ mlisp::Proc::Proc(Proc const& other) noexcept
 {
 }
 
-mlisp::Proc::Proc(std::shared_ptr<Data const> data) noexcept
+mlisp::Proc::Proc(std::shared_ptr<Data> data) noexcept
     : data_{data}
 {
 }
@@ -367,7 +367,7 @@ mlisp::Number::Number(Number const& other) noexcept
 {
 }
 
-mlisp::Number::Number(std::shared_ptr<Data const> data) noexcept
+mlisp::Number::Number(std::shared_ptr<Data> data) noexcept
     : data_{data}
 {
 }
@@ -391,7 +391,7 @@ mlisp::String::String(String const& other) noexcept
 {
 }
 
-mlisp::String::String(std::shared_ptr<Data const> data) noexcept
+mlisp::String::String(std::shared_ptr<Data> data) noexcept
     : data_{data}
 {
 }
@@ -407,11 +407,11 @@ mlisp::String::text() const
 
 mlisp::Symbol::Symbol(std::string name) noexcept
 {
-    thread_local std::map<std::string, std::shared_ptr<Data const>> symbols;
+    thread_local std::map<std::string, std::shared_ptr<Data>> symbols;
 
     auto i = symbols.find(name);
     if (i == symbols.end()) {
-        data_ = std::make_shared<Data const>(std::move(name));
+        data_ = std::make_shared<Data>(std::move(name));
         symbols.insert(std::make_pair(data_->name, data_));
     } else {
         data_ = i->second;
@@ -423,7 +423,7 @@ mlisp::Symbol::Symbol(Symbol const& other) noexcept
 {
 }
 
-mlisp::Symbol::Symbol(std::shared_ptr<Data const> data) noexcept
+mlisp::Symbol::Symbol(std::shared_ptr<Data> data) noexcept
     : data_{data}
 {
 }
@@ -578,7 +578,7 @@ mlisp::Env::lookup(std::string const& name) const
 // eval
 
 namespace {
-    class Evaluator: ObjectVisitor {
+    class Evaluator: NodeVisitor {
     public:
         explicit Evaluator(Env env) : env_(env)
         {
@@ -658,12 +658,12 @@ mlisp::eval(Node expr, Env env)
 namespace {
     using namespace mlisp;
 
-    class Printer: ObjectVisitor {
+    class Printer: NodeVisitor {
     public:
         Printer(std::ostream& ostream, bool is_head)
             : ostream_(ostream), is_head_(is_head) { }
 
-        void print(Node const& node)
+        void print(Node node)
         {
             if (node) {
                 node.accept(*this);
@@ -763,7 +763,7 @@ mlisp::to_list(Node node) noexcept
         return Optional<List>{{}}; // nil
     }
 
-    auto data = std::dynamic_pointer_cast<List::Data const>(node.data_);
+    auto data = std::dynamic_pointer_cast<List::Data>(node.data_);
     if (data) {
         return { List{ data } };
     }
@@ -774,7 +774,7 @@ mlisp::to_list(Node node) noexcept
 mlisp::Optional<Proc>
 mlisp::to_proc(Node node) noexcept
 {
-    auto data = std::dynamic_pointer_cast<Proc::Data const>(node.data_);
+    auto data = std::dynamic_pointer_cast<Proc::Data>(node.data_);
     if (data) {
         return { Proc{ data } };
     }
@@ -785,7 +785,7 @@ mlisp::to_proc(Node node) noexcept
 mlisp::Optional<Number>
 mlisp::to_number(Node node) noexcept
 {
-    auto data = std::dynamic_pointer_cast<Number::Data const>(node.data_);
+    auto data = std::dynamic_pointer_cast<Number::Data>(node.data_);
     if (data) {
         return { Number{ data } };
     }
@@ -796,7 +796,7 @@ mlisp::to_number(Node node) noexcept
 mlisp::Optional<String>
 mlisp::to_string(Node node) noexcept
 {
-    auto data = std::dynamic_pointer_cast<String::Data const>(node.data_);
+    auto data = std::dynamic_pointer_cast<String::Data>(node.data_);
     if (data) {
         return { String{ data } };
     }
@@ -807,7 +807,7 @@ mlisp::to_string(Node node) noexcept
 mlisp::Optional<Symbol>
 mlisp::to_symbol(Node node) noexcept
 {
-    auto data = std::dynamic_pointer_cast<Symbol::Data const>(node.data_);
+    auto data = std::dynamic_pointer_cast<Symbol::Data>(node.data_);
     if (data) {
         return { Symbol{ data } };
     }
