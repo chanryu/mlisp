@@ -48,25 +48,25 @@ Object cadr(Pair list)
     return car(cdr(list));
 }
 
-EnvPtr build_env()
+Env build_env()
 {
-    auto env = make_env(nullptr);
+    auto env = Env{};
 
-    set(env, "car", make_proc([] (Pair args, EnvPtr env) {
+    env.set("car", make_proc([] (Pair args, Env env) {
         if (cdr(args)) {
             throw EvalError("car: too many args given");
         }
         return car(to_list(eval(car(args), env), "car"));
     }));
 
-    set(env, "cdr", make_proc([] (Pair args, EnvPtr env) {
+    env.set("cdr", make_proc([] (Pair args, Env env) {
         if (cdr(args)) {
             throw EvalError("cdr: too many args given");
         }
         return cdr(to_list(eval(car(args), env), "cdr"));
     }));
 
-    set(env, "cons", make_proc([] (Pair args, EnvPtr env) {
+    env.set("cons", make_proc([] (Pair args, Env env) {
         if (!cdr(args)) {
             throw EvalError("cons: not enough args");
         }
@@ -77,7 +77,7 @@ EnvPtr build_env()
         return cons(head, tail);
     }));
 
-    set(env, "list", make_proc([] (Pair args, EnvPtr env) {
+    env.set("list", make_proc([] (Pair args, Env env) {
         std::vector<Object> objs;
         for (; args; args = cdr(args)) {
             objs.push_back(eval(car(args), env));
@@ -91,7 +91,7 @@ EnvPtr build_env()
         return list;
     }));
 
-    set(env, "set", make_proc([] (Pair args, EnvPtr env) {
+    env.set("set", make_proc([] (Pair args, Env env) {
         if (!args || !cdr(args)) {
             throw EvalError("set: too few parameters");
         }
@@ -99,19 +99,19 @@ EnvPtr build_env()
             throw EvalError("set: too many parameters");
         }
 
-        auto symbol = to_symbol(car(args));
+        auto symbol = to_symbol(eval(car(args), env));
         if (!symbol) {
-            throw EvalError("setq: " + std::to_string(car(args)) +
+            throw EvalError("set: " + std::to_string(car(args)) +
                             " is not a symbol.");
         }
 
         auto value = eval(cadr(args), env);
-        set(env, symbol->name(), value);
+        env.set(symbol->name(), value);
 
         return value;
     }));
 
-    set(env, "setq", make_proc([] (Pair args, EnvPtr env) {
+    env.set("setq", make_proc([] (Pair args, Env env) {
         if (!args || !cdr(args)) {
             throw EvalError("setq: too few parameters");
         }
@@ -126,13 +126,13 @@ EnvPtr build_env()
         }
 
         auto value = eval(cadr(args), env);
-        set(env, symbol->name(), value);
+        env.set(symbol->name(), value);
 
         return value;
     }));
 
-    set(env, "do", make_proc([] (Pair args, EnvPtr env) {
-        env = make_env(env);
+    env.set("do", make_proc([] (Pair args, Env env) {
+        env = env.derive_new();
         Object result;
         while (args) {
             result = eval(car(args), env);
@@ -141,7 +141,7 @@ EnvPtr build_env()
         return result;
     }));
 
-    set(env, "+", make_proc([] (Pair args, EnvPtr env) {
+    env.set("+", make_proc([] (Pair args, Env env) {
         auto result = 0.0;
         for (; args; args = cdr(args)) {
             auto arg = eval(car(args), env);
@@ -150,7 +150,7 @@ EnvPtr build_env()
         return make_number(result);
     }));
 
-    set(env, "-", make_proc([] (Pair args, EnvPtr env) {
+    env.set("-", make_proc([] (Pair args, Env env) {
         if (!args) {
             throw EvalError("-: too few parameters");
         }
@@ -171,7 +171,7 @@ EnvPtr build_env()
         return make_number(result);
     }));
 
-    set(env, "*", make_proc([] (Pair args, EnvPtr env) {
+    env.set("*", make_proc([] (Pair args, Env env) {
         auto result = 1.0;
         for (; args; args = cdr(args)) {
             auto arg = eval(car(args), env);
@@ -181,7 +181,7 @@ EnvPtr build_env()
         return make_number(result);
     }));
 
-    set(env, "/", make_proc([] (Pair args, EnvPtr env) {
+    env.set("/", make_proc([] (Pair args, Env env) {
         if (!args || !cdr(args)) {
             throw EvalError("/: too few parameters");
         }
@@ -195,7 +195,7 @@ EnvPtr build_env()
         return make_number(result);
     }));
 
-    set(env, "nil?", make_proc([] (Pair args, EnvPtr env) {
+    env.set("nil?", make_proc([] (Pair args, Env env) {
         Object result;
         if (!eval(car(args), env)) {
             result = Symbol{ "t" };
@@ -203,7 +203,7 @@ EnvPtr build_env()
         return result;
     }));
 
-    set(env, "zero?", make_proc([] (Pair args, EnvPtr env) {
+    env.set("zero?", make_proc([] (Pair args, Env env) {
         Object result;
         if (to_number(eval(car(args), env), "zero?").value() == 0) {
             result = Symbol{ "t" };
@@ -211,7 +211,7 @@ EnvPtr build_env()
         return result;
     }));
 
-    set(env, "if", make_proc([] (Pair args, EnvPtr env) {
+    env.set("if", make_proc([] (Pair args, Env env) {
         auto cond = car(args);
         if (!cdr(args)) {
             throw EvalError("if: too few arguments");
@@ -228,7 +228,7 @@ EnvPtr build_env()
         }
     }));
 
-    set(env, "print", make_proc([] (Pair args, EnvPtr env) {
+    env.set("print", make_proc([] (Pair args, Env env) {
         auto first = true;
         while (args) {
             if (first) {
@@ -243,7 +243,7 @@ EnvPtr build_env()
         return Object{};
     }));
 
-    set(env, "lambda", make_proc([] (Pair args, EnvPtr) {
+    env.set("lambda", make_proc([] (Pair args, Env) {
 
         if (cdr(cdr(args))) {
             throw EvalError("lambda: too many args");
@@ -252,9 +252,9 @@ EnvPtr build_env()
         auto formal_args = to_formal_args(car(args), "lambda");
         auto lambda_body = cadr(args);
 
-        return make_proc([formal_args, lambda_body] (Pair args, EnvPtr env) {
+        return make_proc([formal_args, lambda_body] (Pair args, Env env) {
 
-            auto lambda_env = make_env(env);
+            auto lambda_env = env.derive_new();
 
             auto syms = formal_args;
             while (syms) {
@@ -265,7 +265,7 @@ EnvPtr build_env()
 
                 auto sym = *to_symbol(car(syms));
                 auto val = car(args);
-                set(lambda_env, sym.name(), val);
+                lambda_env.set(sym.name(), val);
                 syms = cdr(syms);
                 args = cdr(args);
             }
@@ -278,7 +278,7 @@ EnvPtr build_env()
         });
     }));
 
-    set(env, "closure", make_proc([] (Pair args, EnvPtr env) {
+    env.set("closure", make_proc([] (Pair args, Env env) {
         if (cdr(cdr(args))) {
             throw EvalError("closure: too many args");
         }
@@ -286,9 +286,9 @@ EnvPtr build_env()
         auto formal_args = to_formal_args(car(args), "closure");
         auto closure_body = cadr(args);
 
-        return make_proc([formal_args, closure_body, env] (Pair args, EnvPtr) {
+        return make_proc([formal_args, closure_body, env] (Pair args, Env) {
 
-            auto closure_env = make_env(env);
+            auto closure_env = env.derive_new();
 
             auto syms = formal_args;
             while (syms) {
@@ -299,7 +299,7 @@ EnvPtr build_env()
 
                 auto sym = *to_symbol(car(syms));
                 auto val = car(args);
-                set(closure_env, sym.name(), val);
+                closure_env.set(sym.name(), val);
                 syms = cdr(syms);
                 args = cdr(args);
             }
@@ -312,14 +312,14 @@ EnvPtr build_env()
         });
     }));
 
-    set(env, "def", make_proc([] (Pair args, EnvPtr env) {
+    env.set("def", make_proc([] (Pair args, Env env) {
         auto sym = to_symbol(car(args));
         if (!sym) {
             EvalError("def: " + std::to_string(car(args)) +
                       " is not a symbol.");
         }
         auto val = eval(cons(Symbol{ "lambda" }, cdr(args)), env);
-        set(env, sym->name(), val);
+        env.set(sym->name(), val);
         return val;
     }));
 

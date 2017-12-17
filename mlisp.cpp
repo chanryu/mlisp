@@ -346,7 +346,7 @@ mlisp::Proc::Proc(std::shared_ptr<Data const> data) noexcept
 }
 
 mlisp::Object
-mlisp::Proc::operator()(Pair args, EnvPtr env) const
+mlisp::Proc::operator()(Pair args, Env env) const
 {
     if (data_->func) {
         return data_->func(args, env);
@@ -517,52 +517,52 @@ mlisp::Parser::clean() const noexcept
 ////////////////////////////////////////////////////////////////////////////////
 // Env
 
-struct mlisp::Env {
-    EnvPtr base;
+struct mlisp::Env::Data {
+    std::shared_ptr<Data> base;
     std::map<std::string, Object> vars;
 };
 
-EnvPtr
-mlisp::make_env(EnvPtr base_env)
+mlisp::Env::Env() : data_{ std::make_shared<Data>() }
 {
-    auto env = std::make_shared<Env>();
-    env->base = base_env;
-    return env;
+}
+
+Env
+mlisp::Env::derive_new() const
+{
+    Env new_env;
+    new_env.data_->base = data_;
+    return new_env;
 }
 
 void
-mlisp::set(EnvPtr env, std::string name, Object value)
+mlisp::Env::set(std::string const& name, Object value)
 {
-    assert(env);
-    env->vars[name] = value;
+    data_->vars[name] = value;
 }
 
 bool
-mlisp::update(EnvPtr env, std::string const& name, Object value)
+mlisp::Env::update(std::string const& name, Object value)
 {
-    assert(env);
-
-    auto i = env->vars.find(name);
-    if (i != env->vars.end()) {
+    auto i = data_->vars.find(name);
+    if (i != data_->vars.end()) {
         i->second = value;
         return true;
     }
     return false;
 }
 
-bool
-mlisp::lookup(EnvPtr env, std::string const& name, Object& value)
+mlisp::Optional<Object>
+mlisp::Env::lookup(std::string const& name) const
 {
-    while (env) {
-        auto i = env->vars.find(name);
-        if (i != env->vars.end()) {
+    Optional<Object> value;
+    for (auto data = data_; data; data = data->base) {
+        auto i = data->vars.find(name);
+        if (i != data->vars.end()) {
             value = i->second;
-            return true;
+            break;
         }
-        env = env->base;
     }
-
-    return false;
+    return value;
 }
 
 
@@ -572,7 +572,7 @@ mlisp::lookup(EnvPtr env, std::string const& name, Object& value)
 namespace {
     class Evaluator: ObjectVisitor {
     public:
-        explicit Evaluator(EnvPtr env) : env_(env)
+        explicit Evaluator(Env env) : env_(env)
         {
         }
 
@@ -589,16 +589,15 @@ namespace {
         }
 
     private:
-        void visit(Pair list) override
+        void visit(Pair pair) override
         {
-            auto cmd = eval(car(list), env_);
+            auto cmd = eval(car(pair), env_);
             auto proc = to_proc(cmd);
-
-            if (proc) {
-                result_ = (*proc)(cdr(list), env_);
-            } else {
-                throw EvalError(std::to_string(cmd) + " is not a symbol.");
+            if (!proc) {
+                throw EvalError(std::to_string(cmd) + " is not a proc.");
             }
+
+            result_ = (*proc)(cdr(pair), env_);
         }
 
         void visit(Number num) override
@@ -614,18 +613,17 @@ namespace {
         void visit(Symbol sym) override
         {
             if (sym.name() == MLISP_BUILTIN_QUOTE) {
-                static auto quote_proc = make_proc([] (Pair args, EnvPtr) {
+                thread_local auto quote_proc = make_proc([] (Pair args, Env) {
                     return car(args);
                 });
                 result_ = quote_proc;
             }
             else {
-                Object value;
-                if (lookup(env_, sym.name(), value)) {
-                    result_ = value;
-                } else {
+                auto value = env_.lookup(sym.name());
+                if (!value) {
                     throw EvalError("Unknown symbol: " + sym.name());
                 }
+                result_ = *value;
             }
         }
 
@@ -635,13 +633,13 @@ namespace {
         }
 
     private:
-        EnvPtr env_;
+        Env env_;
         Object result_;
     };
 }
 
 mlisp::Object
-mlisp::eval(Object expr, EnvPtr env)
+mlisp::eval(Object expr, Env env)
 {
     return Evaluator(env).evaluate(expr);
 }
@@ -668,10 +666,10 @@ namespace {
         }
 
     private:
-        void visit(Pair list) override
+        void visit(Pair pair) override
         {
             auto quoted = false;
-            auto symbol = to_symbol(car(list));
+            auto symbol = to_symbol(car(pair));
 
             if (symbol && symbol->name() == MLISP_BUILTIN_QUOTE) {
                 ostream_ << "'";
@@ -682,10 +680,10 @@ namespace {
                 ostream_ << '(';
             }
             if (!quoted) {
-                auto head = car(list);
+                auto head = car(pair);
                 Printer{ostream_, true}.print(head);
             }
-            auto tail = cdr(list);
+            auto tail = cdr(pair);
             if (tail) {
                 if (!quoted) {
                     ostream_ << ' ';

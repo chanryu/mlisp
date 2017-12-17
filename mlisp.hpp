@@ -15,9 +15,8 @@ namespace mlisp {
     class String;
     class Symbol;
 
-    struct Env;
-    using EnvPtr = std::shared_ptr<Env>;
-    using Func = std::function<Object(Pair, EnvPtr)>;
+    class Env;
+    using Func = std::function<Object(Pair, Env)>;
 
     class ObjectVisitor {
     public:
@@ -93,7 +92,7 @@ namespace mlisp {
         explicit Proc(Func) noexcept;
         Proc(Proc const&) noexcept;
 
-        Object operator()(Pair, EnvPtr) const;
+        Object operator()(Pair, Env) const;
 
     public:
         struct Data;
@@ -181,12 +180,22 @@ namespace mlisp {
 
     // Env & eval
 
-    EnvPtr make_env(EnvPtr base_env);
-    void set(EnvPtr, std::string, Object);
-    bool update(EnvPtr, std::string const&, Object);
-    bool lookup(EnvPtr, std::string const&, Object&);
+    class Env {
+    public:
+        Env();
 
-    Object eval(Object expr, EnvPtr env); // throws EvalError
+        Env derive_new() const;
+
+        void set(std::string const&, Object);
+        bool update(std::string const&, Object);
+        Optional<Object> lookup(std::string const&) const;
+
+    private:
+        struct Data;
+        std::shared_ptr<Data> data_;
+    };
+
+    Object eval(Object expr, Env env); // throws EvalError
 }
 
 namespace mlisp {
@@ -288,11 +297,23 @@ namespace mlisp {
     template <typename T> class Optional {
     public:
         Optional() noexcept {}
-        Optional(T t) noexcept : t_ { std::make_shared<T>(t) } {}
+        Optional(T t) noexcept : t_{ std::make_shared<T>(t) } {}
 
         operator bool() const noexcept
         {
             return !!t_;
+        }
+
+        Optional<T>& operator = (T const& t)
+        {
+            if (t_) {
+                *t_ = t;
+            }
+            else {
+                t_ = std::make_shared<T>(t);
+            }
+
+            return *this;
         }
 
         T& operator *() const
