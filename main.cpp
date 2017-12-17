@@ -243,29 +243,30 @@ Env build_env()
         return Node{};
     }));
 
-    env.set("lambda", make_proc([] (List args, Env) {
-
+    env.set("lambda", make_proc([] (List args, Env env) {
         if (cdr(cdr(args))) {
             throw EvalError("lambda: too many args");
         }
 
         auto formal_args = to_formal_args(car(args), "lambda");
         auto lambda_body = cadr(args);
+        auto creator_env = env;
 
-        return make_proc([formal_args, lambda_body] (List args, Env env) {
+        return make_proc([formal_args, lambda_body, creator_env] (List args, Env env) {
 
-            auto lambda_env = env.derive_new();
+            auto lambda_env = creator_env.derive_new();
 
             auto syms = formal_args;
             while (syms) {
-                assert(is_symbol(car(syms)));
                 if (!args) {
                     EvalError("Proc: too few args");
                 }
 
-                auto sym = *to_symbol(car(syms));
+                assert(is_symbol(car(syms)));
+
+                auto sym = to_symbol(car(syms));
                 auto val = eval(car(args), env);
-                lambda_env.set(sym.name(), val);
+                lambda_env.set(sym->name(), val);
                 syms = cdr(syms);
                 args = cdr(args);
             }
@@ -278,48 +279,13 @@ Env build_env()
         });
     }));
 
-    env.set("closure", make_proc([] (List args, Env env) {
-        if (cdr(cdr(args))) {
-            throw EvalError("closure: too many args");
-        }
-
-        auto formal_args = to_formal_args(car(args), "closure");
-        auto closure_body = cadr(args);
-        auto closure_base_env = env;
-
-        return make_proc([formal_args, closure_body, closure_base_env] (List args, Env env) {
-
-            auto closure_env = closure_base_env.derive_new();
-
-            auto syms = formal_args;
-            while (syms) {
-                assert(is_symbol(car(syms)));
-                if (!args) {
-                    EvalError("Proc: too few args");
-                }
-
-                auto sym = *to_symbol(car(syms));
-                auto val = eval(car(args), env);
-                closure_env.set(sym.name(), val);
-                syms = cdr(syms);
-                args = cdr(args);
-            }
-
-            if (args) {
-                EvalError("Proc: too many args");
-            }
-
-            return eval(closure_body, closure_env);
-        });
-    }));
-
     env.set("def", make_proc([] (List args, Env env) {
         auto sym = to_symbol(car(args));
         if (!sym) {
             EvalError("def: " + std::to_string(car(args)) +
                       " is not a symbol.");
         }
-        auto val = eval(cons(Symbol{ "lambda" }, cdr(args)), env);
+        auto val = eval(cons(make_symbol("lambda"), cdr(args)), env);
         env.set(sym->name(), val);
         return val;
     }));
