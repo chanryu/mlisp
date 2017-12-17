@@ -489,7 +489,7 @@ mlisp::Parser::parse(std::istream& istream)
             node = make_number(std::stod(token));
         }
         else {
-            node = Symbol{ std::move(token) };
+            node = make_symbol(std::move(token));
         }
 
         while (true) {
@@ -499,7 +499,7 @@ mlisp::Parser::parse(std::istream& istream)
 
             if (stack_.top().type == Context::Type::quote) {
                 stack_.pop();
-                node = cons(Symbol{ MLISP_BUILTIN_QUOTE }, cons(node, {}));
+                node = cons(make_symbol(MLISP_BUILTIN_QUOTE), cons(node, {}));
                 continue;
             }
 
@@ -621,17 +621,14 @@ namespace {
 
         void visit(Symbol sym) override
         {
-            thread_local std::map<std::string, Node> builtin_symbols = {{
-                MLISP_BUILTIN_NIL, List{}
-            }, {
-                MLISP_BUILTIN_QUOTE, Proc{
-                    [](List args, Env) { return car(args); }
-                }
-            }};
-
-            auto i = builtin_symbols.find(sym.name());
-            if (i != builtin_symbols.end()) {
-                result_ = i->second;
+            if (sym.name() == MLISP_BUILTIN_NIL) {
+                result_ = List{};
+            }
+            else if (sym.name() == MLISP_BUILTIN_QUOTE) {
+                thread_local auto quote_proc = make_proc([](List args, Env) {
+                    return car(args);
+                });
+                result_ = quote_proc;
             }
             else {
                 auto value = env_.lookup(sym.name());
