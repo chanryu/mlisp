@@ -783,7 +783,7 @@ namespace {
 
         void visit(String str) override
         {
-            ostream_ << '"' << str.text() << '"';
+            ostream_ << str.text();
         }
 
         void visit(Symbol sym) override
