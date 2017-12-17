@@ -4,8 +4,6 @@
 #include "mlisp.hpp"
 
 namespace {
-    using namespace mlisp;
-
     bool is_paren(char c) noexcept
     {
         return c == '(' || c == ')';
@@ -469,7 +467,7 @@ mlisp::Symbol::name() const
 ////////////////////////////////////////////////////////////////////////////////
 // Parser
 
-mlisp::Optional<Node>
+mlisp::Optional<mlisp::Node>
 mlisp::Parser::parse(std::istream& istream)
 {
     while (true) {
@@ -598,7 +596,7 @@ mlisp::Env::Env() : data_{ std::make_shared<Data>() }
 {
 }
 
-Env
+mlisp::Env
 mlisp::Env::derive_new() const
 {
     Env new_env;
@@ -623,7 +621,7 @@ mlisp::Env::update(std::string const& name, Node value)
     return false;
 }
 
-mlisp::Optional<Node>
+mlisp::Optional<mlisp::Node>
 mlisp::Env::lookup(std::string const& name) const
 {
     for (auto data = data_; data; data = data->base) {
@@ -635,7 +633,7 @@ mlisp::Env::lookup(std::string const& name) const
     return {};
 }
 
-mlisp::Optional<Node>
+mlisp::Optional<mlisp::Node>
 mlisp::Env::shallow_lookup(std::string const& name) const
 {
     auto i = data_->vars.find(name);
@@ -649,7 +647,7 @@ mlisp::Env::shallow_lookup(std::string const& name) const
 ////////////////////////////////////////////////////////////////////////////////
 // eval
 
-namespace {
+namespace mlisp {
     class Evaluator: NodeVisitor {
     public:
         explicit Evaluator(Env env) : env_(env) { }
@@ -728,9 +726,7 @@ mlisp::eval(Node expr, Env env)
 ////////////////////////////////////////////////////////////////////////////////
 // Printer
 
-namespace {
-    using namespace mlisp;
-
+namespace mlisp {
     class Printer: NodeVisitor {
     public:
         Printer(std::ostream& ostream, bool is_head)
@@ -824,7 +820,7 @@ std::to_string(mlisp::Node const& node)
 ////////////////////////////////////////////////////////////////////////////////
 // Optional, to_xxx
 
-mlisp::Optional<List>
+mlisp::Optional<mlisp::List>
 mlisp::to_list(Node node) noexcept
 {
     if (!node.data_) {
@@ -839,7 +835,7 @@ mlisp::to_list(Node node) noexcept
     return {};
 }
 
-mlisp::Optional<Proc>
+mlisp::Optional<mlisp::Proc>
 mlisp::to_proc(Node node) noexcept
 {
     auto data = std::dynamic_pointer_cast<Proc::Data>(node.data_);
@@ -850,7 +846,7 @@ mlisp::to_proc(Node node) noexcept
     return {};
 }
 
-mlisp::Optional<Number>
+mlisp::Optional<mlisp::Number>
 mlisp::to_number(Node node) noexcept
 {
     auto data = std::dynamic_pointer_cast<Number::Data>(node.data_);
@@ -861,7 +857,7 @@ mlisp::to_number(Node node) noexcept
     return {};
 }
 
-mlisp::Optional<String>
+mlisp::Optional<mlisp::String>
 mlisp::to_string(Node node) noexcept
 {
     auto data = std::dynamic_pointer_cast<String::Data>(node.data_);
@@ -872,7 +868,7 @@ mlisp::to_string(Node node) noexcept
     return {};
 }
 
-mlisp::Optional<Symbol>
+mlisp::Optional<mlisp::Symbol>
 mlisp::to_symbol(Node node) noexcept
 {
     auto data = std::dynamic_pointer_cast<Symbol::Data>(node.data_);
