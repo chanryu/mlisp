@@ -48,6 +48,59 @@ Node cadr(List list)
     return car(cdr(list));
 }
 
+bool equal(Node n1, Node n2)
+{
+    auto num1 = to_number(n1);
+    if (num1) {
+        auto num2 = to_number(n2);
+        if (num2) {
+            return num1->value() == num2->value();
+        }
+        return false;
+    }
+
+    auto str1 = to_string(n1);
+    if (str1) {
+        auto str2 = to_string(n2);
+        if (str2) {
+            return str1->text() == str2->text();
+        }
+        return false;
+    }
+
+    auto sym1 = to_symbol(n1);
+    if (sym1) {
+        auto sym2 = to_symbol(n2);
+        if (sym2) {
+            return sym1->name() == sym2->name();
+        }
+        return false;
+    }
+
+    auto list1 = to_list(n1);
+    if (list1) {
+        auto list2 = to_list(n2);
+        if (list2) {
+            auto l1 = *list1;
+            auto l2 = *list2;
+            while (l1) {
+                if (!l2) {
+                    return false;
+                }
+                if (!equal(car(l1), car(l2))) {
+                    return false;
+                }
+                l1 = cdr(l1);
+                l2 = cdr(l2);
+            }
+            return !l2;
+        }
+        return false;
+    }
+
+    return false;
+}
+
 Env build_env()
 {
     auto env = Env{};
@@ -195,20 +248,18 @@ Env build_env()
         return make_number(result);
     }));
 
-    env.set("nil?", make_proc([] (List args, Env env) {
-        Node result;
+    env.set("nil?", make_proc([] (List args, Env env) -> Node {
         if (!eval(car(args), env)) {
-            result = Symbol{ "t" };
+            return Symbol{ "t" };
         }
-        return result;
+        return {};
     }));
 
-    env.set("zero?", make_proc([] (List args, Env env) {
-        Node result;
+    env.set("zero?", make_proc([] (List args, Env env) -> Node {
         if (to_number(eval(car(args), env), "zero?").value() == 0) {
-            result = Symbol{ "t" };
+            return Symbol{ "t" };
         }
-        return result;
+        return {};
     }));
 
     env.set("if", make_proc([] (List args, Env env) {
@@ -228,7 +279,7 @@ Env build_env()
         }
     }));
 
-    env.set("print", make_proc([] (List args, Env env) {
+    env.set("print", make_proc([] (List args, Env env) -> Node {
         auto first = true;
         while (args) {
             if (first) {
@@ -240,7 +291,7 @@ Env build_env()
             args = cdr(args);
         }
         std::cout << std::endl;
-        return Node{};
+        return {};
     }));
 
     env.set("lambda", make_proc([] (List args, Env env) {
@@ -288,6 +339,21 @@ Env build_env()
         auto val = eval(cons(make_symbol("lambda"), cdr(args)), env);
         env.set(sym->name(), val);
         return val;
+    }));
+
+    env.set("equal?", make_proc([] (List args, Env env) -> Node {
+        if (!args) {
+            throw EvalError("equal?: two few args");
+        }
+
+        auto obj = eval(car(args), env);
+        for (args = cdr(args); args; args = cdr(args)) {
+            if (!equal(obj, eval(car(args), env))) {
+                return {};  // nil => false
+            }
+        }
+
+        return make_symbol("t");
     }));
 
     return env;

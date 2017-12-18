@@ -303,32 +303,10 @@ namespace mlisp {
         Optional() noexcept {}
         Optional(T t) noexcept : t_{ std::make_shared<T>(t) } {}
 
-        operator bool() const noexcept
-        {
-            return !!t_;
-        }
+        operator bool() const noexcept { return !!t_; }
 
-        Optional<T>& operator = (T const& t)
-        {
-            if (t_) {
-                *t_ = t;
-            }
-            else {
-                t_ = std::make_shared<T>(t);
-            }
-
-            return *this;
-        }
-
-        T& operator *() const
-        {
-            return *t_;
-        }
-
-        T* operator ->() const
-        {
-            return t_.get();
-        }
+        T& operator *() const { return *t_; }
+        T* operator ->() const { return t_.get(); }
 
     private:
         std::shared_ptr<T> t_;
