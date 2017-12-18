@@ -144,6 +144,13 @@ Env build_env()
         return list;
     }));
 
+    env.set("list?", make_proc([] (List args, Env env) -> Node {
+        if (to_list(car(args))) {
+            return Symbol{ "t" };
+        }
+        return {};
+    }));
+
     env.set("set", make_proc([] (List args, Env env) {
         if (!args || !cdr(args)) {
             throw EvalError("set: too few parameters");
@@ -280,6 +287,7 @@ Env build_env()
     }));
 
     env.set("print", make_proc([] (List args, Env env) -> Node {
+        Node ret;
         auto first = true;
         while (args) {
             if (first) {
@@ -287,11 +295,11 @@ Env build_env()
             } else {
                 std::cout << " ";
             }
-            std::cout << eval(car(args), env);
+            std::cout << (ret = eval(car(args), env));
             args = cdr(args);
         }
         std::cout << std::endl;
-        return {};
+        return ret;
     }));
 
     env.set("lambda", make_proc([] (List args, Env env) {
