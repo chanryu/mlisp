@@ -1,17 +1,17 @@
+MLISP := mlisp
 BUILD := build
 
-#SRCS := $(shell find . -type f -name '*.cpp')
 SRCS := $(wildcard ./*.cpp)
 OBJS := $(patsubst ./%.cpp, $(BUILD)/%.o, $(SRCS))
-
-EXEC := mlisp
 
 CXXFLAGS += -Wall -DNDEBUG -pedantic -O2 -g -std=c++11
 
 .PHONY: clean
 
-$(EXEC): $(OBJS)
-	$(CXX) -o $@ $(OBJS)
+all: $(MLISP)
+
+$(MLISP): $(OBJS)
+	$(CXX) -o $@ $(OBJS) -L/usr/local/lib -I/usr/local/include -lreadline
 
 $(BUILD)/%.o: ./%.cpp
 	@mkdir -p $(dir $@)
@@ -27,5 +27,5 @@ $(BUILD)/%.o: ./%.cpp
 include $(shell find $(BUILD) -type f -name '*.P' 2> /dev/null)
 
 clean:
-	rm -f  $(EXEC)
+	rm -f  $(MLISP)
 	rm -rf $(BUILD)

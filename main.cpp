@@ -2,6 +2,9 @@
 #include <fstream>
 #include <sstream>
 
+#include <readline/readline.h>
+#include <readline/history.h>
+
 #include "mlisp.hpp"
 
 using namespace mlisp;
@@ -146,6 +149,13 @@ Env build_env()
 
     env.set("list?", make_proc([] (List args, Env env) -> Node {
         if (to_list(car(args))) {
+            return Symbol{ "t" };
+        }
+        return {};
+    }));
+
+    env.set("symbol?", make_proc([] (List args, Env env) -> Node {
+        if (to_symbol(car(args))) {
             return Symbol{ "t" };
         }
         return {};
@@ -369,24 +379,44 @@ Env build_env()
 
 int repl()
 {
+    static bool once = true;
+    if (once) {
+        once = false;
+        // By default readline does filename completion. We disable this
+        // by asking readline to just insert the TAB character itself.
+        rl_bind_key('\t', rl_insert);
+    }
+
+    auto get_line = [] (char const* prompt, std::string& line) -> bool {
+        auto buf = readline(prompt);
+        if (buf) {
+            line = buf;
+            free(buf);
+            if (!line.empty()) {
+                add_history(line.c_str());
+            }
+            return true;
+        }
+        return false;
+    };
+
     auto parser = Parser{};
     auto env = build_env();
 
-    auto readline = [] {
-        std::string line;
-        std::getline(std::cin, line);
-        return line;
-    };
-
     while (true) {
+        char const* prompt;
         if (parser.clean()) {
-            std::cout << "mlisp> ";
+            prompt = "mlisp> ";
         }
         else {
-            std::cout << "...... ";
+            prompt = "...... ";
         }
 
-        auto line = readline();
+        std::string line;
+        if (!get_line(prompt, line)) {
+            break;
+        }
+
         auto is = std::istringstream(line);
 
         while (!is.eof()) {

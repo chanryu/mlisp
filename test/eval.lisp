@@ -1,3 +1,13 @@
+(setq null nil)
+(setq null? nil?)
+(setq eq? equal?)
+(setq pair? list?)
+(setq write print)
+
+(print
+
+; BEGIN ORIGINAL
+
 ((lambda (eval environment)
    (eval eval
       (quote
@@ -67,3 +77,6 @@
  (cons (cons (quote null) (cons null null))
  (cons (cons (quote write) (cons write null)) null)))))))))
  )
+
+; END ORIGINAL
+)
