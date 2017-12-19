@@ -303,6 +303,12 @@ mlisp::Node::operator = (Symbol const& rhs) noexcept
     return *this;
 }
 
+bool
+mlisp::Node::operator == (Node const& rhs) noexcept
+{
+    return data_ == rhs.data_;
+}
+
 mlisp::Node::operator bool() const noexcept
 {
     return !!data_;
@@ -648,6 +654,7 @@ mlisp::Env::shallow_lookup(std::string const& name) const
 // eval
 
 namespace mlisp {
+
     class Evaluator: NodeVisitor {
     public:
         explicit Evaluator(Env env) : env_(env) { }
@@ -667,10 +674,10 @@ namespace mlisp {
     private:
         void visit(List list) override
         {
-            auto cmd = eval(car(list), env_);
-            auto proc = to_proc(cmd);
+            auto node = eval(car(list), env_);
+            auto proc = to_proc(node);
             if (!proc) {
-                throw EvalError(std::to_string(cmd) + " is not a proc.");
+                throw EvalError(std::to_string(node) + " is not a proc.");
             }
 
             result_ = (*proc)(cdr(list), env_);

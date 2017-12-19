@@ -51,6 +51,11 @@ Node cadr(List list)
     return car(cdr(list));
 }
 
+Node caddr(List list)
+{
+    return car(cdr(cdr(list)));
+}
+
 bool equal(Node n1, Node n2)
 {
     auto num1 = to_number(n1);
@@ -104,35 +109,65 @@ bool equal(Node n1, Node n2)
     return false;
 }
 
-Env build_env()
+void set_arithmetic_operators(Env env)
 {
-    auto env = Env{};
-
-    env.set("car", make_proc([] (List args, Env env) {
-        if (cdr(args)) {
-            throw EvalError("car: too many args given");
+    env.set("+", make_proc([] (List args, Env env) {
+        auto result = 0.0;
+        for (; args; args = cdr(args)) {
+            auto arg = eval(car(args), env);
+            result += to_number(arg, "+").value();
         }
-        return car(to_list(eval(car(args), env), "car"));
+        return make_number(result);
     }));
 
-    env.set("cdr", make_proc([] (List args, Env env) {
-        if (cdr(args)) {
-            throw EvalError("cdr: too many args given");
-        }
-        return cdr(to_list(eval(car(args), env), "cdr"));
-    }));
-
-    env.set("cons", make_proc([] (List args, Env env) {
-        if (!cdr(args)) {
-            throw EvalError("cons: not enough args");
+    env.set("-", make_proc([] (List args, Env env) {
+        if (!args) {
+            throw EvalError("-: too few parameters");
         }
 
-        auto head = eval(car(args), env);
-        auto tail = to_list(eval(cadr(args), env), "cons");
+        auto result = to_number(eval(car(args), env), "-").value();
+        args = cdr(args);
+        if (args) {
+            while (args) {
+                auto arg = eval(car(args), env);
+                result -= to_number(arg, "-").value();
+                args = cdr(args);
+            }
+        } else {
+            // unary -
+            result = -result;
+        }
 
-        return cons(head, tail);
+        return make_number(result);
     }));
 
+    env.set("*", make_proc([] (List args, Env env) {
+        auto result = 1.0;
+        for (; args; args = cdr(args)) {
+            auto arg = eval(car(args), env);
+            result *= to_number(arg, "*").value();
+        }
+
+        return make_number(result);
+    }));
+
+    env.set("/", make_proc([] (List args, Env env) {
+        if (!args || !cdr(args)) {
+            throw EvalError("/: too few parameters");
+        }
+
+        auto result = to_number(eval(car(args), env), "/").value();
+        for (args = cdr(args); args; args = cdr(args)) {
+            auto arg = eval(car(args), env);
+            result /= to_number(arg, "/").value();
+        }
+
+        return make_number(result);
+    }));
+}
+
+void set_complementary_operators(Env env)
+{
     env.set("list", make_proc([] (List args, Env env) {
         std::vector<Node> objs;
         for (; args; args = cdr(args)) {
@@ -211,60 +246,6 @@ Env build_env()
         return result;
     }));
 
-    env.set("+", make_proc([] (List args, Env env) {
-        auto result = 0.0;
-        for (; args; args = cdr(args)) {
-            auto arg = eval(car(args), env);
-            result += to_number(arg, "+").value();
-        }
-        return make_number(result);
-    }));
-
-    env.set("-", make_proc([] (List args, Env env) {
-        if (!args) {
-            throw EvalError("-: too few parameters");
-        }
-
-        auto result = to_number(eval(car(args), env), "-").value();
-        args = cdr(args);
-        if (args) {
-            while (args) {
-                auto arg = eval(car(args), env);
-                result -= to_number(arg, "-").value();
-                args = cdr(args);
-            }
-        } else {
-            // unary -
-            result = -result;
-        }
-
-        return make_number(result);
-    }));
-
-    env.set("*", make_proc([] (List args, Env env) {
-        auto result = 1.0;
-        for (; args; args = cdr(args)) {
-            auto arg = eval(car(args), env);
-            result *= to_number(arg, "*").value();
-        }
-
-        return make_number(result);
-    }));
-
-    env.set("/", make_proc([] (List args, Env env) {
-        if (!args || !cdr(args)) {
-            throw EvalError("/: too few parameters");
-        }
-
-        auto result = to_number(eval(car(args), env), "/").value();
-        for (args = cdr(args); args; args = cdr(args)) {
-            auto arg = eval(car(args), env);
-            result /= to_number(arg, "/").value();
-        }
-
-        return make_number(result);
-    }));
-
     env.set("nil?", make_proc([] (List args, Env env) -> Node {
         if (!eval(car(args), env)) {
             return Symbol{ "t" };
@@ -312,6 +293,91 @@ Env build_env()
         return ret;
     }));
 
+    env.set("equal?", make_proc([] (List args, Env env) -> Node {
+        if (!args) {
+            throw EvalError("equal?: two few args");
+        }
+
+        auto obj = eval(car(args), env);
+        for (args = cdr(args); args; args = cdr(args)) {
+            if (!equal(obj, eval(car(args), env))) {
+                return {};  // nil => false
+            }
+        }
+
+        return make_symbol("t");
+    }));
+}
+
+void set_primitive_operators(Env env)
+{
+    // "quote" is already built into the Parser/eval()
+    //env.set("quote", make_proc([](List args, Env) {
+    //    return car(args);
+    //}));
+
+    env.set("atom", make_proc([] (List args, Env env) -> Node {
+        auto list = to_list(eval(car(args), env));
+        if (!list || !*list) {
+            return make_symbol("t");
+        }
+        return {};
+    }));
+
+    env.set("eq", make_proc([] (List args, Env env) -> Node {
+        if (!car(args) || !cadr(args)) {
+            throw EvalError("eq: too few args given");
+        }
+        else if (caddr(args)) {
+            throw EvalError("eq: too many args given");
+        }
+        if (eval(car(args), env) == eval(cadr(args), env)) {
+            return make_symbol("t");
+        }
+        return {};
+    }));
+
+    env.set("car", make_proc([] (List args, Env env) {
+        if (cdr(args)) {
+            throw EvalError("car: too many args given");
+        }
+        return car(to_list(eval(car(args), env), "car"));
+    }));
+
+    env.set("cdr", make_proc([] (List args, Env env) {
+        if (cdr(args)) {
+            throw EvalError("cdr: too many args given");
+        }
+        return cdr(to_list(eval(car(args), env), "cdr"));
+    }));
+
+    env.set("cons", make_proc([] (List args, Env env) {
+        if (!cdr(args)) {
+            throw EvalError("cons: not enough args");
+        }
+
+        auto head = eval(car(args), env);
+        auto tail = to_list(eval(cadr(args), env), "cons");
+
+        return cons(head, tail);
+    }));
+
+    env.set("cond", make_proc([] (List args, Env env) -> Node {
+        while (args) {
+            auto clause = to_list(car(args), "cond");
+            auto pred = car(clause);
+            if (eval(pred, env)) {
+                Node result;
+                for (auto expr = cdr(clause); expr; expr = cdr(expr)) {
+                    result = eval(car(expr), env);
+                }
+                return result;
+            }
+            args = cdr(args);
+        }
+        return {};
+    }));
+
     env.set("lambda", make_proc([] (List args, Env env) {
         if (cdr(cdr(args))) {
             throw EvalError("lambda: too many args");
@@ -348,31 +414,23 @@ Env build_env()
         });
     }));
 
-    env.set("def", make_proc([] (List args, Env env) {
+    env.set("defun", make_proc([] (List args, Env env) {
         auto sym = to_symbol(car(args));
         if (!sym) {
-            EvalError("def: " + std::to_string(car(args)) +
+            EvalError("defun: " + std::to_string(car(args)) +
                       " is not a symbol.");
         }
         auto val = eval(cons(make_symbol("lambda"), cdr(args)), env);
         env.set(sym->name(), val);
         return val;
     }));
+}
 
-    env.set("equal?", make_proc([] (List args, Env env) -> Node {
-        if (!args) {
-            throw EvalError("equal?: two few args");
-        }
+Env build_env()
+{
+    auto env = Env{};
 
-        auto obj = eval(car(args), env);
-        for (args = cdr(args); args; args = cdr(args)) {
-            if (!equal(obj, eval(car(args), env))) {
-                return {};  // nil => false
-            }
-        }
-
-        return make_symbol("t");
-    }));
+    set_primitive_operators(env);
 
     return env;
 }

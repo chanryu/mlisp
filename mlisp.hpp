@@ -46,6 +46,7 @@ namespace mlisp {
         Node& operator = (String const&) noexcept;
         Node& operator = (Symbol const&) noexcept;
 
+        bool operator == (Node const&) noexcept;
         operator bool() const noexcept;
 
         void accept(NodeVisitor&);
@@ -59,9 +60,6 @@ namespace mlisp {
 
     private:
         std::shared_ptr<Data> data_;
-
-    private:
-        bool operator == (Node const&) noexcept = delete;
     };
 
     class List final {
