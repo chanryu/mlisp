@@ -5,7 +5,7 @@ TEST_COUNT=0
 PASS_COUNT=0
 
 test() {
-  $LISP -e "$1" | grep -q "^$2$"
+  echo "$1" | $LISP | grep -q "^$2$"
   if [ $? -eq 0 ]; then
     RESULT=" PASS"
     PASS_COUNT=$((PASS_COUNT + 1))
@@ -19,6 +19,8 @@ test() {
 # quote
 test "(quote a)" "a"
 test "(quote (a b c))" "(a b c)"
+test "'a" "a"
+test "'(a b c)" "(a b c)"
 
 # atom
 test "(atom 'a)" "t"

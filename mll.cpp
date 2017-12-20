@@ -1,7 +1,7 @@
 #include <cassert>
 #include <sstream>
 
-#include "mlisp.hpp"
+#include "mll.hpp"
 
 namespace {
     inline bool is_paren(char c)
@@ -132,7 +132,7 @@ namespace {
 ////////////////////////////////////////////////////////////////////////////////
 // Object::Data
 
-struct mlisp::Node::Data: std::enable_shared_from_this<Node::Data> {
+struct mll::Node::Data: std::enable_shared_from_this<Node::Data> {
     virtual ~Data() {}
     virtual void accept(NodeVisitor&) = 0;
 };
@@ -141,7 +141,7 @@ struct mlisp::Node::Data: std::enable_shared_from_this<Node::Data> {
 ////////////////////////////////////////////////////////////////////////////////
 // Pair::Data
 
-struct mlisp::List::Data: public mlisp::Node::Data {
+struct mll::List::Data: public mll::Node::Data {
 
     Data(Node h, List t) noexcept : head{h}, tail{t} { }
 
@@ -159,7 +159,7 @@ struct mlisp::List::Data: public mlisp::Node::Data {
 ////////////////////////////////////////////////////////////////////////////////
 // Proc::Data
 
-struct mlisp::Proc::Data: public mlisp::Node::Data {
+struct mll::Proc::Data: public mll::Node::Data {
 
     explicit Data(Func f) noexcept : func{f} { }
 
@@ -176,7 +176,7 @@ struct mlisp::Proc::Data: public mlisp::Node::Data {
 ////////////////////////////////////////////////////////////////////////////////
 // Number::Data
 
-struct mlisp::Number::Data: public mlisp::Node::Data {
+struct mll::Number::Data: public mll::Node::Data {
 
     explicit Data(double v) noexcept : value{v} { }
 
@@ -193,7 +193,7 @@ struct mlisp::Number::Data: public mlisp::Node::Data {
 ////////////////////////////////////////////////////////////////////////////////
 // String::Data
 
-struct mlisp::String::Data: public mlisp::Node::Data {
+struct mll::String::Data: public mll::Node::Data {
 
     explicit Data(std::string t) noexcept : text{std::move(t)} { }
 
@@ -210,7 +210,7 @@ struct mlisp::String::Data: public mlisp::Node::Data {
 ////////////////////////////////////////////////////////////////////////////////
 // Symbol::Data
 
-struct mlisp::Symbol::Data: public mlisp::Node::Data {
+struct mll::Symbol::Data: public mll::Node::Data {
 
     explicit Data(std::string n) noexcept : name{std::move(n)} { }
 
@@ -227,95 +227,95 @@ struct mlisp::Symbol::Data: public mlisp::Node::Data {
 ////////////////////////////////////////////////////////////////////////////////
 // Object
 
-mlisp::Node::Node() noexcept
+mll::Node::Node() noexcept
 {
 }
 
-mlisp::Node::Node(Node const& other) noexcept
+mll::Node::Node(Node const& other) noexcept
     : data_{other.data_}
 {
 }
 
-mlisp::Node::Node(List const& list) noexcept
+mll::Node::Node(List const& list) noexcept
     : data_{list.data_}
 {
 }
 
-mlisp::Node::Node(Proc const& proc) noexcept
+mll::Node::Node(Proc const& proc) noexcept
     : data_{proc.data_}
 {
 }
 
-mlisp::Node::Node(Number const& number) noexcept
+mll::Node::Node(Number const& number) noexcept
     : data_{number.data_}
 {
 }
 
-mlisp::Node::Node(String const& string) noexcept
+mll::Node::Node(String const& string) noexcept
     : data_{string.data_}
 {
 }
 
-mlisp::Node::Node(Symbol const& symbol) noexcept
+mll::Node::Node(Symbol const& symbol) noexcept
     : data_{symbol.data_}
 {
 }
 
-mlisp::Node&
-mlisp::Node::operator = (Node const& rhs) noexcept
+mll::Node&
+mll::Node::operator = (Node const& rhs) noexcept
 {
     data_ = rhs.data_;
     return *this;
 }
 
-mlisp::Node&
-mlisp::Node::operator = (List const& rhs) noexcept
+mll::Node&
+mll::Node::operator = (List const& rhs) noexcept
 {
     data_ = rhs.data_;
     return *this;
 }
 
-mlisp::Node&
-mlisp::Node::operator = (Proc const& rhs) noexcept
+mll::Node&
+mll::Node::operator = (Proc const& rhs) noexcept
 {
     data_ = rhs.data_;
     return *this;
 }
 
-mlisp::Node&
-mlisp::Node::operator = (Number const& rhs) noexcept
+mll::Node&
+mll::Node::operator = (Number const& rhs) noexcept
 {
     data_ = rhs.data_;
     return *this;
 }
 
-mlisp::Node&
-mlisp::Node::operator = (String const& rhs) noexcept
+mll::Node&
+mll::Node::operator = (String const& rhs) noexcept
 {
     data_ = rhs.data_;
     return *this;
 }
 
-mlisp::Node&
-mlisp::Node::operator = (Symbol const& rhs) noexcept
+mll::Node&
+mll::Node::operator = (Symbol const& rhs) noexcept
 {
     data_ = rhs.data_;
     return *this;
 }
 
 bool
-mlisp::Node::operator == (Node const& rhs) noexcept
+mll::Node::operator == (Node const& rhs) noexcept
 {
     return data_ == rhs.data_;
 }
 
-mlisp::Node::operator bool() const noexcept
+mll::Node::operator bool() const noexcept
 {
     return !!data_;
 }
 
 void
-mlisp::Node::accept(NodeVisitor& visitor)
+mll::Node::accept(NodeVisitor& visitor)
 {
     if (data_) {
         data_->accept(visitor);
@@ -325,38 +325,38 @@ mlisp::Node::accept(NodeVisitor& visitor)
 ////////////////////////////////////////////////////////////////////////////////
 // ConsCell
 
-mlisp::List::List() noexcept
+mll::List::List() noexcept
 {
 }
 
-mlisp::List::List(Node head, List tail) noexcept
+mll::List::List(Node head, List tail) noexcept
     : data_{ std::make_shared<Data>(head, tail) }
 {
 }
 
-mlisp::List::List(List const& other) noexcept
+mll::List::List(List const& other) noexcept
     : data_{other.data_}
 {
 }
 
-mlisp::List::List(std::shared_ptr<Data> data) noexcept
+mll::List::List(std::shared_ptr<Data> data) noexcept
     : data_{data}
 {
 }
 
-mlisp::List::operator bool() const noexcept
+mll::List::operator bool() const noexcept
 {
     return !!data_;
 }
 
-mlisp::Node
-mlisp::List::head() const
+mll::Node
+mll::List::head() const
 {
     return data_ ? data_->head : Node{};
 }
 
-mlisp::List
-mlisp::List::tail() const
+mll::List
+mll::List::tail() const
 {
     return data_ ? data_->tail : List{};
 }
@@ -365,23 +365,23 @@ mlisp::List::tail() const
 ////////////////////////////////////////////////////////////////////////////////
 // Procedure
 
-mlisp::Proc::Proc(Func func) noexcept
+mll::Proc::Proc(Func func) noexcept
     : data_{ std::make_shared<Data>(func) }
 {
 }
 
-mlisp::Proc::Proc(Proc const& other) noexcept
+mll::Proc::Proc(Proc const& other) noexcept
     : data_{other.data_}
 {
 }
 
-mlisp::Proc::Proc(std::shared_ptr<Data> data) noexcept
+mll::Proc::Proc(std::shared_ptr<Data> data) noexcept
     : data_{data}
 {
 }
 
-mlisp::Node
-mlisp::Proc::operator()(List args, Env env) const
+mll::Node
+mll::Proc::operator()(List args, Env env) const
 {
     if (data_->func) {
         return data_->func(args, env);
@@ -392,23 +392,23 @@ mlisp::Proc::operator()(List args, Env env) const
 ////////////////////////////////////////////////////////////////////////////////
 // Number
 
-mlisp::Number::Number(double value) noexcept
+mll::Number::Number(double value) noexcept
     : data_{ std::make_shared<Data>(value) }
 {
 }
 
-mlisp::Number::Number(Number const& other) noexcept
+mll::Number::Number(Number const& other) noexcept
     : data_{other.data_}
 {
 }
 
-mlisp::Number::Number(std::shared_ptr<Data> data) noexcept
+mll::Number::Number(std::shared_ptr<Data> data) noexcept
     : data_{data}
 {
 }
 
 double
-mlisp::Number::value() const
+mll::Number::value() const
 {
     return data_->value;
 }
@@ -416,23 +416,23 @@ mlisp::Number::value() const
 ////////////////////////////////////////////////////////////////////////////////
 // String
 
-mlisp::String::String(std::string text) noexcept
+mll::String::String(std::string text) noexcept
     : data_{ std::make_shared<Data>(std::move(text)) }
 {
 }
 
-mlisp::String::String(String const& other) noexcept
+mll::String::String(String const& other) noexcept
     : data_{other.data_}
 {
 }
 
-mlisp::String::String(std::shared_ptr<Data> data) noexcept
+mll::String::String(std::shared_ptr<Data> data) noexcept
     : data_{data}
 {
 }
 
 std::string const&
-mlisp::String::text() const
+mll::String::text() const
 {
     return data_->text;
 }
@@ -440,7 +440,7 @@ mlisp::String::text() const
 ////////////////////////////////////////////////////////////////////////////////
 // Symbol
 
-mlisp::Symbol::Symbol(std::string name) noexcept
+mll::Symbol::Symbol(std::string name) noexcept
 {
     thread_local std::map<std::string, std::shared_ptr<Data>> symbols;
 
@@ -453,18 +453,18 @@ mlisp::Symbol::Symbol(std::string name) noexcept
     }
 }
 
-mlisp::Symbol::Symbol(Symbol const& other) noexcept
+mll::Symbol::Symbol(Symbol const& other) noexcept
     : data_{other.data_}
 {
 }
 
-mlisp::Symbol::Symbol(std::shared_ptr<Data> data) noexcept
+mll::Symbol::Symbol(std::shared_ptr<Data> data) noexcept
     : data_{data}
 {
 }
 
 std::string const&
-mlisp::Symbol::name() const
+mll::Symbol::name() const
 {
     return data_->name;
 }
@@ -473,8 +473,8 @@ mlisp::Symbol::name() const
 ////////////////////////////////////////////////////////////////////////////////
 // Parser
 
-mlisp::Optional<mlisp::Node>
-mlisp::Parser::parse(std::istream& istream)
+mll::Optional<mll::Node>
+mll::Parser::parse(std::istream& istream)
 {
     while (true) {
 
@@ -555,13 +555,13 @@ mlisp::Parser::parse(std::istream& istream)
 }
 
 bool
-mlisp::Parser::clean() const noexcept
+mll::Parser::clean() const noexcept
 {
     return stack_.empty();
 }
 
 std::string
-mlisp::Parser::translate(std::string token) const
+mll::Parser::translate(std::string token) const
 {
     assert(token.length() >= 2);
     assert(token.front() == '"' && token.back() == '"');
@@ -593,17 +593,17 @@ mlisp::Parser::translate(std::string token) const
 ////////////////////////////////////////////////////////////////////////////////
 // Env
 
-struct mlisp::Env::Data {
+struct mll::Env::Data {
     std::shared_ptr<Data> base;
     std::map<std::string, Node> vars;
 };
 
-mlisp::Env::Env() : data_{ std::make_shared<Data>() }
+mll::Env::Env() : data_{ std::make_shared<Data>() }
 {
 }
 
-mlisp::Env
-mlisp::Env::derive_new() const
+mll::Env
+mll::Env::derive_new() const
 {
     Env new_env;
     new_env.data_->base = data_;
@@ -611,13 +611,13 @@ mlisp::Env::derive_new() const
 }
 
 void
-mlisp::Env::set(std::string const& name, Node value)
+mll::Env::set(std::string const& name, Node value)
 {
     data_->vars[name] = value;
 }
 
 bool
-mlisp::Env::update(std::string const& name, Node value)
+mll::Env::update(std::string const& name, Node value)
 {
     auto i = data_->vars.find(name);
     if (i != data_->vars.end()) {
@@ -627,8 +627,8 @@ mlisp::Env::update(std::string const& name, Node value)
     return false;
 }
 
-mlisp::Optional<mlisp::Node>
-mlisp::Env::lookup(std::string const& name) const
+mll::Optional<mll::Node>
+mll::Env::lookup(std::string const& name) const
 {
     for (auto data = data_; data; data = data->base) {
         auto i = data->vars.find(name);
@@ -639,8 +639,8 @@ mlisp::Env::lookup(std::string const& name) const
     return {};
 }
 
-mlisp::Optional<mlisp::Node>
-mlisp::Env::shallow_lookup(std::string const& name) const
+mll::Optional<mll::Node>
+mll::Env::shallow_lookup(std::string const& name) const
 {
     auto i = data_->vars.find(name);
     if (i != data_->vars.end()) {
@@ -653,7 +653,7 @@ mlisp::Env::shallow_lookup(std::string const& name) const
 ////////////////////////////////////////////////////////////////////////////////
 // eval
 
-namespace mlisp {
+namespace mll {
 
     class Evaluator: NodeVisitor {
     public:
@@ -724,8 +724,8 @@ namespace mlisp {
     };
 }
 
-mlisp::Node
-mlisp::eval(Node expr, Env env)
+mll::Node
+mll::eval(Node expr, Env env)
 {
     return Evaluator(env).evaluate(expr);
 }
@@ -733,7 +733,7 @@ mlisp::eval(Node expr, Env env)
 ////////////////////////////////////////////////////////////////////////////////
 // Printer
 
-namespace mlisp {
+namespace mll {
     class Printer: NodeVisitor {
     public:
         Printer(std::ostream& ostream, bool is_head)
@@ -811,20 +811,20 @@ namespace mlisp {
 }
 
 std::ostream&
-mlisp::operator << (std::ostream& ostream, mlisp::Node const& node)
+mll::operator << (std::ostream& ostream, mll::Node const& node)
 {
     Printer{ostream, true}.print(node);
     return ostream;
 }
 
 std::ostream&
-mlisp::operator << (std::ostream& ostream, mlisp::List const& ccl)
+mll::operator << (std::ostream& ostream, mll::List const& ccl)
 {
     return ostream << Node{ ccl };
 }
 
 std::string
-std::to_string(mlisp::Node const& node)
+std::to_string(mll::Node const& node)
 {
     return (ostringstream{} << node).str();
 }
@@ -832,8 +832,8 @@ std::to_string(mlisp::Node const& node)
 ////////////////////////////////////////////////////////////////////////////////
 // Optional, to_xxx
 
-mlisp::Optional<mlisp::List>
-mlisp::to_list(Node node) noexcept
+mll::Optional<mll::List>
+mll::to_list(Node node) noexcept
 {
     if (!node.data_) {
         return Optional<List>{{}}; // nil
@@ -847,8 +847,8 @@ mlisp::to_list(Node node) noexcept
     return {};
 }
 
-mlisp::Optional<mlisp::Proc>
-mlisp::to_proc(Node node) noexcept
+mll::Optional<mll::Proc>
+mll::to_proc(Node node) noexcept
 {
     auto data = std::dynamic_pointer_cast<Proc::Data>(node.data_);
     if (data) {
@@ -858,8 +858,8 @@ mlisp::to_proc(Node node) noexcept
     return {};
 }
 
-mlisp::Optional<mlisp::Number>
-mlisp::to_number(Node node) noexcept
+mll::Optional<mll::Number>
+mll::to_number(Node node) noexcept
 {
     auto data = std::dynamic_pointer_cast<Number::Data>(node.data_);
     if (data) {
@@ -869,8 +869,8 @@ mlisp::to_number(Node node) noexcept
     return {};
 }
 
-mlisp::Optional<mlisp::String>
-mlisp::to_string(Node node) noexcept
+mll::Optional<mll::String>
+mll::to_string(Node node) noexcept
 {
     auto data = std::dynamic_pointer_cast<String::Data>(node.data_);
     if (data) {
@@ -880,8 +880,8 @@ mlisp::to_string(Node node) noexcept
     return {};
 }
 
-mlisp::Optional<mlisp::Symbol>
-mlisp::to_symbol(Node node) noexcept
+mll::Optional<mll::Symbol>
+mll::to_symbol(Node node) noexcept
 {
     auto data = std::dynamic_pointer_cast<Symbol::Data>(node.data_);
     if (data) {

@@ -5,9 +5,9 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
-#include "mlisp.hpp"
+#include "mll.hpp"
 
-using namespace mlisp;
+using namespace mll;
 
 bool is_symbol(Node node)
 {
@@ -510,18 +510,20 @@ int run_stream(std::istream& is, std::ostream& os)
         auto parser = Parser{};
         auto env = build_env();
 
+        Node result;
         while (true) {
             auto expr = parser.parse(is);
             if (!expr) {
                 break;
             }
-
-            os << eval(*expr, env) << std::endl;
+            result = eval(*expr, env);
         }
 
         if (!is.eof()) {
             return -1;
         }
+
+        os << result << std::endl;
     }
     catch (ParseError& e) {
         std::cout << e.what() << std::endl;
@@ -550,23 +552,27 @@ int run_file(const char* filename)
 
 int main(int argc, char *argv[])
 {
-    if (argc == 1) {
-        return repl();
-    }
-
-    if (argc == 2) {
-        return run_file(argv[1]);
-    }
-
-    if (argc == 3) {
-        if (strcmp(argv[1], "-e")) {
-            // "-e" is the only option
-            return -1;
+    if (argc > 1) {
+        for (int i = 1; i < argc; ++i) {
+            int ret = run_file(argv[i]);
+            if (ret != 0) {
+                return ret;
+            }
         }
-
-        auto iss = std::istringstream{ argv[2] };
-        return run_stream(iss, std::cout);
+        return 0;
     }
 
-    return -1;
+    auto cin_piped = []() {
+        if (std::cin.get() != EOF) {
+            std::cin.unget();
+            return true;
+        }
+        return false;
+    }();
+
+    if (cin_piped) {
+        return run_stream(std::cin, std::cout);
+    }
+
+    return repl();
 }

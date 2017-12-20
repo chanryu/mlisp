@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-namespace mlisp {
+namespace mll {
 
     class Node;
     class List;
@@ -154,7 +154,7 @@ namespace mlisp {
     };
 }
 
-namespace mlisp {
+namespace mll {
 
     // Parser
 
@@ -177,7 +177,7 @@ namespace mlisp {
     };
 }
 
-namespace mlisp {
+namespace mll {
 
     // Env & eval
 
@@ -200,7 +200,7 @@ namespace mlisp {
     Node eval(Node expr, Env env); // throws EvalError
 }
 
-namespace mlisp {
+namespace mll {
 
     // Overloaded ostream << operators
 
@@ -209,10 +209,10 @@ namespace mlisp {
 }
 
 namespace std {
-    string to_string(mlisp::Node const&);
+    string to_string(mll::Node const&);
 }
 
-namespace mlisp {
+namespace mll {
 
     // Casting functions
 
@@ -223,7 +223,7 @@ namespace mlisp {
     Optional<Symbol> to_symbol(Node) noexcept;
 }
 
-namespace mlisp {
+namespace mll {
 
     // Exceptions
 
@@ -247,7 +247,7 @@ namespace mlisp {
     };
 }
 
-namespace mlisp {
+namespace mll {
 
     // Convience wrappers
 
@@ -292,7 +292,7 @@ namespace mlisp {
     }
 }
 
-namespace mlisp {
+namespace mll {
 
     // Optional template
 
