@@ -504,27 +504,22 @@ int repl()
     return parser.clean() ? 0 : -1;
 }
 
-int run_file(const char* filename)
+int run_stream(std::istream& is, std::ostream& os)
 {
-    std::ifstream ifs(filename);
-    if (!ifs.is_open()) {
-        return -1;
-    }
-
     try {
         auto parser = Parser{};
         auto env = build_env();
 
         while (true) {
-            auto expr = parser.parse(ifs);
+            auto expr = parser.parse(is);
             if (!expr) {
                 break;
             }
 
-            eval(*expr, env);
+            os << eval(*expr, env) << std::endl;
         }
 
-        if (!ifs.eof()) {
+        if (!is.eof()) {
             return -1;
         }
     }
@@ -540,13 +535,38 @@ int run_file(const char* filename)
     return 0;
 }
 
+int run_file(const char* filename)
+{
+    auto ifs = std::ifstream{ filename };
+    if (!ifs.is_open()) {
+        return -1;
+    }
+
+    // throw-away stream
+    std::ostringstream oss;
+
+    return run_stream(ifs, oss);
+}
+
 int main(int argc, char *argv[])
 {
-    using namespace mlisp;
-
     if (argc == 1) {
         return repl();
     }
 
-    return run_file(argv[1]);
+    if (argc == 2) {
+        return run_file(argv[1]);
+    }
+
+    if (argc == 3) {
+        if (strcmp(argv[1], "-e")) {
+            // "-e" is the only option
+            return -1;
+        }
+
+        auto iss = std::istringstream{ argv[2] };
+        return run_stream(iss, std::cout);
+    }
+
+    return -1;
 }
