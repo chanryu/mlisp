@@ -745,13 +745,18 @@ namespace mlisp {
                 node.accept(*this);
             }
             else {
-                ostream_ << MLISP_BUILTIN_NIL;
+                visit(List{});
             }
         }
 
     private:
         void visit(List list) override
         {
+            if (!list) {
+                ostream_ << MLISP_BUILTIN_NIL;
+                return;
+            }
+
             auto quoted = false;
             auto symbol = to_symbol(car(list));
 
