@@ -2,6 +2,8 @@
 #include <fstream>
 #include <sstream>
 
+#include <unistd.h> // isatty
+
 #include <readline/readline.h>
 #include <readline/history.h>
 
@@ -426,16 +428,7 @@ void set_primitive_operators(Env env)
     }));
 }
 
-Env build_env()
-{
-    auto env = Env{};
-
-    set_primitive_operators(env);
-
-    return env;
-}
-
-int repl()
+int repl(Env env)
 {
     static bool once = true;
     if (once) {
@@ -459,7 +452,6 @@ int repl()
     };
 
     auto parser = Parser{};
-    auto env = build_env();
 
     while (true) {
         char const* prompt;
@@ -504,26 +496,18 @@ int repl()
     return parser.clean() ? 0 : -1;
 }
 
-int run_stream(std::istream& is, std::ostream& os)
+int eval_stream(Env env, std::istream& is, std::ostream& os)
 {
     try {
         auto parser = Parser{};
-        auto env = build_env();
 
-        Node result;
         while (true) {
             auto expr = parser.parse(is);
             if (!expr) {
                 break;
             }
-            result = eval(*expr, env);
+            os << eval(*expr, env) << std::endl;
         }
-
-        if (!is.eof()) {
-            return -1;
-        }
-
-        os << result << std::endl;
     }
     catch (ParseError& e) {
         std::cout << e.what() << std::endl;
@@ -534,10 +518,10 @@ int run_stream(std::istream& is, std::ostream& os)
         return -1;
     }
 
-    return 0;
+    return is.eof() ? 0 : -1;
 }
 
-int run_file(const char* filename)
+int eval_file(Env env, const char* filename)
 {
     auto ifs = std::ifstream{ filename };
     if (!ifs.is_open()) {
@@ -546,33 +530,34 @@ int run_file(const char* filename)
 
     // throw-away stream
     std::ostringstream oss;
+    oss.setstate(std::ios_base::badbit);
 
-    return run_stream(ifs, oss);
+    return eval_stream(env, ifs, oss);
 }
 
 int main(int argc, char *argv[])
 {
-    if (argc > 1) {
-        for (int i = 1; i < argc; ++i) {
-            int ret = run_file(argv[i]);
-            if (ret != 0) {
-                return ret;
-            }
+    Env env;
+    set_primitive_operators(env);
+
+    for (int i = 1; i < argc; ++i) {
+        int ret = eval_file(env, argv[i]);
+        if (ret != 0) {
+            return ret;
         }
-        return 0;
     }
 
     auto cin_piped = []() {
-        if (std::cin.get() != EOF) {
-            std::cin.unget();
-            return true;
-        }
-        return false;
+        return !isatty(fileno(stdin));
     }();
 
     if (cin_piped) {
-        return run_stream(std::cin, std::cout);
+        return eval_stream(env, std::cin, std::cout);
     }
 
-    return repl();
+    if (argc > 1) {
+        return 0;
+    }
+
+    return repl(env);
 }
