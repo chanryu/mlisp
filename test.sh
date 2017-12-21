@@ -1,22 +1,29 @@
 #!/usr/bin/env bash
 
 LISP="./mlisp"
-TEST_COUNT=0
-PASS_COUNT=0
+FAIL_COUNT=0
+
+red() {
+  printf "\033[31m$1\033[0m"
+}
+
+green() {
+  printf "\033[32m$1\033[0m"
+}
 
 test() {
-  echo "$1" | $LISP | grep -q "^$2$"
+  EVAL=$(echo "$1" | $LISP)
+  echo "$EVAL" | grep -q "^$2$"
   if [ $? -eq 0 ]; then
-    RESULT=" PASS"
-    PASS_COUNT=$((PASS_COUNT + 1))
+    printf "%s $1 -> $2\n" $(green "PASS")
   else
-    RESULT="!FAIL"
+    FAIL_COUNT=$((FAIL_COUNT + 1))
+    printf "%s $1 -> $2 (actual: $EVAL)\n" $(red "FAIL")
   fi
-  echo "$RESULT: $1 -> $2"
-  TEST_COUNT=$((TEST_COUNT + 1))
 }
 
 # quote
+test "(quote a)" "1"
 test "(quote a)" "a"
 test "(quote (a b c))" "(a b c)"
 test "'a" "a"
@@ -62,5 +69,8 @@ test "(defun subst (x y z)
                         (subst x y (cdr z))))))
       (subst 'm 'b '(a b (a b c) d))" "(a m (a m c) d)"
 
-echo "Passed $PASS_COUNT of $TEST_COUNT"
-
+if [ $FAIL_COUNT -eq 0 ]; then
+  echo $(green "Passed all tests.")
+else
+  echo $(red "Failed $FAIL_COUNT test(s).")
+fi
