@@ -9,18 +9,18 @@
 namespace mll {
 
     class Node;
-    class List;
+    class Pair;
     class Proc;
     class Number;
     class String;
     class Symbol;
 
     class Env;
-    using Func = std::function<Node(List, Env)>;
+    using Func = std::function<Node(Pair, Env)>;
 
     class NodeVisitor {
     public:
-        virtual void visit(List) = 0;
+        virtual void visit(Pair) = 0;
         virtual void visit(Proc) = 0;
         virtual void visit(Number) = 0;
         virtual void visit(String) = 0;
@@ -33,14 +33,14 @@ namespace mll {
     public:
         Node() noexcept;
         Node(Node const&) noexcept;
-        Node(List const&) noexcept;
+        Node(Pair const&) noexcept;
         Node(Proc const&) noexcept;
         Node(Number const&) noexcept;
         Node(String const&) noexcept;
         Node(Symbol const&) noexcept;
 
         Node& operator = (Node const&) noexcept;
-        Node& operator = (List const&) noexcept;
+        Node& operator = (Pair const&) noexcept;
         Node& operator = (Proc const&) noexcept;
         Node& operator = (Number const&) noexcept;
         Node& operator = (String const&) noexcept;
@@ -52,7 +52,7 @@ namespace mll {
         void accept(NodeVisitor&);
 
         struct Data;
-        friend Optional<List> to_list(Node) noexcept;
+        friend Optional<Pair> to_pair(Node) noexcept;
         friend Optional<Proc> to_proc(Node) noexcept;
         friend Optional<Number> to_number(Node) noexcept;
         friend Optional<String> to_string(Node) noexcept;
@@ -62,26 +62,26 @@ namespace mll {
         std::shared_ptr<Data> data_;
     };
 
-    class List final {
+    class Pair final {
     public:
-        List() noexcept;
-        List(Node head, List tail) noexcept;
-        List(List const&) noexcept;
+        Pair() noexcept;
+        Pair(Node head, Pair tail) noexcept;
+        Pair(Pair const&) noexcept;
 
         operator bool() const noexcept;
 
         Node head() const;
-        List tail() const;
+        Pair tail() const;
 
     public:
         struct Data;
         friend class Node;
-        friend Node car(List) noexcept;
-        friend List cdr(List) noexcept;
-        friend Optional<List> to_list(Node) noexcept;
+        friend Node car(Pair) noexcept;
+        friend Pair cdr(Pair) noexcept;
+        friend Optional<Pair> to_pair(Node) noexcept;
 
     private:
-        List(std::shared_ptr<Data>) noexcept;
+        Pair(std::shared_ptr<Data>) noexcept;
         std::shared_ptr<Data> data_;
     };
 
@@ -90,7 +90,7 @@ namespace mll {
         explicit Proc(Func) noexcept;
         Proc(Proc const&) noexcept;
 
-        Node operator()(List, Env) const;
+        Node operator()(Pair, Env) const;
 
     public:
         struct Data;
@@ -205,7 +205,7 @@ namespace mll {
     // Overloaded ostream << operators
 
     std::ostream& operator << (std::ostream& os, Node const&);
-    std::ostream& operator << (std::ostream& os, List const&);
+    std::ostream& operator << (std::ostream& os, Pair const&);
 }
 
 namespace std {
@@ -216,7 +216,7 @@ namespace mll {
 
     // Casting functions
 
-    Optional<List> to_list(Node) noexcept;
+    Optional<Pair> to_pair(Node) noexcept;
     Optional<Proc> to_proc(Node) noexcept;
     Optional<Number> to_number(Node) noexcept;
     Optional<String> to_string(Node) noexcept;
@@ -251,9 +251,9 @@ namespace mll {
 
     // Convience wrappers
 
-    inline List make_pair(Node head, List tail) noexcept
+    inline Pair make_pair(Node head, Pair tail) noexcept
     {
-        return List{ head, tail };
+        return Pair{ head, tail };
     }
 
     inline Proc make_proc(Func func) noexcept
@@ -276,19 +276,19 @@ namespace mll {
         return Symbol{ std::move(name) };
     }
 
-    inline List cons(Node head, List tail) noexcept
+    inline Pair cons(Node head, Pair tail) noexcept
     {
         return make_pair(head, tail);
     }
 
-    inline Node car(List list) noexcept
+    inline Node car(Pair pair) noexcept
     {
-        return list.head();
+        return pair.head();
     }
 
-    inline List cdr(List list) noexcept
+    inline Pair cdr(Pair pair) noexcept
     {
-        return list.tail();
+        return pair.tail();
     }
 }
 

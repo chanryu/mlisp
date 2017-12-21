@@ -16,13 +16,13 @@ bool is_symbol(Node node)
     return !!to_symbol(node);
 }
 
-List to_list(Node node, char const* cmd)
+Pair to_pair(Node node, char const* cmd)
 {
-    auto list = to_list(node);
-    if (!list) {
-        throw EvalError(cmd + (": " + std::to_string(node)) + " is not a list.");
+    auto pair = to_pair(node);
+    if (!pair) {
+        throw EvalError(cmd + (": " + std::to_string(node)) + " is not a pair.");
     }
-    return *list;
+    return *pair;
 }
 
 Number to_number(Node node, char const* cmd)
@@ -34,9 +34,9 @@ Number to_number(Node node, char const* cmd)
     return *number;
 }
 
-List to_formal_args(Node node, char const* cmd)
+Pair to_formal_args(Node node, char const* cmd)
 {
-    auto args = to_list(node, cmd);
+    auto args = to_pair(node, cmd);
 
     // validate args (must be list of symbols)
     for (auto c = args; c; c = cdr(c)) {
@@ -48,14 +48,14 @@ List to_formal_args(Node node, char const* cmd)
     return args;
 }
 
-Node cadr(List list)
+Node cadr(Pair pair)
 {
-    return car(cdr(list));
+    return car(cdr(pair));
 }
 
-Node caddr(List list)
+Node caddr(Pair pair)
 {
-    return car(cdr(cdr(list)));
+    return car(cdr(cdr(pair)));
 }
 
 bool equal(Node n1, Node n2)
@@ -87,9 +87,9 @@ bool equal(Node n1, Node n2)
         return false;
     }
 
-    auto list1 = to_list(n1);
+    auto list1 = to_pair(n1);
     if (list1) {
-        auto list2 = to_list(n2);
+        auto list2 = to_pair(n2);
         if (list2) {
             auto l1 = *list1;
             auto l2 = *list2;
@@ -113,7 +113,7 @@ bool equal(Node n1, Node n2)
 
 void set_arithmetic_operators(Env env)
 {
-    env.set("+", make_proc([] (List args, Env env) {
+    env.set("+", make_proc([] (Pair args, Env env) {
         auto result = 0.0;
         for (; args; args = cdr(args)) {
             auto arg = eval(car(args), env);
@@ -122,7 +122,7 @@ void set_arithmetic_operators(Env env)
         return make_number(result);
     }));
 
-    env.set("-", make_proc([] (List args, Env env) {
+    env.set("-", make_proc([] (Pair args, Env env) {
         if (!args) {
             throw EvalError("-: too few parameters");
         }
@@ -143,7 +143,7 @@ void set_arithmetic_operators(Env env)
         return make_number(result);
     }));
 
-    env.set("*", make_proc([] (List args, Env env) {
+    env.set("*", make_proc([] (Pair args, Env env) {
         auto result = 1.0;
         for (; args; args = cdr(args)) {
             auto arg = eval(car(args), env);
@@ -153,7 +153,7 @@ void set_arithmetic_operators(Env env)
         return make_number(result);
     }));
 
-    env.set("/", make_proc([] (List args, Env env) {
+    env.set("/", make_proc([] (Pair args, Env env) {
         if (!args || !cdr(args)) {
             throw EvalError("/: too few parameters");
         }
@@ -170,13 +170,13 @@ void set_arithmetic_operators(Env env)
 
 void set_complementary_operators(Env env)
 {
-    env.set("list", make_proc([] (List args, Env env) {
+    env.set("list", make_proc([] (Pair args, Env env) {
         std::vector<Node> objs;
         for (; args; args = cdr(args)) {
             objs.push_back(eval(car(args), env));
         }
 
-        List list;
+        Pair list;
         while (!objs.empty()) {
             list = cons(objs.back(), list);
             objs.pop_back();
@@ -184,21 +184,14 @@ void set_complementary_operators(Env env)
         return list;
     }));
 
-    env.set("list?", make_proc([] (List args, Env env) -> Node {
-        if (to_list(car(args))) {
-            return Symbol{ "t" };
-        }
-        return {};
-    }));
-
-    env.set("symbol?", make_proc([] (List args, Env env) -> Node {
+    env.set("symbol?", make_proc([] (Pair args, Env env) -> Node {
         if (to_symbol(car(args))) {
             return Symbol{ "t" };
         }
         return {};
     }));
 
-    env.set("set", make_proc([] (List args, Env env) {
+    env.set("set", make_proc([] (Pair args, Env env) {
         if (!args || !cdr(args)) {
             throw EvalError("set: too few parameters");
         }
@@ -218,7 +211,7 @@ void set_complementary_operators(Env env)
         return value;
     }));
 
-    env.set("setq", make_proc([] (List args, Env env) {
+    env.set("setq", make_proc([] (Pair args, Env env) {
         if (!args || !cdr(args)) {
             throw EvalError("setq: too few parameters");
         }
@@ -238,7 +231,7 @@ void set_complementary_operators(Env env)
         return value;
     }));
 
-    env.set("do", make_proc([] (List args, Env env) {
+    env.set("do", make_proc([] (Pair args, Env env) {
         env = env.derive_new();
         Node result;
         while (args) {
@@ -248,21 +241,21 @@ void set_complementary_operators(Env env)
         return result;
     }));
 
-    env.set("nil?", make_proc([] (List args, Env env) -> Node {
+    env.set("nil?", make_proc([] (Pair args, Env env) -> Node {
         if (!eval(car(args), env)) {
             return Symbol{ "t" };
         }
         return {};
     }));
 
-    env.set("zero?", make_proc([] (List args, Env env) -> Node {
+    env.set("zero?", make_proc([] (Pair args, Env env) -> Node {
         if (to_number(eval(car(args), env), "zero?").value() == 0) {
             return Symbol{ "t" };
         }
         return {};
     }));
 
-    env.set("if", make_proc([] (List args, Env env) {
+    env.set("if", make_proc([] (Pair args, Env env) {
         auto cond = car(args);
         if (!cdr(args)) {
             throw EvalError("if: too few arguments");
@@ -279,7 +272,7 @@ void set_complementary_operators(Env env)
         }
     }));
 
-    env.set("print", make_proc([] (List args, Env env) -> Node {
+    env.set("print", make_proc([] (Pair args, Env env) -> Node {
         Node ret;
         auto first = true;
         while (args) {
@@ -295,7 +288,7 @@ void set_complementary_operators(Env env)
         return ret;
     }));
 
-    env.set("equal?", make_proc([] (List args, Env env) -> Node {
+    env.set("equal?", make_proc([] (Pair args, Env env) -> Node {
         if (!args) {
             throw EvalError("equal?: two few args");
         }
@@ -318,15 +311,15 @@ void set_primitive_operators(Env env)
     //    return car(args);
     //}));
 
-    env.set("atom", make_proc([] (List args, Env env) -> Node {
-        auto list = to_list(eval(car(args), env));
-        if (!list || !*list) {
+    env.set("atom", make_proc([] (Pair args, Env env) -> Node {
+        auto pair = to_pair(eval(car(args), env));
+        if (!pair || !*pair) {
             return make_symbol("t");
         }
         return {};
     }));
 
-    env.set("eq", make_proc([] (List args, Env env) -> Node {
+    env.set("eq", make_proc([] (Pair args, Env env) -> Node {
         if (!car(args) || !cadr(args)) {
             throw EvalError("eq: too few args given");
         }
@@ -339,34 +332,34 @@ void set_primitive_operators(Env env)
         return {};
     }));
 
-    env.set("car", make_proc([] (List args, Env env) {
+    env.set("car", make_proc([] (Pair args, Env env) {
         if (cdr(args)) {
             throw EvalError("car: too many args given");
         }
-        return car(to_list(eval(car(args), env), "car"));
+        return car(to_pair(eval(car(args), env), "car"));
     }));
 
-    env.set("cdr", make_proc([] (List args, Env env) {
+    env.set("cdr", make_proc([] (Pair args, Env env) {
         if (cdr(args)) {
             throw EvalError("cdr: too many args given");
         }
-        return cdr(to_list(eval(car(args), env), "cdr"));
+        return cdr(to_pair(eval(car(args), env), "cdr"));
     }));
 
-    env.set("cons", make_proc([] (List args, Env env) {
+    env.set("cons", make_proc([] (Pair args, Env env) {
         if (!cdr(args)) {
             throw EvalError("cons: not enough args");
         }
 
         auto head = eval(car(args), env);
-        auto tail = to_list(eval(cadr(args), env), "cons");
+        auto tail = to_pair(eval(cadr(args), env), "cons");
 
         return cons(head, tail);
     }));
 
-    env.set("cond", make_proc([] (List args, Env env) -> Node {
+    env.set("cond", make_proc([] (Pair args, Env env) -> Node {
         while (args) {
-            auto clause = to_list(car(args), "cond");
+            auto clause = to_pair(car(args), "cond");
             auto pred = car(clause);
             if (eval(pred, env)) {
                 Node result;
@@ -380,7 +373,7 @@ void set_primitive_operators(Env env)
         return {};
     }));
 
-    env.set("lambda", make_proc([] (List args, Env env) {
+    env.set("lambda", make_proc([] (Pair args, Env env) {
         if (cdr(cdr(args))) {
             throw EvalError("lambda: too many args");
         }
@@ -389,7 +382,7 @@ void set_primitive_operators(Env env)
         auto lambda_body = cadr(args);
         auto creator_env = env;
 
-        return make_proc([formal_args, lambda_body, creator_env] (List args, Env env) {
+        return make_proc([formal_args, lambda_body, creator_env] (Pair args, Env env) {
 
             auto lambda_env = creator_env.derive_new();
 
@@ -416,7 +409,7 @@ void set_primitive_operators(Env env)
         });
     }));
 
-    env.set("defun", make_proc([] (List args, Env env) {
+    env.set("defun", make_proc([] (Pair args, Env env) {
         auto sym = to_symbol(car(args));
         if (!sym) {
             EvalError("defun: " + std::to_string(car(args)) +

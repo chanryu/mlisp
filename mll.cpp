@@ -141,19 +141,19 @@ struct mll::Node::Data: std::enable_shared_from_this<Node::Data> {
 ////////////////////////////////////////////////////////////////////////////////
 // Pair::Data
 
-struct mll::List::Data: public mll::Node::Data {
+struct mll::Pair::Data: public mll::Node::Data {
 
-    Data(Node h, List t) noexcept : head{h}, tail{t} { }
+    Data(Node h, Pair t) noexcept : head{h}, tail{t} { }
 
     void accept(NodeVisitor& visitor) override
     {
-        visitor.visit(List{
+        visitor.visit(Pair{
             std::static_pointer_cast<Data>(shared_from_this())
         });
     }
 
     Node const head;
-    List const tail;
+    Pair const tail;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -236,8 +236,8 @@ mll::Node::Node(Node const& other) noexcept
 {
 }
 
-mll::Node::Node(List const& list) noexcept
-    : data_{list.data_}
+mll::Node::Node(Pair const& pair) noexcept
+    : data_{pair.data_}
 {
 }
 
@@ -269,7 +269,7 @@ mll::Node::operator = (Node const& rhs) noexcept
 }
 
 mll::Node&
-mll::Node::operator = (List const& rhs) noexcept
+mll::Node::operator = (Pair const& rhs) noexcept
 {
     data_ = rhs.data_;
     return *this;
@@ -325,40 +325,40 @@ mll::Node::accept(NodeVisitor& visitor)
 ////////////////////////////////////////////////////////////////////////////////
 // ConsCell
 
-mll::List::List() noexcept
+mll::Pair::Pair() noexcept
 {
 }
 
-mll::List::List(Node head, List tail) noexcept
+mll::Pair::Pair(Node head, Pair tail) noexcept
     : data_{ std::make_shared<Data>(head, tail) }
 {
 }
 
-mll::List::List(List const& other) noexcept
+mll::Pair::Pair(Pair const& other) noexcept
     : data_{other.data_}
 {
 }
 
-mll::List::List(std::shared_ptr<Data> data) noexcept
+mll::Pair::Pair(std::shared_ptr<Data> data) noexcept
     : data_{data}
 {
 }
 
-mll::List::operator bool() const noexcept
+mll::Pair::operator bool() const noexcept
 {
     return !!data_;
 }
 
 mll::Node
-mll::List::head() const
+mll::Pair::head() const
 {
     return data_ ? data_->head : Node{};
 }
 
-mll::List
-mll::List::tail() const
+mll::Pair
+mll::Pair::tail() const
 {
-    return data_ ? data_->tail : List{};
+    return data_ ? data_->tail : Pair{};
 }
 
 
@@ -381,7 +381,7 @@ mll::Proc::Proc(std::shared_ptr<Data> data) noexcept
 }
 
 mll::Node
-mll::Proc::operator()(List args, Env env) const
+mll::Proc::operator()(Pair args, Env env) const
 {
     if (data_->func) {
         return data_->func(args, env);
@@ -497,7 +497,7 @@ mll::Parser::parse(std::istream& istream)
         Node node;
 
         if (token == ")") {
-            List list;
+            Pair list;
             while (true) {
                 if (stack_.empty() ||
                     stack_.top().type == Context::Type::quote) {
@@ -672,15 +672,15 @@ namespace mll {
         }
 
     private:
-        void visit(List list) override
+        void visit(Pair pair) override
         {
-            auto node = eval(car(list), env_);
+            auto node = eval(car(pair), env_);
             auto proc = to_proc(node);
             if (!proc) {
                 throw EvalError(std::to_string(node) + " is not a proc.");
             }
 
-            result_ = (*proc)(cdr(list), env_);
+            result_ = (*proc)(cdr(pair), env_);
         }
 
         void visit(Number num) override
@@ -696,10 +696,10 @@ namespace mll {
         void visit(Symbol sym) override
         {
             if (sym.name() == MLISP_BUILTIN_NIL) {
-                result_ = List{};
+                result_ = Pair{};
             }
             else if (sym.name() == MLISP_BUILTIN_QUOTE) {
-                thread_local auto quote_proc = make_proc([](List args, Env) {
+                thread_local auto quote_proc = make_proc([](Pair args, Env) {
                     return car(args);
                 });
                 result_ = quote_proc;
@@ -745,20 +745,20 @@ namespace mll {
                 node.accept(*this);
             }
             else {
-                visit(List{});
+                visit(Pair{});
             }
         }
 
     private:
-        void visit(List list) override
+        void visit(Pair pair) override
         {
-            if (!list) {
+            if (!pair) {
                 ostream_ << MLISP_BUILTIN_NIL;
                 return;
             }
 
             auto quoted = false;
-            auto symbol = to_symbol(car(list));
+            auto symbol = to_symbol(car(pair));
 
             if (symbol && symbol->name() == MLISP_BUILTIN_QUOTE) {
                 ostream_ << "'";
@@ -769,10 +769,10 @@ namespace mll {
                 ostream_ << '(';
             }
             if (!quoted) {
-                auto head = car(list);
+                auto head = car(pair);
                 Printer{ostream_, true}.print(head);
             }
-            auto tail = cdr(list);
+            auto tail = cdr(pair);
             if (tail) {
                 if (!quoted) {
                     ostream_ << ' ';
@@ -818,7 +818,7 @@ mll::operator << (std::ostream& ostream, mll::Node const& node)
 }
 
 std::ostream&
-mll::operator << (std::ostream& ostream, mll::List const& ccl)
+mll::operator << (std::ostream& ostream, mll::Pair const& ccl)
 {
     return ostream << Node{ ccl };
 }
@@ -832,16 +832,16 @@ std::to_string(mll::Node const& node)
 ////////////////////////////////////////////////////////////////////////////////
 // Optional, to_xxx
 
-mll::Optional<mll::List>
-mll::to_list(Node node) noexcept
+mll::Optional<mll::Pair>
+mll::to_pair(Node node) noexcept
 {
     if (!node.data_) {
-        return Optional<List>{{}}; // nil
+        return Optional<Pair>{{}}; // nil
     }
 
-    auto data = std::dynamic_pointer_cast<List::Data>(node.data_);
+    auto data = std::dynamic_pointer_cast<Pair::Data>(node.data_);
     if (data) {
-        return { List{ data } };
+        return { Pair{ data } };
     }
 
     return {};
