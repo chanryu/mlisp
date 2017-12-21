@@ -23,7 +23,6 @@ test() {
 }
 
 # quote
-test "(quote a)" "1"
 test "(quote a)" "a"
 test "(quote (a b c))" "(a b c)"
 test "'a" "a"
