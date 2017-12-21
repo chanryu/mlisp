@@ -1,4 +1,3 @@
-MLISP := mlisp
 BUILD := build
 
 SRCS := $(wildcard ./*.cpp)
@@ -6,11 +5,11 @@ OBJS := $(patsubst ./%.cpp, $(BUILD)/%.cpp.o, $(SRCS))
 
 CXXFLAGS += -Wall -DNDEBUG -pedantic -O2 -g -std=c++11
 
-.PHONY: clean test
+.PHONY: clean mlisp-test
 
-all: $(MLISP) test
+all: mlisp-test
 
-$(MLISP): $(OBJS)
+mlisp: $(OBJS)
 	$(CXX) -o $@ $(OBJS) -L/usr/local/lib -I/usr/local/include -lreadline
 
 $(BUILD)/%.cpp.o: ./%.cpp
@@ -26,9 +25,9 @@ $(BUILD)/%.cpp.o: ./%.cpp
 
 include $(shell find $(BUILD) -type f -name '*.P' 2> /dev/null)
 
-test: $(MLISP)
-	@./test.sh
+mlisp-test: mlisp
+	@./mlisp-test.sh
 
 clean:
-	rm -f  $(MLISP)
+	rm -f  mlisp
 	rm -rf $(BUILD)
