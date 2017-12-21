@@ -298,7 +298,7 @@ namespace mll {
     // A quasy replacement for std::experimental::optional
     template <typename T> class Optional final {
     public:
-        Optional() noexcept : engaged_{false}, zero_{0}
+        Optional() noexcept : engaged_{false}
         {
         }
 
@@ -344,7 +344,6 @@ namespace mll {
     private:
         bool engaged_;
         union {
-            char zero_;
             T value_;
         };
     };
