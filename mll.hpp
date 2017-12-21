@@ -1,3 +1,4 @@
+#include <cassert>
 #include <iostream>
 #include <map>
 #include <memory>
@@ -294,19 +295,57 @@ namespace mll {
 
 namespace mll {
 
-    // Optional template
-
-    template <typename T> class Optional {
+    // A quasy replacement for std::experimental::optional
+    template <typename T> class Optional final {
     public:
-        Optional() noexcept {}
-        Optional(T t) noexcept : t_{ std::make_shared<T>(t) } {}
+        Optional() noexcept : engaged_{false}, zero_{0}
+        {
+        }
 
-        operator bool() const noexcept { return !!t_; }
+        Optional(T t) noexcept : engaged_{true}
+        {
+            new (&value_) T(t);
+        }
 
-        T& operator *() const { return *t_; }
-        T* operator ->() const { return t_.get(); }
+        Optional(Optional const& other) noexcept : engaged_{other.engaged_}
+        {
+            if (engaged_) {
+                new (&value_) T(other.value_);
+            }
+        }
+
+        ~Optional()
+        {
+            if (engaged_) {
+                value_.~T();
+            }
+        }
+
+        Optional& operator = (Optional const&) = delete;
+        bool operator == (Optional const&) = delete;
+
+        operator bool() const noexcept
+        {
+            return engaged_;
+        }
+
+        T& operator *() const
+        {
+            assert(engaged_);
+            return value_;
+        }
+
+        T* operator ->() const
+        {
+            assert(engaged_);
+            return &value_;
+        }
 
     private:
-        std::shared_ptr<T> t_;
+        bool engaged_;
+        union {
+            char zero_;
+            T value_;
+        };
     };
 }

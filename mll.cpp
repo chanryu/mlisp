@@ -1,4 +1,3 @@
-#include <cassert>
 #include <sstream>
 
 #include "mll.hpp"
