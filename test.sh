@@ -12,7 +12,11 @@ green() {
 }
 
 test() {
-  EVAL=$(echo "$1" | $LISP)
+  if [ -z "$3" ]; then
+    EVAL=$(echo "$1" | $LISP)
+  else
+    EVAL=$(echo "$1" | $LISP $3.lisp)
+  fi
   echo "$EVAL" | grep -q "^$2$"
   if [ $? -eq 0 ]; then
     printf "%s $1 -> $2\n" $(green "PASS")
@@ -22,9 +26,15 @@ test() {
   fi
 }
 
+test-op() {
+  test "$1" "$2" "op"
+}
+
+test-subst() {
+  test "$1" "$2" "subst"
+}
+
 # quote
-test "(quote a)" "a"
-test "(quote (a b c))" "(a b c)"
 test "'a" "a"
 test "'(a b c)" "(a b c)"
 
@@ -59,17 +69,43 @@ test "(cond ((eq 'a 'b) 'first) ((atom 'a) 'second))" "second"
 test "((lambda (x) (cons x '(b))) 'a)" "(a b)"
 test "((lambda (x y) (cons x (cdr y))) 'z '(a b c))" "(z b c)"
 
-# defun
-test "(defun subst (x y z)
-        (cond ((atom z)
-               (cond ((eq z y) x)
-                     ('t z)))
-              ('t (cons (subst x y (car z))
-                        (subst x y (cdr z))))))
-      (subst 'm 'b '(a b (a b c) d))" "(a m (a m c) d)"
+# cadr
+test-op "(cadr '((a b) (c d) e))" "(c d)"
+
+# caddr
+test-op "(caddr '((a b) (c d) e))" "e"
+
+# cdar
+test-op "(cdar '((a b) (c d) e))" "(b)"
+
+# null.
+test-op "(null. 'a)" "nil"
+test-op "(null. '())" "t"
+
+# and.
+test-op "(and. (atom 'a) (eq 'a 'a))" "t"
+
+# not.
+test-op "(not. (eq 'a 'a))" "nil"
+test-op "(not. (eq 'a 'b))" "t"
+
+# append.
+test-op "(append. '(a b) '(c d))" "(a b c d)"
+test-op "(append. '() '(c d))" "(c d)"
+
+# pair.
+test-op "(pair. '(x y z) '(a b c))" "((x a) (y b) (z c))"
+
+# assoc.
+test-op "(assoc. 'x '((x a) (y b)))" "a"
+test-op "(assoc. 'x '((x new) (x a) (y b)))" "new"
+
+# subst
+test-subst "(subst 'm 'b '(a b (a b c) d))" "(a m (a m c) d)" "subst"
+
 
 if [ $FAIL_COUNT -eq 0 ]; then
-  echo $(green "Passed all tests.")
+  echo "All tests passed."
 else
-  echo $(red "Failed $FAIL_COUNT test(s).")
+  echo $(red "$FAIL_COUNT test(s) failed.")
 fi
