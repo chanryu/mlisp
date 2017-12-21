@@ -168,6 +168,10 @@ namespace mll {
         virtual std::string translate(std::string token) const;
 
     private:
+        bool get_token(std::istream& istream);
+        std::string token_;
+        bool token_escaped_;
+
         struct Context {
             enum class Type { quote, paren, list };
             Type type;
@@ -321,8 +325,17 @@ namespace mll {
             }
         }
 
-        Optional& operator = (Optional const&) = delete;
-        bool operator == (Optional const&) = delete;
+        Optional& operator = (Optional const& rhs)
+        {
+            if (engaged_) {
+                value_.~T();
+            }
+
+            engaged_ = rhs.engaged_;
+            if (engaged_) {
+                new (&value_) T(rhs.value_);
+            }
+        }
 
         operator bool() const noexcept
         {
@@ -346,5 +359,6 @@ namespace mll {
         union {
             T value_;
         };
+        bool operator == (Optional const&) = delete;
     };
 }

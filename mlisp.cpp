@@ -211,26 +211,6 @@ void set_complementary_operators(Env env)
         return value;
     }));
 
-    env.set("setq", make_proc([] (Pair args, Env env) {
-        if (!args || !cdr(args)) {
-            throw EvalError("setq: too few parameters");
-        }
-        if (cdr(cdr(args))) {
-            throw EvalError("setq: too many parameters");
-        }
-
-        auto symbol = to_symbol(car(args));
-        if (!symbol) {
-            throw EvalError("setq: " + std::to_string(car(args)) +
-                            " is not a symbol.");
-        }
-
-        auto value = eval(cadr(args), env);
-        env.set(symbol->name(), value);
-
-        return value;
-    }));
-
     env.set("do", make_proc([] (Pair args, Env env) {
         env = env.derive_new();
         Node result;
@@ -409,15 +389,30 @@ void set_primitive_operators(Env env)
         });
     }));
 
-    env.set("defun", make_proc([] (Pair args, Env env) {
-        auto sym = to_symbol(car(args));
-        if (!sym) {
-            EvalError("defun: " + std::to_string(car(args)) +
-                      " is not a symbol.");
+    env.set("label", make_proc([] (Pair args, Env env) {
+        if (!args || !cdr(args)) {
+            throw EvalError("label: too few parameters");
         }
-        auto val = eval(cons(make_symbol("lambda"), cdr(args)), env);
-        env.set(sym->name(), val);
-        return val;
+        if (cdr(cdr(args))) {
+            throw EvalError("label: too many parameters");
+        }
+
+        auto symbol = to_symbol(car(args));
+        if (!symbol) {
+            throw EvalError("label: " + std::to_string(car(args)) +
+                            " is not a symbol.");
+        }
+
+        auto value = eval(cadr(args), env);
+        env.set(symbol->name(), value);
+
+        return value;
+    }));
+
+    env.set("defun", make_proc([] (Pair args, Env env) {
+        auto name = car(args);
+        auto body = cons(make_symbol("lambda"), cdr(args));
+        return eval(cons(make_symbol("label"), cons(name, cons(body, {}))), env);
     }));
 }
 
@@ -439,6 +434,7 @@ int repl(Env env)
             if (!line.empty()) {
                 add_history(line.c_str());
             }
+            line.push_back('\n');
             return true;
         }
         return false;

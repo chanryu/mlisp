@@ -47,64 +47,6 @@ namespace {
         }
     }
 
-    std::string get_token(std::istream& istream) noexcept
-    {
-        std::string token;
-
-        skip_whitespaces_and_comments(istream);
-
-        char c;
-        while (istream.get(c)) {
-            if (is_space(c)) {
-                assert(!token.empty());
-                return token;
-            }
-
-            if (is_quote(c)) {
-                token.push_back(c);
-                return token;
-            }
-
-            if (is_paren(c)) {
-                if (token.empty()) {
-                    token.push_back(c);
-                }
-                else {
-                    istream.unget();
-                }
-                return token;
-            }
-
-            if (c == '"') {
-                if (token.empty()) {
-                    token.push_back(c);
-                    auto escaped = false;
-                    while (istream.get(c)) {
-                        token.push_back(c);
-                        if (escaped) {
-                            escaped = false;
-                        }
-                        else if (c == '\\') {
-                            escaped = true;
-                        }
-                        else if (c == '"') {
-                            break;
-                        }
-                    }
-                    return token;
-                }
-                else {
-                    istream.unget();
-                }
-                return token;
-            }
-
-            token.push_back(c);
-        }
-
-        return token;
-    }
-
     bool is_number_token(std::string const& token)
     {
         assert(!token.empty());
@@ -124,8 +66,10 @@ namespace {
         return token[0] == '"';
     }
 
-    char const* const MLISP_BUILTIN_NIL = "nil";
-    char const* const MLISP_BUILTIN_QUOTE = "quote";
+    static mll::Pair const nil;
+
+    char const* const MLL_NIL = "nil";
+    char const* const MLL_QUOTE = "quote";
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -351,13 +295,13 @@ mll::Pair::operator bool() const noexcept
 mll::Node
 mll::Pair::head() const
 {
-    return data_ ? data_->head : Node{};
+    return data_ ? data_->head : nil;
 }
 
 mll::Pair
 mll::Pair::tail() const
 {
-    return data_ ? data_->tail : Pair{};
+    return data_ ? data_->tail : nil;
 }
 
 
@@ -385,7 +329,7 @@ mll::Proc::operator()(Pair args, Env env) const
     if (data_->func) {
         return data_->func(args, env);
     }
-    return {};  // nil
+    return nil;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -477,30 +421,32 @@ mll::Parser::parse(std::istream& istream)
 {
     while (true) {
 
-        auto token = get_token(istream);
-
-        if (token.empty()) {
+        if (!get_token(istream))
             break;
-        }
 
-        if (token == "'") {
+        assert(!token_.empty());
+
+        if (token_ == "'") {
+            token_.clear();
             stack_.push({ Context::Type::quote, {}, true });
             continue;
         }
 
-        if (token == "(") {
+        if (token_ == "(") {
+            token_.clear();
             stack_.push({ Context::Type::paren, {}, true });
             continue;
         }
 
         Node node;
 
-        if (token == ")") {
+        if (token_ == ")") {
             Pair list;
             while (true) {
                 if (stack_.empty() ||
                     stack_.top().type == Context::Type::quote) {
-                    throw ParseError{"Unexpected ')'"};
+                    token_.clear();
+                    throw ParseError{"redundant ')'"};
                 }
 
                 auto c = stack_.top();
@@ -518,15 +464,17 @@ mll::Parser::parse(std::istream& istream)
             }
             node = list;
         }
-        else if (is_number_token(token)) {
-            node = make_number(std::stod(token));
+        else if (is_number_token(token_)) {
+            node = make_number(std::stod(token_));
         }
-        else if (is_string_token(token)) {
-            node = make_string(translate(std::move(token)));
+        else if (is_string_token(token_)) {
+            node = make_string(translate(std::move(token_)));
         }
         else {
-            node = make_symbol(std::move(token));
+            node = make_symbol(std::move(token_));
         }
+
+        token_.clear();
 
         while (true) {
             if (stack_.empty()) {
@@ -535,7 +483,7 @@ mll::Parser::parse(std::istream& istream)
 
             if (stack_.top().type == Context::Type::quote) {
                 stack_.pop();
-                node = cons(make_symbol(MLISP_BUILTIN_QUOTE), cons(node, {}));
+                node = cons(make_symbol(MLL_QUOTE), cons(node, nil));
                 continue;
             }
 
@@ -587,6 +535,74 @@ mll::Parser::translate(std::string token) const
     }
 
     return text;
+}
+
+bool
+mll::Parser::get_token(std::istream& istream)
+{
+    auto read_string_token = [this, &istream]() {
+        assert(!token_.empty());
+        assert(token_[0] == '"');
+        char c;
+        while (istream.get(c)) {
+            token_.push_back(c);
+            if (token_escaped_) {
+                token_escaped_ = false;
+            }
+            else if (c == '\\') {
+                token_escaped_ = true;
+            }
+            else if (c == '"') {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    if (!token_.empty()) {
+        // we have unfinished string token
+        return read_string_token();
+    }
+
+    skip_whitespaces_and_comments(istream);
+
+    char c;
+    while (istream.get(c)) {
+        if (is_space(c)) {
+            assert(!token_.empty());
+            return true;
+        }
+
+        if (is_quote(c)) {
+            token_.push_back(c);
+            return true;
+        }
+
+        if (is_paren(c)) {
+            if (token_.empty()) {
+                token_.push_back(c);
+            }
+            else {
+                istream.unget();
+            }
+            return true;
+        }
+
+        if (c == '"') {
+            if (token_.empty()) {
+                token_.push_back(c);
+                token_escaped_ = false;
+                return read_string_token();
+            }
+
+            istream.unget();
+            return true;
+        }
+
+        token_.push_back(c);
+    }
+
+    return !token_.empty();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -664,7 +680,7 @@ namespace mll {
                 expr.accept(*this);
             }
             else {
-                result_ = Node{};
+                result_ = nil;
             }
 
             return result_;
@@ -694,10 +710,10 @@ namespace mll {
 
         void visit(Symbol sym) override
         {
-            if (sym.name() == MLISP_BUILTIN_NIL) {
-                result_ = Pair{};
+            if (sym.name() == MLL_NIL) {
+                result_ = nil;
             }
-            else if (sym.name() == MLISP_BUILTIN_QUOTE) {
+            else if (sym.name() == MLL_QUOTE) {
                 thread_local auto quote_proc = make_proc([](Pair args, Env) {
                     return car(args);
                 });
@@ -744,22 +760,19 @@ namespace mll {
                 node.accept(*this);
             }
             else {
-                visit(Pair{});
+                ostream_ << MLL_NIL;
             }
         }
 
     private:
         void visit(Pair pair) override
         {
-            if (!pair) {
-                ostream_ << MLISP_BUILTIN_NIL;
-                return;
-            }
+            assert(pair);
 
             auto quoted = false;
             auto symbol = to_symbol(car(pair));
 
-            if (symbol && symbol->name() == MLISP_BUILTIN_QUOTE) {
+            if (symbol && symbol->name() == MLL_QUOTE) {
                 ostream_ << "'";
                 quoted = true;
             }
@@ -835,7 +848,7 @@ mll::Optional<mll::Pair>
 mll::to_pair(Node node) noexcept
 {
     if (!node.data_) {
-        return Optional<Pair>{{}}; // nil
+        return nil;
     }
 
     auto data = std::dynamic_pointer_cast<Pair::Data>(node.data_);
