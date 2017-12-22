@@ -16,8 +16,8 @@ namespace mll {
     class String;
     class Symbol;
 
-    class Env;
-    using Func = std::function<Node(Pair, Env)>;
+    struct Env;
+    using Func = std::function<Node(Pair, std::shared_ptr<Env>)>;
 
     class NodeVisitor {
     public:
@@ -91,7 +91,7 @@ namespace mll {
         explicit Proc(Func) noexcept;
         Proc(Proc const&) noexcept;
 
-        Node operator()(Pair, Env) const;
+        Node operator()(Pair, std::shared_ptr<Env>) const;
 
     public:
         struct Data;
@@ -184,25 +184,14 @@ namespace mll {
 
 namespace mll {
 
-    // Env & eval
+    struct Env;
+    std::shared_ptr<Env> make_env(std::shared_ptr<Env const> base);
+    void set(std::shared_ptr<Env>, std::string const&, Node);
+    bool update(std::shared_ptr<Env>, std::string const&, Node);
+    Optional<Node> lookup(std::shared_ptr<Env const>, std::string const&);
+    Optional<Node> shallow_lookup(std::shared_ptr<Env const>, std::string const&);
 
-    class Env {
-    public:
-        Env();
-
-        Env derive_new() const;
-
-        void set(std::string const&, Node);
-        bool update(std::string const&, Node);
-        Optional<Node> lookup(std::string const&) const;
-        Optional<Node> shallow_lookup(std::string const&) const;
-
-    private:
-        struct Data;
-        std::shared_ptr<Data> data_;
-    };
-
-    Node eval(Node expr, Env env); // throws EvalError
+    Node eval(Node expr, std::shared_ptr<Env> env); // throws EvalError
 }
 
 namespace mll {

@@ -325,7 +325,7 @@ mll::Proc::Proc(std::shared_ptr<Data> data) noexcept
 }
 
 mll::Node
-mll::Proc::operator()(Pair args, Env env) const
+mll::Proc::operator()(Pair args, std::shared_ptr<Env> env) const
 {
     if (data_->func) {
         return data_->func(args, env);
@@ -609,46 +609,46 @@ mll::Parser::get_token(std::istream& istream)
 ////////////////////////////////////////////////////////////////////////////////
 // Env
 
-struct mll::Env::Data {
-    std::shared_ptr<Data> base;
+struct mll::Env {
+    std::shared_ptr<Env const> base;
     std::map<std::string, Node> vars;
 };
 
-mll::Env::Env() : data_{ std::make_shared<Data>() }
+std::shared_ptr<mll::Env>
+mll::make_env(std::shared_ptr<mll::Env const> base)
 {
-}
-
-mll::Env
-mll::Env::derive_new() const
-{
-    Env new_env;
-    new_env.data_->base = data_;
-    return new_env;
+    auto env = std::make_shared<Env>();
+    env->base = base;
+    return env;
 }
 
 void
-mll::Env::set(std::string const& name, Node value)
+mll::set(std::shared_ptr<Env> env, std::string const& name, Node value)
 {
-    data_->vars[name] = value;
+    if (env) {
+        env->vars[name] = value;
+    }
 }
 
 bool
-mll::Env::update(std::string const& name, Node value)
+mll::update(std::shared_ptr<Env> env, std::string const& name, Node value)
 {
-    auto i = data_->vars.find(name);
-    if (i != data_->vars.end()) {
-        i->second = value;
-        return true;
+    if (env) {
+        auto i = env->vars.find(name);
+        if (i != env->vars.end()) {
+            i->second = value;
+            return true;
+        }
     }
     return false;
 }
 
 mll::Optional<mll::Node>
-mll::Env::lookup(std::string const& name) const
+mll::lookup(std::shared_ptr<Env const> env, std::string const& name)
 {
-    for (auto data = data_; data; data = data->base) {
-        auto i = data->vars.find(name);
-        if (i != data->vars.end()) {
+    for (; env; env = env->base) {
+        auto i = env->vars.find(name);
+        if (i != env->vars.end()) {
             return i->second;
         }
     }
@@ -656,15 +656,16 @@ mll::Env::lookup(std::string const& name) const
 }
 
 mll::Optional<mll::Node>
-mll::Env::shallow_lookup(std::string const& name) const
+mll::shallow_lookup(std::shared_ptr<Env const> env, std::string const& name)
 {
-    auto i = data_->vars.find(name);
-    if (i != data_->vars.end()) {
-        return i->second;
+    if (env) {
+        auto i = env->vars.find(name);
+        if (i != env->vars.end()) {
+            return i->second;
+        }
     }
     return {};
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // eval
@@ -673,7 +674,7 @@ namespace mll {
 
     class Evaluator: NodeVisitor {
     public:
-        explicit Evaluator(Env env) : env_(env) { }
+        explicit Evaluator(std::shared_ptr<Env> env) : env_(env) { }
 
         Node evaluate(Node expr)
         {
@@ -715,13 +716,13 @@ namespace mll {
                 result_ = nil;
             }
             else if (sym.name() == MLL_QUOTE) {
-                thread_local auto quote_proc = make_proc([](Pair args, Env) {
+                thread_local auto quote_proc = make_proc([](Pair args, std::shared_ptr<Env>) {
                     return car(args);
                 });
                 result_ = quote_proc;
             }
             else {
-                auto value = env_.lookup(sym.name());
+                auto value = lookup(env_, sym.name());
                 if (!value) {
                     throw EvalError("Unknown symbol: " + sym.name());
                 }
@@ -735,13 +736,13 @@ namespace mll {
         }
 
     private:
-        Env env_;
+        std::shared_ptr<Env> env_;
         Node result_;
     };
 }
 
 mll::Node
-mll::eval(Node expr, Env env)
+mll::eval(Node expr, std::shared_ptr<Env> env)
 {
     return Evaluator(env).evaluate(expr);
 }
