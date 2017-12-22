@@ -50,14 +50,15 @@ namespace {
     bool is_number_token(std::string const& token)
     {
         assert(!token.empty());
-        char c = token[0];
-        if (c == '-') {
-            if (token.size() == 1) {
-                return false;
-            }
-            c = token[1];
-        }
-        return c == '.' || (c >= '0' && c <= '9');
+
+        char const* s = token.c_str();
+        if (*s == '-') s++;
+        if (*s == '.') s++;
+        if (*s < '0' || *s > '9') return false;
+
+        size_t len;
+        std::stod(token.c_str(), &len);
+        return token.length() == len;
     }
 
     bool is_string_token(std::string const& token)
