@@ -27,7 +27,7 @@ test() {
 }
 
 test-op() {
-  test "$1" "$2" "op"
+  test "$1" "$2" "primitives"
 }
 
 test-subst() {
