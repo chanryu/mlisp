@@ -325,7 +325,7 @@ mll::Proc::Proc(std::shared_ptr<Data> data) noexcept
 }
 
 mll::Node
-mll::Proc::operator()(Pair args, std::shared_ptr<Env> env) const
+mll::Proc::call(Pair args, std::shared_ptr<Env> env) const
 {
     if (data_->func) {
         return data_->func(args, env);
@@ -697,7 +697,7 @@ namespace mll {
                 throw EvalError(std::to_string(node) + " is not a proc.");
             }
 
-            result_ = (*proc)(cdr(pair), env_);
+            result_ = proc->call(cdr(pair), env_);
         }
 
         void visit(Number num) override

@@ -77,8 +77,6 @@ namespace mll {
     public:
         struct Data;
         friend class Node;
-        friend Node car(Pair) noexcept;
-        friend Pair cdr(Pair) noexcept;
         friend Optional<Pair> to_pair(Node) noexcept;
 
     private:
@@ -91,7 +89,7 @@ namespace mll {
         explicit Proc(Func) noexcept;
         Proc(Proc const&) noexcept;
 
-        Node operator()(Pair, std::shared_ptr<Env>) const;
+        Node call(Pair, std::shared_ptr<Env>) const;
 
     public:
         struct Data;
