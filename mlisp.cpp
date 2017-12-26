@@ -11,12 +11,42 @@
 
 using namespace mll;
 
+
+int eval_file(std::shared_ptr<Env> env, const char* filename);
+
 bool is_symbol(Node node)
 {
     return !!to_symbol(node);
 }
 
-Pair to_pair(Node node, char const* cmd)
+size_t length(Pair list)
+{
+    size_t l = 0;
+    while (list) {
+        l += 1;
+        list = cdr(list);
+    }
+    return l;
+}
+
+void assert_argc(Pair args, size_t count, char const *cmd)
+{
+    if (length(args) != count) {
+        throw EvalError(cmd + (" expects " + std::to_string(count)) + " argument(s).");
+    }
+}
+
+void assert_argc_range(Pair args, size_t min, size_t max, char const *cmd)
+{
+    auto len = length(args);
+
+    if (len >= min && len <= max) {
+        throw EvalError(cmd + (" expects " + std::to_string(min)) + " ~ " +
+                        std::to_string(max) + " argument(s).");
+    }
+}
+
+Pair to_pair_or_throw(Node node, char const* cmd)
 {
     auto pair = to_pair(node);
     if (!pair) {
@@ -25,18 +55,36 @@ Pair to_pair(Node node, char const* cmd)
     return *pair;
 }
 
-Number to_number(Node node, char const* cmd)
+Number to_number_or_throw(Node node, char const* cmd)
 {
-    auto number = to_number(node);
-    if (!number) {
+    auto num = to_number(node);
+    if (!num) {
         throw EvalError(cmd + (": " + std::to_string(node)) + " is not a number.");
     }
-    return *number;
+    return *num;
+}
+
+String to_string_or_throw(Node node, char const* cmd)
+{
+    auto str = to_string(node);
+    if (!str) {
+        throw EvalError(cmd + (": " + std::to_string(node)) + " is not a string.");
+    }
+    return *str;
+}
+
+Symbol to_symbol_or_throw(Node node, char const* cmd)
+{
+    auto sym = to_symbol(node);
+    if (!sym) {
+        throw EvalError(cmd + (": " + std::to_string(node)) + " is not a symbol.");
+    }
+    return *sym;
 }
 
 Pair to_formal_args(Node node, char const* cmd)
 {
-    auto args = to_pair(node, cmd);
+    auto args = to_pair_or_throw(node, cmd);
 
     // validate args (must be list of symbols)
     for (auto c = args; c; c = cdr(c)) {
@@ -58,66 +106,13 @@ Node caddr(Pair pair)
     return car(cdr(cdr(pair)));
 }
 
-bool equal(Node n1, Node n2)
-{
-    auto num1 = to_number(n1);
-    if (num1) {
-        auto num2 = to_number(n2);
-        if (num2) {
-            return num1->value() == num2->value();
-        }
-        return false;
-    }
-
-    auto str1 = to_string(n1);
-    if (str1) {
-        auto str2 = to_string(n2);
-        if (str2) {
-            return str1->text() == str2->text();
-        }
-        return false;
-    }
-
-    auto sym1 = to_symbol(n1);
-    if (sym1) {
-        auto sym2 = to_symbol(n2);
-        if (sym2) {
-            return sym1->name() == sym2->name();
-        }
-        return false;
-    }
-
-    auto list1 = to_pair(n1);
-    if (list1) {
-        auto list2 = to_pair(n2);
-        if (list2) {
-            auto l1 = *list1;
-            auto l2 = *list2;
-            while (l1) {
-                if (!l2) {
-                    return false;
-                }
-                if (!equal(car(l1), car(l2))) {
-                    return false;
-                }
-                l1 = cdr(l1);
-                l2 = cdr(l2);
-            }
-            return !l2;
-        }
-        return false;
-    }
-
-    return false;
-}
-
 void set_arithmetic_operators(std::shared_ptr<Env> env)
 {
     set(env, "+", make_proc([] (Pair args, std::shared_ptr<Env> env) {
         auto result = 0.0;
         for (; args; args = cdr(args)) {
             auto arg = eval(car(args), env);
-            result += to_number(arg, "+").value();
+            result += to_number_or_throw(arg, "+").value();
         }
         return make_number(result);
     }));
@@ -127,16 +122,17 @@ void set_arithmetic_operators(std::shared_ptr<Env> env)
             throw EvalError("-: too few parameters");
         }
 
-        auto result = to_number(eval(car(args), env), "-").value();
+        auto result = to_number_or_throw(eval(car(args), env), "-").value();
         args = cdr(args);
         if (args) {
             while (args) {
                 auto arg = eval(car(args), env);
-                result -= to_number(arg, "-").value();
+                result -= to_number_or_throw(arg, "-").value();
                 args = cdr(args);
             }
-        } else {
-            // unary -
+        }
+        else {
+            // unary minus
             result = -result;
         }
 
@@ -147,7 +143,7 @@ void set_arithmetic_operators(std::shared_ptr<Env> env)
         auto result = 1.0;
         for (; args; args = cdr(args)) {
             auto arg = eval(car(args), env);
-            result *= to_number(arg, "*").value();
+            result *= to_number_or_throw(arg, "*").value();
         }
 
         return make_number(result);
@@ -158,13 +154,65 @@ void set_arithmetic_operators(std::shared_ptr<Env> env)
             throw EvalError("/: too few parameters");
         }
 
-        auto result = to_number(eval(car(args), env), "/").value();
+        auto result = to_number_or_throw(eval(car(args), env), "/").value();
         for (args = cdr(args); args; args = cdr(args)) {
             auto arg = eval(car(args), env);
-            result /= to_number(arg, "/").value();
+            result /= to_number_or_throw(arg, "/").value();
         }
 
         return make_number(result);
+    }));
+}
+
+void set_typesupport_operators(std::shared_ptr<Env> env)
+{
+    set(env, "number?", make_proc([] (Pair args, std::shared_ptr<Env> env) -> Node {
+        if (to_number(eval(car(args), env))) {
+            return Symbol{ "t" };
+        }
+        return {};
+    }));
+
+    set(env, "number-equal?", make_proc([] (Pair args, std::shared_ptr<Env> env) -> Node {
+        if (length(args) != 2) {
+            throw EvalError("number-equal?: must be given 2 parameters");
+        }
+
+        auto num1 = to_number_or_throw(eval(car(args), env), "number-equal?");
+        auto num2 = to_number_or_throw(eval(cadr(args), env), "number-equal?");
+
+        if (num1.value() == num2.value()) {
+            return Symbol{ "t" };
+        }
+        return {};
+    }));
+
+    set(env, "string?", make_proc([] (Pair args, std::shared_ptr<Env> env) -> Node {
+        if (to_string(eval(car(args), env))) {
+            return Symbol{ "t" };
+        }
+        return {};
+    }));
+
+    set(env, "string-equal?", make_proc([] (Pair args, std::shared_ptr<Env> env) -> Node {
+        if (length(args) != 2) {
+            throw EvalError("string-equal?: must be given 2 parameters");
+        }
+
+        auto str1 = to_string_or_throw(eval(car(args), env), "string-equal?");
+        auto str2 = to_string_or_throw(eval(cadr(args), env), "string-equal?");
+
+        if (str1.text() == str2.text()) {
+            return Symbol{ "t" };
+        }
+        return {};
+    }));
+
+    set(env, "symbol?", make_proc([] (Pair args, std::shared_ptr<Env> env) -> Node {
+        if (to_symbol(eval(car(args), env))) {
+            return Symbol{ "t" };
+        }
+        return {};
     }));
 }
 
@@ -184,72 +232,26 @@ void set_complementary_operators(std::shared_ptr<Env> env)
         return list;
     }));
 
-    set(env, "symbol?", make_proc([] (Pair args, std::shared_ptr<Env> env) -> Node {
-        if (to_symbol(car(args))) {
-            return Symbol{ "t" };
-        }
-        return {};
-    }));
-
     set(env, "set", make_proc([] (Pair args, std::shared_ptr<Env> env) {
-        if (!args || !cdr(args)) {
-            throw EvalError("set: too few parameters");
-        }
-        if (cdr(cdr(args))) {
-            throw EvalError("set: too many parameters");
-        }
+        assert_argc(args, 2, "set");
 
-        auto symbol = to_symbol(eval(car(args), env));
-        if (!symbol) {
-            throw EvalError("set: " + std::to_string(car(args)) +
-                            " is not a symbol.");
-        }
-
+        auto symbol = to_symbol_or_throw(eval(car(args), env), "set");
         auto value = eval(cadr(args), env);
-        set(env, symbol->name(), value);
-
+        set(env, symbol.name(), value);
         return value;
     }));
 
-    set(env, "do", make_proc([] (Pair args, std::shared_ptr<Env> env) {
-        env = make_env(env);
-        Node result;
-        while (args) {
-            result = eval(car(args), env);
-            args = cdr(args);
-        }
-        return result;
-    }));
-
-    set(env, "nil?", make_proc([] (Pair args, std::shared_ptr<Env> env) -> Node {
-        if (!eval(car(args), env)) {
-            return Symbol{ "t" };
-        }
-        return {};
-    }));
-
-    set(env, "zero?", make_proc([] (Pair args, std::shared_ptr<Env> env) -> Node {
-        if (to_number(eval(car(args), env), "zero?").value() == 0) {
-            return Symbol{ "t" };
-        }
-        return {};
-    }));
-
     set(env, "if", make_proc([] (Pair args, std::shared_ptr<Env> env) {
-        auto cond = car(args);
-        if (!cdr(args)) {
-            throw EvalError("if: too few arguments");
-        }
+        assert_argc_range(args, 2, 3, "if");
 
+        auto cond = car(args);
         auto body = cdr(args);
         auto then_arm = car(body);
         auto else_arm = cadr(body);
-
         if (eval(cond, env)) {
             return eval(then_arm, env);
-        } else {
-            return eval(else_arm, env);
         }
+        return eval(else_arm, env);
     }));
 
     set(env, "print", make_proc([] (Pair args, std::shared_ptr<Env> env) -> Node {
@@ -258,7 +260,8 @@ void set_complementary_operators(std::shared_ptr<Env> env)
         while (args) {
             if (first) {
                 first = false;
-            } else {
+            }
+            else {
                 std::cout << " ";
             }
             std::cout << (ret = eval(car(args), env));
@@ -268,19 +271,13 @@ void set_complementary_operators(std::shared_ptr<Env> env)
         return ret;
     }));
 
-    set(env, "equal?", make_proc([] (Pair args, std::shared_ptr<Env> env) -> Node {
-        if (!args) {
-            throw EvalError("equal?: two few args");
+    set(env, "load", make_proc([] (Pair args, std::shared_ptr<Env> env) -> Node {
+        assert_argc(args, 1, "load");
+        auto filename = to_string_or_throw(car(args), "load");
+        if (!eval_file(env, filename.text().c_str())) {
+            return make_symbol("t");
         }
-
-        auto obj = eval(car(args), env);
-        for (args = cdr(args); args; args = cdr(args)) {
-            if (!equal(obj, eval(car(args), env))) {
-                return {};  // nil => false
-            }
-        }
-
-        return make_symbol("t");
+        return {};
     }));
 }
 
@@ -316,14 +313,14 @@ void set_primitive_operators(std::shared_ptr<Env> env)
         if (cdr(args)) {
             throw EvalError("car: too many args given");
         }
-        return car(to_pair(eval(car(args), env), "car"));
+        return car(to_pair_or_throw(eval(car(args), env), "car"));
     }));
 
     set(env, "cdr", make_proc([] (Pair args, std::shared_ptr<Env> env) {
         if (cdr(args)) {
             throw EvalError("cdr: too many args given");
         }
-        return cdr(to_pair(eval(car(args), env), "cdr"));
+        return cdr(to_pair_or_throw(eval(car(args), env), "cdr"));
     }));
 
     set(env, "cons", make_proc([] (Pair args, std::shared_ptr<Env> env) {
@@ -332,14 +329,14 @@ void set_primitive_operators(std::shared_ptr<Env> env)
         }
 
         auto head = eval(car(args), env);
-        auto tail = to_pair(eval(cadr(args), env), "cons");
+        auto tail = to_pair_or_throw(eval(cadr(args), env), "cons");
 
         return cons(head, tail);
     }));
 
     set(env, "cond", make_proc([] (Pair args, std::shared_ptr<Env> env) -> Node {
         while (args) {
-            auto clause = to_pair(car(args), "cond");
+            auto clause = to_pair_or_throw(car(args), "cond");
             auto pred = car(clause);
             if (eval(pred, env)) {
                 Node result;
@@ -396,14 +393,9 @@ void set_primitive_operators(std::shared_ptr<Env> env)
             throw EvalError("label: too many parameters");
         }
 
-        auto symbol = to_symbol(car(args));
-        if (!symbol) {
-            throw EvalError("label: " + std::to_string(car(args)) +
-                            " is not a symbol.");
-        }
-
+        auto symbol = to_symbol_or_throw(car(args), "label");
         auto value = eval(cadr(args), env);
-        set(env, symbol->name(), value);
+        set(env, symbol.name(), value);
 
         return value;
     }));
@@ -526,7 +518,10 @@ int eval_file(std::shared_ptr<Env> env, const char* filename)
 int main(int argc, char *argv[])
 {
     auto env = make_env(nullptr);
+
     set_primitive_operators(env);
+    set_typesupport_operators(env);
+    set_complementary_operators(env);
 
     for (int i = 1; i < argc; ++i) {
         int ret = eval_file(env, argv[i]);
