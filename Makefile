@@ -1,7 +1,9 @@
 BUILD := build
 
-SRCS := $(wildcard ./*.cpp)
-OBJS := $(patsubst ./%.cpp, $(BUILD)/%.cpp.o, $(SRCS))
+MLL_SRCS := $(wildcard src/mll/*.cpp)
+MLL_OBJS := $(patsubst src/mll/%.cpp, $(BUILD)/mll/%.cpp.o, $(MLL_SRCS))
+MLISP_SRCS := $(wildcard src/mlisp/*.cpp)
+MLISP_OBJS := $(patsubst src/mlisp/%.cpp, $(BUILD)/mlisp/%.cpp.o, $(MLISP_SRCS))
 
 CXXFLAGS += -Wall -DNDEBUG -pedantic -O2 -g -std=c++11
 
@@ -9,10 +11,10 @@ CXXFLAGS += -Wall -DNDEBUG -pedantic -O2 -g -std=c++11
 
 all: mlisp-test
 
-mlisp: $(OBJS)
-	$(CXX) -o $@ $(OBJS) -L/usr/local/lib -I/usr/local/include -lreadline
+mlisp: $(MLL_OBJS) $(MLISP_OBJS)
+	$(CXX) -o $@ $(MLL_OBJS) $(MLISP_OBJS) -L/usr/local/lib -I/usr/local/include -lreadline
 
-$(BUILD)/%.cpp.o: ./%.cpp
+$(BUILD)/%.cpp.o: src/%.cpp
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -MD -MF $@.d -c -o $@ $<
 	@cp $@.d $@.P

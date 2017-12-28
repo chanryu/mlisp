@@ -7,7 +7,7 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
-#include "mll.hpp"
+#include "../mll/mll.hpp"
 
 using namespace mll;
 
