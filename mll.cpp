@@ -81,11 +81,10 @@ struct mll::Node::Data: std::enable_shared_from_this<Node::Data> {
     virtual void accept(NodeVisitor&) = 0;
 };
 
-
 ////////////////////////////////////////////////////////////////////////////////
 // List::Data
 
-struct mll::List::Data: public mll::Node::Data {
+struct mll::List::Data: mll::Node::Data {
 
     Data(Node h, List t) noexcept : head{h}, tail{t} { }
 
@@ -103,9 +102,9 @@ struct mll::List::Data: public mll::Node::Data {
 ////////////////////////////////////////////////////////////////////////////////
 // Proc::Data
 
-struct mll::Proc::Data: public mll::Node::Data {
+struct mll::Proc::Data: mll::Node::Data {
 
-    explicit Data(Func f) noexcept : func{f} { }
+    explicit Data(Func f) noexcept : func{std::move(f)} { }
 
     void accept(NodeVisitor& visitor) override
     {
@@ -120,7 +119,7 @@ struct mll::Proc::Data: public mll::Node::Data {
 ////////////////////////////////////////////////////////////////////////////////
 // Number::Data
 
-struct mll::Number::Data: public mll::Node::Data {
+struct mll::Number::Data: mll::Node::Data {
 
     explicit Data(double v) noexcept : value{v} { }
 
@@ -137,7 +136,7 @@ struct mll::Number::Data: public mll::Node::Data {
 ////////////////////////////////////////////////////////////////////////////////
 // String::Data
 
-struct mll::String::Data: public mll::Node::Data {
+struct mll::String::Data: mll::Node::Data {
 
     explicit Data(std::string t) noexcept : text{std::move(t)} { }
 
@@ -154,7 +153,7 @@ struct mll::String::Data: public mll::Node::Data {
 ////////////////////////////////////////////////////////////////////////////////
 // Symbol::Data
 
-struct mll::Symbol::Data: public mll::Node::Data {
+struct mll::Symbol::Data: mll::Node::Data {
 
     explicit Data(std::string n) noexcept : name{std::move(n)} { }
 
@@ -263,11 +262,7 @@ mll::Node::accept(NodeVisitor& visitor)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// ConsCell
-
-mll::List::List() noexcept
-{
-}
+// List
 
 mll::List::List(Node head, List tail) noexcept
     : data_{ std::make_shared<Data>(head, tail) }
@@ -303,7 +298,7 @@ mll::List::tail() const
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Procedure
+// Proc
 
 mll::Proc::Proc(Func func) noexcept
     : data_{ std::make_shared<Data>(func) }

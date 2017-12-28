@@ -33,6 +33,7 @@ namespace mll {
     class Node final {
     public:
         Node() noexcept = default;
+
         Node(Node const&) noexcept;
         Node(List const&) noexcept;
         Node(Proc const&) noexcept;
@@ -65,7 +66,8 @@ namespace mll {
 
     class List final {
     public:
-        List() noexcept;
+        List() noexcept = default;
+
         List(Node head, List tail) noexcept;
         List(List const&) noexcept;
 
