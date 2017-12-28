@@ -10,18 +10,18 @@
 namespace mll {
 
     class Node;
-    class Pair;
+    class List;
     class Proc;
     class Number;
     class String;
     class Symbol;
 
     struct Env;
-    using Func = std::function<Node(Pair, std::shared_ptr<Env>)>;
+    using Func = std::function<Node(List, std::shared_ptr<Env>)>;
 
     class NodeVisitor {
     public:
-        virtual void visit(Pair) = 0;
+        virtual void visit(List) = 0;
         virtual void visit(Proc) = 0;
         virtual void visit(Number) = 0;
         virtual void visit(String) = 0;
@@ -32,16 +32,16 @@ namespace mll {
 
     class Node final {
     public:
-        Node() noexcept;
+        Node() noexcept = default;
         Node(Node const&) noexcept;
-        Node(Pair const&) noexcept;
+        Node(List const&) noexcept;
         Node(Proc const&) noexcept;
         Node(Number const&) noexcept;
         Node(String const&) noexcept;
         Node(Symbol const&) noexcept;
 
         Node& operator = (Node const&) noexcept;
-        Node& operator = (Pair const&) noexcept;
+        Node& operator = (List const&) noexcept;
         Node& operator = (Proc const&) noexcept;
         Node& operator = (Number const&) noexcept;
         Node& operator = (String const&) noexcept;
@@ -53,7 +53,7 @@ namespace mll {
         void accept(NodeVisitor&);
 
         struct Data;
-        friend Optional<Pair> to_pair(Node) noexcept;
+        friend Optional<List> to_list(Node) noexcept;
         friend Optional<Proc> to_proc(Node) noexcept;
         friend Optional<Number> to_number(Node) noexcept;
         friend Optional<String> to_string(Node) noexcept;
@@ -63,24 +63,24 @@ namespace mll {
         std::shared_ptr<Data> data_;
     };
 
-    class Pair final {
+    class List final {
     public:
-        Pair() noexcept;
-        Pair(Node head, Pair tail) noexcept;
-        Pair(Pair const&) noexcept;
+        List() noexcept;
+        List(Node head, List tail) noexcept;
+        List(List const&) noexcept;
 
         operator bool() const noexcept;
 
         Node head() const;
-        Pair tail() const;
+        List tail() const;
 
     public:
         struct Data;
         friend class Node;
-        friend Optional<Pair> to_pair(Node) noexcept;
+        friend Optional<List> to_list(Node) noexcept;
 
     private:
-        Pair(std::shared_ptr<Data>) noexcept;
+        List(std::shared_ptr<Data>) noexcept;
         std::shared_ptr<Data> data_;
     };
 
@@ -89,7 +89,7 @@ namespace mll {
         explicit Proc(Func) noexcept;
         Proc(Proc const&) noexcept;
 
-        Node call(Pair, std::shared_ptr<Env>) const;
+        Node call(List, std::shared_ptr<Env>) const;
 
     public:
         struct Data;
@@ -197,7 +197,7 @@ namespace mll {
     // Overloaded ostream << operators
 
     std::ostream& operator << (std::ostream& os, Node const&);
-    std::ostream& operator << (std::ostream& os, Pair const&);
+    std::ostream& operator << (std::ostream& os, List const&);
 }
 
 namespace std {
@@ -208,7 +208,7 @@ namespace mll {
 
     // Casting functions
 
-    Optional<Pair> to_pair(Node) noexcept;
+    Optional<List> to_list(Node) noexcept;
     Optional<Proc> to_proc(Node) noexcept;
     Optional<Number> to_number(Node) noexcept;
     Optional<String> to_string(Node) noexcept;
@@ -243,11 +243,6 @@ namespace mll {
 
     // Convience wrappers
 
-    inline Pair make_pair(Node head, Pair tail) noexcept
-    {
-        return Pair{ head, tail };
-    }
-
     inline Proc make_proc(Func func) noexcept
     {
         return Proc{ func };
@@ -268,19 +263,19 @@ namespace mll {
         return Symbol{ std::move(name) };
     }
 
-    inline Pair cons(Node head, Pair tail) noexcept
+    inline List cons(Node const& head, List const& tail) noexcept
     {
-        return make_pair(head, tail);
+        return List{ head, tail };
     }
 
-    inline Node car(Pair pair) noexcept
+    inline Node car(List const& list) noexcept
     {
-        return pair.head();
+        return list.head();
     }
 
-    inline Pair cdr(Pair pair) noexcept
+    inline List cdr(List const& list) noexcept
     {
-        return pair.tail();
+        return list.tail();
     }
 }
 
@@ -309,18 +304,6 @@ namespace mll {
         {
             if (engaged_) {
                 value_.~T();
-            }
-        }
-
-        Optional& operator = (Optional const& rhs)
-        {
-            if (engaged_) {
-                value_.~T();
-            }
-
-            engaged_ = rhs.engaged_;
-            if (engaged_) {
-                new (&value_) T(rhs.value_);
             }
         }
 

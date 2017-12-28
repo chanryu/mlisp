@@ -67,14 +67,14 @@ namespace {
         return token[0] == '"';
     }
 
-    static mll::Pair const nil;
+    static mll::List const nil;
 
     char const* const MLL_NIL = "nil";
     char const* const MLL_QUOTE = "quote";
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Object::Data
+// Node::Data
 
 struct mll::Node::Data: std::enable_shared_from_this<Node::Data> {
     virtual ~Data() {}
@@ -83,21 +83,21 @@ struct mll::Node::Data: std::enable_shared_from_this<Node::Data> {
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Pair::Data
+// List::Data
 
-struct mll::Pair::Data: public mll::Node::Data {
+struct mll::List::Data: public mll::Node::Data {
 
-    Data(Node h, Pair t) noexcept : head{h}, tail{t} { }
+    Data(Node h, List t) noexcept : head{h}, tail{t} { }
 
     void accept(NodeVisitor& visitor) override
     {
-        visitor.visit(Pair{
+        visitor.visit(List{
             std::static_pointer_cast<Data>(shared_from_this())
         });
     }
 
     Node const head;
-    Pair const tail;
+    List const tail;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -171,17 +171,13 @@ struct mll::Symbol::Data: public mll::Node::Data {
 ////////////////////////////////////////////////////////////////////////////////
 // Object
 
-mll::Node::Node() noexcept
-{
-}
-
 mll::Node::Node(Node const& other) noexcept
     : data_{other.data_}
 {
 }
 
-mll::Node::Node(Pair const& pair) noexcept
-    : data_{pair.data_}
+mll::Node::Node(List const& list) noexcept
+    : data_{list.data_}
 {
 }
 
@@ -213,7 +209,7 @@ mll::Node::operator = (Node const& rhs) noexcept
 }
 
 mll::Node&
-mll::Node::operator = (Pair const& rhs) noexcept
+mll::Node::operator = (List const& rhs) noexcept
 {
     data_ = rhs.data_;
     return *this;
@@ -269,38 +265,38 @@ mll::Node::accept(NodeVisitor& visitor)
 ////////////////////////////////////////////////////////////////////////////////
 // ConsCell
 
-mll::Pair::Pair() noexcept
+mll::List::List() noexcept
 {
 }
 
-mll::Pair::Pair(Node head, Pair tail) noexcept
+mll::List::List(Node head, List tail) noexcept
     : data_{ std::make_shared<Data>(head, tail) }
 {
 }
 
-mll::Pair::Pair(Pair const& other) noexcept
+mll::List::List(List const& other) noexcept
     : data_{other.data_}
 {
 }
 
-mll::Pair::Pair(std::shared_ptr<Data> data) noexcept
+mll::List::List(std::shared_ptr<Data> data) noexcept
     : data_{data}
 {
 }
 
-mll::Pair::operator bool() const noexcept
+mll::List::operator bool() const noexcept
 {
     return !!data_;
 }
 
 mll::Node
-mll::Pair::head() const
+mll::List::head() const
 {
     return data_ ? data_->head : nil;
 }
 
-mll::Pair
-mll::Pair::tail() const
+mll::List
+mll::List::tail() const
 {
     return data_ ? data_->tail : nil;
 }
@@ -325,7 +321,7 @@ mll::Proc::Proc(std::shared_ptr<Data> data) noexcept
 }
 
 mll::Node
-mll::Proc::call(Pair args, std::shared_ptr<Env> env) const
+mll::Proc::call(List args, std::shared_ptr<Env> env) const
 {
     if (data_->func) {
         return data_->func(args, env);
@@ -442,7 +438,7 @@ mll::Parser::parse(std::istream& istream)
         Node node;
 
         if (token_ == ")") {
-            Pair list;
+            List list;
             while (true) {
                 if (stack_.empty() ||
                     stack_.top().type == Context::Type::quote) {
@@ -689,15 +685,15 @@ namespace mll {
         }
 
     private:
-        void visit(Pair pair) override
+        void visit(List list) override
         {
-            auto node = eval(car(pair), env_);
+            auto node = eval(car(list), env_);
             auto proc = to_proc(node);
             if (!proc) {
                 throw EvalError(std::to_string(node) + " is not a proc.");
             }
 
-            result_ = proc->call(cdr(pair), env_);
+            result_ = proc->call(cdr(list), env_);
         }
 
         void visit(Number num) override
@@ -716,7 +712,7 @@ namespace mll {
                 result_ = nil;
             }
             else if (sym.name() == MLL_QUOTE) {
-                thread_local auto quote_proc = make_proc([](Pair args, std::shared_ptr<Env>) {
+                thread_local auto quote_proc = make_proc([](List args, std::shared_ptr<Env>) {
                     return car(args);
                 });
                 result_ = quote_proc;
@@ -767,12 +763,12 @@ namespace mll {
         }
 
     private:
-        void visit(Pair pair) override
+        void visit(List list) override
         {
-            assert(pair);
+            assert(list);
 
             auto quoted = false;
-            auto symbol = to_symbol(car(pair));
+            auto symbol = to_symbol(car(list));
 
             if (symbol && symbol->name() == MLL_QUOTE) {
                 ostream_ << "'";
@@ -783,10 +779,10 @@ namespace mll {
                 ostream_ << '(';
             }
             if (!quoted) {
-                auto head = car(pair);
+                auto head = car(list);
                 Printer{ostream_, true}.print(head);
             }
-            auto tail = cdr(pair);
+            auto tail = cdr(list);
             if (tail) {
                 if (!quoted) {
                     ostream_ << ' ';
@@ -832,7 +828,7 @@ mll::operator << (std::ostream& ostream, mll::Node const& node)
 }
 
 std::ostream&
-mll::operator << (std::ostream& ostream, mll::Pair const& ccl)
+mll::operator << (std::ostream& ostream, mll::List const& ccl)
 {
     return ostream << Node{ ccl };
 }
@@ -846,16 +842,16 @@ std::to_string(mll::Node const& node)
 ////////////////////////////////////////////////////////////////////////////////
 // Optional, to_xxx
 
-mll::Optional<mll::Pair>
-mll::to_pair(Node node) noexcept
+mll::Optional<mll::List>
+mll::to_list(Node node) noexcept
 {
     if (!node.data_) {
         return nil;
     }
 
-    auto data = std::dynamic_pointer_cast<Pair::Data>(node.data_);
+    auto data = std::dynamic_pointer_cast<List::Data>(node.data_);
     if (data) {
-        return { Pair{ data } };
+        return { List{ data } };
     }
 
     return {};
