@@ -69,7 +69,6 @@ namespace {
 
     static mll::List const nil;
 
-    char const* const MLL_NIL = "nil";
     char const* const MLL_QUOTE = "quote";
 }
 
@@ -703,10 +702,7 @@ namespace mll {
 
         void visit(Symbol sym) override
         {
-            if (sym.name() == MLL_NIL) {
-                result_ = nil;
-            }
-            else if (sym.name() == MLL_QUOTE) {
+            if (sym.name() == MLL_QUOTE) {
                 thread_local auto quote_proc = make_proc([](List args, std::shared_ptr<Env>) {
                     return car(args);
                 });
@@ -753,7 +749,7 @@ namespace mll {
                 node.accept(*this);
             }
             else {
-                ostream_ << MLL_NIL;
+                ostream_ << "()";
             }
         }
 
