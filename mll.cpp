@@ -599,60 +599,56 @@ mll::Parser::get_token(std::istream& istream)
 ////////////////////////////////////////////////////////////////////////////////
 // Env
 
-struct mll::Env {
-    std::shared_ptr<Env const> base;
-    std::map<std::string, Node> vars;
-};
+std::shared_ptr<mll::Env>
+mll::Env::create()
+{
+    struct Env_ : Env {};
+    return std::make_shared<Env_>();
+}
 
 std::shared_ptr<mll::Env>
-mll::make_env(std::shared_ptr<mll::Env const> base)
+mll::Env::derive_new() const
 {
-    auto env = std::make_shared<Env>();
-    env->base = base;
-    return env;
+    auto derived = create();
+    derived->base_ = shared_from_this();
+    return derived;
 }
 
 void
-mll::set(std::shared_ptr<Env> env, std::string const& name, Node value)
+mll::Env::set(std::string const& name, Node const& value)
 {
-    if (env) {
-        env->vars[name] = value;
-    }
+    vars_[name] = value;
 }
 
 bool
-mll::update(std::shared_ptr<Env> env, std::string const& name, Node value)
+mll::Env::update(std::string const& name, Node const& value)
 {
-    if (env) {
-        auto i = env->vars.find(name);
-        if (i != env->vars.end()) {
-            i->second = value;
-            return true;
-        }
+    auto it = vars_.find(name);
+    if (it != vars_.end()) {
+        it->second = value;
+        return true;
     }
     return false;
 }
 
 mll::Optional<mll::Node>
-mll::lookup(std::shared_ptr<Env const> env, std::string const& name)
+mll::Env::lookup(std::string const& name) const
 {
-    for (; env; env = env->base) {
-        auto i = env->vars.find(name);
-        if (i != env->vars.end()) {
-            return i->second;
+    for (auto env = this; env; env = env->base_.get()) {
+        auto it = env->vars_.find(name);
+        if (it != env->vars_.end()) {
+            return it->second;
         }
     }
     return {};
 }
 
 mll::Optional<mll::Node>
-mll::shallow_lookup(std::shared_ptr<Env const> env, std::string const& name)
+mll::Env::shallow_lookup(std::string const& name) const
 {
-    if (env) {
-        auto i = env->vars.find(name);
-        if (i != env->vars.end()) {
-            return i->second;
-        }
+    auto it = vars_.find(name);
+    if (it != vars_.end()) {
+        return it->second;
     }
     return {};
 }
@@ -709,7 +705,7 @@ namespace mll {
                 result_ = quote_proc;
             }
             else {
-                auto value = lookup(env_, sym.name());
+                auto value = env_->lookup(sym.name());
                 if (!value) {
                     throw EvalError("Unknown symbol: " + sym.name());
                 }
@@ -816,12 +812,6 @@ mll::operator << (std::ostream& ostream, mll::Node const& node)
 {
     Printer{ostream, true}.print(node);
     return ostream;
-}
-
-std::ostream&
-mll::operator << (std::ostream& ostream, mll::List const& ccl)
-{
-    return ostream << Node{ ccl };
 }
 
 std::string

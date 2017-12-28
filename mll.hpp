@@ -16,7 +16,7 @@ namespace mll {
     class String;
     class Symbol;
 
-    struct Env;
+    class Env;
     using Func = std::function<Node(List, std::shared_ptr<Env>)>;
 
     class NodeVisitor {
@@ -184,22 +184,27 @@ namespace mll {
 
 namespace mll {
 
-    struct Env;
-    std::shared_ptr<Env> make_env(std::shared_ptr<Env const> base);
-    void set(std::shared_ptr<Env>, std::string const&, Node);
-    bool update(std::shared_ptr<Env>, std::string const&, Node);
-    Optional<Node> lookup(std::shared_ptr<Env const>, std::string const&);
-    Optional<Node> shallow_lookup(std::shared_ptr<Env const>, std::string const&);
+    class Env: public std::enable_shared_from_this<Env> {
+    public:
+        static std::shared_ptr<Env> create();
+        std::shared_ptr<Env> derive_new() const;
+
+        void set(std::string const&, Node const&);
+        bool update(std::string const&, Node const&);
+        Optional<Node> lookup(std::string const&) const;
+        Optional<Node> shallow_lookup(std::string const&) const;
+
+    private:
+        Env() = default;
+        std::shared_ptr<Env const> base_;
+        std::map<std::string, Node> vars_;
+    };
 
     Node eval(Node expr, std::shared_ptr<Env> env); // throws EvalError
 }
 
 namespace mll {
-
-    // Overloaded ostream << operators
-
     std::ostream& operator << (std::ostream& os, Node const&);
-    std::ostream& operator << (std::ostream& os, List const&);
 }
 
 namespace std {

@@ -108,7 +108,7 @@ Node caddr(List list)
 
 void set_arithmetic_operators(std::shared_ptr<Env> env)
 {
-    set(env, "+", make_proc([] (List args, std::shared_ptr<Env> env) {
+    env->set("+", make_proc([] (List args, std::shared_ptr<Env> env) {
         auto result = 0.0;
         for (; args; args = cdr(args)) {
             auto arg = eval(car(args), env);
@@ -117,7 +117,7 @@ void set_arithmetic_operators(std::shared_ptr<Env> env)
         return make_number(result);
     }));
 
-    set(env, "-", make_proc([] (List args, std::shared_ptr<Env> env) {
+    env->set("-", make_proc([] (List args, std::shared_ptr<Env> env) {
         if (!args) {
             throw EvalError("-: too few parameters");
         }
@@ -139,7 +139,7 @@ void set_arithmetic_operators(std::shared_ptr<Env> env)
         return make_number(result);
     }));
 
-    set(env, "*", make_proc([] (List args, std::shared_ptr<Env> env) {
+    env->set("*", make_proc([] (List args, std::shared_ptr<Env> env) {
         auto result = 1.0;
         for (; args; args = cdr(args)) {
             auto arg = eval(car(args), env);
@@ -149,7 +149,7 @@ void set_arithmetic_operators(std::shared_ptr<Env> env)
         return make_number(result);
     }));
 
-    set(env, "/", make_proc([] (List args, std::shared_ptr<Env> env) {
+    env->set("/", make_proc([] (List args, std::shared_ptr<Env> env) {
         if (!args || !cdr(args)) {
             throw EvalError("/: too few parameters");
         }
@@ -166,14 +166,14 @@ void set_arithmetic_operators(std::shared_ptr<Env> env)
 
 void set_typesupport_operators(std::shared_ptr<Env> env)
 {
-    set(env, "number?", make_proc([] (List args, std::shared_ptr<Env> env) -> Node {
+    env->set("number?", make_proc([] (List args, std::shared_ptr<Env> env) -> Node {
         if (to_number(eval(car(args), env))) {
             return Symbol{ "t" };
         }
         return {};
     }));
 
-    set(env, "number-equal?", make_proc([] (List args, std::shared_ptr<Env> env) -> Node {
+    env->set("number-equal?", make_proc([] (List args, std::shared_ptr<Env> env) -> Node {
         if (length(args) != 2) {
             throw EvalError("number-equal?: must be given 2 parameters");
         }
@@ -187,14 +187,14 @@ void set_typesupport_operators(std::shared_ptr<Env> env)
         return {};
     }));
 
-    set(env, "string?", make_proc([] (List args, std::shared_ptr<Env> env) -> Node {
+    env->set("string?", make_proc([] (List args, std::shared_ptr<Env> env) -> Node {
         if (to_string(eval(car(args), env))) {
             return Symbol{ "t" };
         }
         return {};
     }));
 
-    set(env, "string-equal?", make_proc([] (List args, std::shared_ptr<Env> env) -> Node {
+    env->set("string-equal?", make_proc([] (List args, std::shared_ptr<Env> env) -> Node {
         if (length(args) != 2) {
             throw EvalError("string-equal?: must be given 2 parameters");
         }
@@ -208,7 +208,7 @@ void set_typesupport_operators(std::shared_ptr<Env> env)
         return {};
     }));
 
-    set(env, "symbol?", make_proc([] (List args, std::shared_ptr<Env> env) -> Node {
+    env->set("symbol?", make_proc([] (List args, std::shared_ptr<Env> env) -> Node {
         if (to_symbol(eval(car(args), env))) {
             return Symbol{ "t" };
         }
@@ -218,7 +218,7 @@ void set_typesupport_operators(std::shared_ptr<Env> env)
 
 void set_complementary_operators(std::shared_ptr<Env> env)
 {
-    set(env, "list", make_proc([] (List args, std::shared_ptr<Env> env) {
+    env->set("list", make_proc([] (List args, std::shared_ptr<Env> env) {
         std::vector<Node> objs;
         for (; args; args = cdr(args)) {
             objs.push_back(eval(car(args), env));
@@ -232,16 +232,16 @@ void set_complementary_operators(std::shared_ptr<Env> env)
         return list;
     }));
 
-    set(env, "set", make_proc([] (List args, std::shared_ptr<Env> env) {
+    env->set("set", make_proc([] (List args, std::shared_ptr<Env> env) {
         assert_argc(args, 2, "set");
 
         auto symbol = to_symbol_or_throw(eval(car(args), env), "set");
         auto value = eval(cadr(args), env);
-        set(env, symbol.name(), value);
+        env->set(symbol.name(), value);
         return value;
     }));
 
-    set(env, "if", make_proc([] (List args, std::shared_ptr<Env> env) {
+    env->set("if", make_proc([] (List args, std::shared_ptr<Env> env) {
         assert_argc_range(args, 2, 3, "if");
 
         auto cond = car(args);
@@ -254,7 +254,7 @@ void set_complementary_operators(std::shared_ptr<Env> env)
         return eval(else_arm, env);
     }));
 
-    set(env, "print", make_proc([] (List args, std::shared_ptr<Env> env) -> Node {
+    env->set("print", make_proc([] (List args, std::shared_ptr<Env> env) -> Node {
         Node ret;
         auto first = true;
         while (args) {
@@ -271,7 +271,7 @@ void set_complementary_operators(std::shared_ptr<Env> env)
         return ret;
     }));
 
-    set(env, "load", make_proc([] (List args, std::shared_ptr<Env> env) -> Node {
+    env->set("load", make_proc([] (List args, std::shared_ptr<Env> env) -> Node {
         assert_argc(args, 1, "load");
         auto filename = to_string_or_throw(car(args), "load");
         if (!eval_file(env, filename.text().c_str())) {
@@ -284,11 +284,11 @@ void set_complementary_operators(std::shared_ptr<Env> env)
 void set_primitive_operators(std::shared_ptr<Env> env)
 {
     // "quote" is already built into the Parser/eval()
-    //set(env, "quote", make_proc([](List args, Env) {
+    //env->set("quote", make_proc([](List args, Env) {
     //    return car(args);
     //}));
 
-    set(env, "atom", make_proc([] (List args, std::shared_ptr<Env> env) -> Node {
+    env->set("atom", make_proc([] (List args, std::shared_ptr<Env> env) -> Node {
         auto list = to_list(eval(car(args), env));
         if (!list || !*list) {
             return make_symbol("t");
@@ -296,7 +296,7 @@ void set_primitive_operators(std::shared_ptr<Env> env)
         return {};
     }));
 
-    set(env, "eq", make_proc([] (List args, std::shared_ptr<Env> env) -> Node {
+    env->set("eq", make_proc([] (List args, std::shared_ptr<Env> env) -> Node {
         if (!car(args) || !cadr(args)) {
             throw EvalError("eq: too few args given");
         }
@@ -309,21 +309,21 @@ void set_primitive_operators(std::shared_ptr<Env> env)
         return {};
     }));
 
-    set(env, "car", make_proc([] (List args, std::shared_ptr<Env> env) {
+    env->set("car", make_proc([] (List args, std::shared_ptr<Env> env) {
         if (cdr(args)) {
             throw EvalError("car: too many args given");
         }
         return car(to_list_or_throw(eval(car(args), env), "car"));
     }));
 
-    set(env, "cdr", make_proc([] (List args, std::shared_ptr<Env> env) {
+    env->set("cdr", make_proc([] (List args, std::shared_ptr<Env> env) {
         if (cdr(args)) {
             throw EvalError("cdr: too many args given");
         }
         return cdr(to_list_or_throw(eval(car(args), env), "cdr"));
     }));
 
-    set(env, "cons", make_proc([] (List args, std::shared_ptr<Env> env) {
+    env->set("cons", make_proc([] (List args, std::shared_ptr<Env> env) {
         if (!cdr(args)) {
             throw EvalError("cons: not enough args");
         }
@@ -334,7 +334,7 @@ void set_primitive_operators(std::shared_ptr<Env> env)
         return cons(head, tail);
     }));
 
-    set(env, "cond", make_proc([] (List args, std::shared_ptr<Env> env) -> Node {
+    env->set("cond", make_proc([] (List args, std::shared_ptr<Env> env) -> Node {
         while (args) {
             auto clause = to_list_or_throw(car(args), "cond");
             auto pred = car(clause);
@@ -350,7 +350,7 @@ void set_primitive_operators(std::shared_ptr<Env> env)
         return {};
     }));
 
-    set(env, "lambda", make_proc([] (List args, std::shared_ptr<Env> env) {
+    env->set("lambda", make_proc([] (List args, std::shared_ptr<Env> env) {
         if (cdr(cdr(args))) {
             throw EvalError("lambda: too many args");
         }
@@ -360,7 +360,7 @@ void set_primitive_operators(std::shared_ptr<Env> env)
         auto creator_env = env;
 
         return make_proc([formal_args, lambda_body, creator_env] (List args, std::shared_ptr<Env> env) {
-            auto lambda_env = make_env(creator_env);
+            auto lambda_env = creator_env->derive_new();
 
             auto syms = formal_args;
             while (syms) {
@@ -372,7 +372,7 @@ void set_primitive_operators(std::shared_ptr<Env> env)
 
                 auto sym = to_symbol(car(syms));
                 auto val = eval(car(args), env);
-                set(lambda_env, sym->name(), val);
+                lambda_env->set(sym->name(), val);
                 syms = cdr(syms);
                 args = cdr(args);
             }
@@ -385,7 +385,7 @@ void set_primitive_operators(std::shared_ptr<Env> env)
         });
     }));
 
-    set(env, "label", make_proc([] (List args, std::shared_ptr<Env> env) {
+    env->set("label", make_proc([] (List args, std::shared_ptr<Env> env) {
         if (!args || !cdr(args)) {
             throw EvalError("label: too few parameters");
         }
@@ -395,12 +395,12 @@ void set_primitive_operators(std::shared_ptr<Env> env)
 
         auto symbol = to_symbol_or_throw(car(args), "label");
         auto value = eval(cadr(args), env);
-        set(env, symbol.name(), value);
+        env->set(symbol.name(), value);
 
         return value;
     }));
 
-    set(env, "defun", make_proc([] (List args, std::shared_ptr<Env> env) {
+    env->set("defun", make_proc([] (List args, std::shared_ptr<Env> env) {
         auto name = car(args);
         auto body = cons(make_symbol("lambda"), cdr(args));
         return eval(cons(make_symbol("label"), cons(name, cons(body, {}))), env);
@@ -517,7 +517,7 @@ int eval_file(std::shared_ptr<Env> env, const char* filename)
 
 int main(int argc, char *argv[])
 {
-    auto env = make_env(nullptr);
+    auto env = Env::create();
 
     set_primitive_operators(env);
     set_typesupport_operators(env);
