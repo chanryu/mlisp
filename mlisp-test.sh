@@ -40,14 +40,14 @@ test "'(a b c)" "(a b c)"
 
 # atom
 test "(atom 'a)" "t"
-test "(atom '(a b c))" "nil"
+test "(atom '(a b c))" "()"
 test "(atom '())" "t"
 test "(atom (atom 'a))" "t"
-test "(atom '(atom 'a))" "nil"
+test "(atom '(atom 'a))" "()"
 
 # eq
 test "(eq 'a 'a)" "t"
-test "(eq 'a 'b)" "nil"
+test "(eq 'a 'b)" "()"
 test "(eq '() '())" "t"
 
 # car
@@ -79,14 +79,14 @@ test-op "(caddr '((a b) (c d) e))" "e"
 test-op "(cdar '((a b) (c d) e))" "(b)"
 
 # null.
-test-op "(null. 'a)" "nil"
+test-op "(null. 'a)" "()"
 test-op "(null. '())" "t"
 
 # and.
 test-op "(and. (atom 'a) (eq 'a 'a))" "t"
 
 # not.
-test-op "(not. (eq 'a 'a))" "nil"
+test-op "(not. (eq 'a 'a))" "()"
 test-op "(not. (eq 'a 'b))" "t"
 
 # append.
