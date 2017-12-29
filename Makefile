@@ -17,7 +17,7 @@ $(MLISP): $(MLL_OBJS) $(MLISP_OBJS)
 
 $(BUILD)/$(MLISP)/%.cpp.o: src/$(MLISP)/%.cpp
 	@mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) -I/usr/local/include -DMLISP_READLINE -MD -MF $@.d -c -o $@ $<
+	$(CXX) $(CXXFLAGS) -Isrc/mll -I/usr/local/include -DMLISP_READLINE -MD -MF $@.d -c -o $@ $<
 	@cp $@.d $@.P
 	@sed -e 's/#.*//' \
 	     -e 's/^[^:]*: *//' \

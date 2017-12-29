@@ -733,84 +733,87 @@ mll::eval(Node expr, std::shared_ptr<Env> env)
 ////////////////////////////////////////////////////////////////////////////////
 // Printer
 
-namespace mll {
-    class Printer: NodeVisitor {
-    public:
-        Printer(std::ostream& ostream, bool is_head)
-            : ostream_(ostream), is_head_(is_head) { }
+mll::BasicPrinter::BasicPrinter(std::ostream& ostream)
+    : ostream_(ostream), is_head_(true)
+{
+}
 
-        void print(Node node)
-        {
-            if (node) {
-                node.accept(*this);
-            }
-            else {
-                ostream_ << "()";
-            }
+mll::BasicPrinter::BasicPrinter(std::ostream& ostream, bool is_head)
+    : ostream_(ostream), is_head_(is_head)
+{
+}
+
+void
+mll::BasicPrinter::print(Node node)
+{
+    if (node) {
+        node.accept(*this);
+    }
+    else {
+        ostream_ << "()";
+    }
+}
+
+void
+mll::BasicPrinter::visit(List list)
+{
+    assert(list);
+
+    auto quoted = false;
+    auto symbol = to_symbol(car(list));
+
+    if (symbol && symbol->name() == MLL_QUOTE) {
+        ostream_ << "'";
+        quoted = true;
+    }
+
+    if (!quoted && is_head_) {
+        ostream_ << '(';
+    }
+    if (!quoted) {
+        auto head = car(list);
+        BasicPrinter{ostream_, true}.print(head);
+    }
+    auto tail = cdr(list);
+    if (tail) {
+        if (!quoted) {
+            ostream_ << ' ';
         }
+        BasicPrinter{ostream_, false}.print(tail);
+    }
+    if (!quoted && is_head_) {
+        ostream_ << ')';
+    }
+}
 
-    private:
-        void visit(List list) override
-        {
-            assert(list);
+void
+mll::BasicPrinter::visit(Number num)
+{
+    ostream_ << num.value();
+}
 
-            auto quoted = false;
-            auto symbol = to_symbol(car(list));
+void
+mll::BasicPrinter::visit(String str)
+{
+    ostream_ << str.text();
+}
 
-            if (symbol && symbol->name() == MLL_QUOTE) {
-                ostream_ << "'";
-                quoted = true;
-            }
+void
+mll::BasicPrinter::visit(Symbol sym)
+{
+    ostream_ << sym.name();
+}
 
-            if (!quoted && is_head_) {
-                ostream_ << '(';
-            }
-            if (!quoted) {
-                auto head = car(list);
-                Printer{ostream_, true}.print(head);
-            }
-            auto tail = cdr(list);
-            if (tail) {
-                if (!quoted) {
-                    ostream_ << ' ';
-                }
-                Printer{ostream_, false}.print(tail);
-            }
-            if (!quoted && is_head_) {
-                ostream_ << ')';
-            }
-        }
-
-        void visit(Number num) override
-        {
-            ostream_ << num.value();
-        }
-
-        void visit(String str) override
-        {
-            ostream_ << str.text();
-        }
-
-        void visit(Symbol sym) override
-        {
-            ostream_ << sym.name();
-        }
-
-        void visit(Proc proc) override
-        {
-            ostream_ << "<#proc>";
-        }
-
-    private:
-        std::ostream& ostream_;
-        bool is_head_;
-    };
+void
+mll::BasicPrinter::visit(Proc proc)
+{
+    ostream_ << "<#proc>";
 }
 
 std::ostream&
 mll::operator << (std::ostream& ostream, mll::Node const& node)
 {
-    Printer{ostream, true}.print(node);
+    BasicPrinter{ostream}.print(node);
     return ostream;
 }
 

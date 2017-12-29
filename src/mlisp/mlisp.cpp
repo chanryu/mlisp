@@ -1,5 +1,4 @@
 #include <cassert>
-#include <fstream>
 #include <sstream>
 
 #include <unistd.h> // isatty
@@ -9,405 +8,8 @@
 #include <readline/history.h>
 #endif
 
-#include "../mll/mll.hpp"
-
-using namespace mll;
-
-
-int eval_file(std::shared_ptr<Env> env, const char* filename);
-
-bool is_symbol(Node node)
-{
-    return !!to_symbol(node);
-}
-
-size_t length(List list)
-{
-    size_t l = 0;
-    while (list) {
-        l += 1;
-        list = cdr(list);
-    }
-    return l;
-}
-
-void assert_argc(List args, size_t count, char const *cmd)
-{
-    if (length(args) != count) {
-        throw EvalError(cmd + (" expects " + std::to_string(count)) + " argument(s).");
-    }
-}
-
-void assert_argc_range(List args, size_t min, size_t max, char const *cmd)
-{
-    auto len = length(args);
-
-    if (len >= min && len <= max) {
-        throw EvalError(cmd + (" expects " + std::to_string(min)) + " ~ " +
-                        std::to_string(max) + " argument(s).");
-    }
-}
-
-List to_list_or_throw(Node node, char const* cmd)
-{
-    auto list = to_list(node);
-    if (!list) {
-        throw EvalError(cmd + (": " + std::to_string(node)) + " is not a list.");
-    }
-    return *list;
-}
-
-Number to_number_or_throw(Node node, char const* cmd)
-{
-    auto num = to_number(node);
-    if (!num) {
-        throw EvalError(cmd + (": " + std::to_string(node)) + " is not a number.");
-    }
-    return *num;
-}
-
-String to_string_or_throw(Node node, char const* cmd)
-{
-    auto str = to_string(node);
-    if (!str) {
-        throw EvalError(cmd + (": " + std::to_string(node)) + " is not a string.");
-    }
-    return *str;
-}
-
-Symbol to_symbol_or_throw(Node node, char const* cmd)
-{
-    auto sym = to_symbol(node);
-    if (!sym) {
-        throw EvalError(cmd + (": " + std::to_string(node)) + " is not a symbol.");
-    }
-    return *sym;
-}
-
-List to_formal_args(Node node, char const* cmd)
-{
-    auto args = to_list_or_throw(node, cmd);
-
-    // validate args (must be list of symbols)
-    for (auto c = args; c; c = cdr(c)) {
-        if (!is_symbol(car(c))) {
-            throw EvalError(cmd + (": " + std::to_string(car(c))) + " is not a symbol");
-        }
-    }
-
-    return args;
-}
-
-Node cadr(List list)
-{
-    return car(cdr(list));
-}
-
-Node caddr(List list)
-{
-    return car(cdr(cdr(list)));
-}
-
-void set_arithmetic_operators(std::shared_ptr<Env> env)
-{
-    env->set("+", make_proc([] (List args, std::shared_ptr<Env> env) {
-        auto result = 0.0;
-        for (; args; args = cdr(args)) {
-            auto arg = eval(car(args), env);
-            result += to_number_or_throw(arg, "+").value();
-        }
-        return make_number(result);
-    }));
-
-    env->set("-", make_proc([] (List args, std::shared_ptr<Env> env) {
-        if (!args) {
-            throw EvalError("-: too few parameters");
-        }
-
-        auto result = to_number_or_throw(eval(car(args), env), "-").value();
-        args = cdr(args);
-        if (args) {
-            while (args) {
-                auto arg = eval(car(args), env);
-                result -= to_number_or_throw(arg, "-").value();
-                args = cdr(args);
-            }
-        }
-        else {
-            // unary minus
-            result = -result;
-        }
-
-        return make_number(result);
-    }));
-
-    env->set("*", make_proc([] (List args, std::shared_ptr<Env> env) {
-        auto result = 1.0;
-        for (; args; args = cdr(args)) {
-            auto arg = eval(car(args), env);
-            result *= to_number_or_throw(arg, "*").value();
-        }
-
-        return make_number(result);
-    }));
-
-    env->set("/", make_proc([] (List args, std::shared_ptr<Env> env) {
-        if (!args || !cdr(args)) {
-            throw EvalError("/: too few parameters");
-        }
-
-        auto result = to_number_or_throw(eval(car(args), env), "/").value();
-        for (args = cdr(args); args; args = cdr(args)) {
-            auto arg = eval(car(args), env);
-            result /= to_number_or_throw(arg, "/").value();
-        }
-
-        return make_number(result);
-    }));
-}
-
-void set_typesupport_operators(std::shared_ptr<Env> env)
-{
-    env->set("number?", make_proc([] (List args, std::shared_ptr<Env> env) -> Node {
-        if (to_number(eval(car(args), env))) {
-            return Symbol{ "t" };
-        }
-        return {};
-    }));
-
-    env->set("number-equal?", make_proc([] (List args, std::shared_ptr<Env> env) -> Node {
-        if (length(args) != 2) {
-            throw EvalError("number-equal?: must be given 2 parameters");
-        }
-
-        auto num1 = to_number_or_throw(eval(car(args), env), "number-equal?");
-        auto num2 = to_number_or_throw(eval(cadr(args), env), "number-equal?");
-
-        if (num1.value() == num2.value()) {
-            return Symbol{ "t" };
-        }
-        return {};
-    }));
-
-    env->set("string?", make_proc([] (List args, std::shared_ptr<Env> env) -> Node {
-        if (to_string(eval(car(args), env))) {
-            return Symbol{ "t" };
-        }
-        return {};
-    }));
-
-    env->set("string-equal?", make_proc([] (List args, std::shared_ptr<Env> env) -> Node {
-        if (length(args) != 2) {
-            throw EvalError("string-equal?: must be given 2 parameters");
-        }
-
-        auto str1 = to_string_or_throw(eval(car(args), env), "string-equal?");
-        auto str2 = to_string_or_throw(eval(cadr(args), env), "string-equal?");
-
-        if (str1.text() == str2.text()) {
-            return Symbol{ "t" };
-        }
-        return {};
-    }));
-
-    env->set("symbol?", make_proc([] (List args, std::shared_ptr<Env> env) -> Node {
-        if (to_symbol(eval(car(args), env))) {
-            return Symbol{ "t" };
-        }
-        return {};
-    }));
-}
-
-void set_complementary_operators(std::shared_ptr<Env> env)
-{
-    env->set("list", make_proc([] (List args, std::shared_ptr<Env> env) {
-        std::vector<Node> objs;
-        for (; args; args = cdr(args)) {
-            objs.push_back(eval(car(args), env));
-        }
-
-        List list;
-        while (!objs.empty()) {
-            list = cons(objs.back(), list);
-            objs.pop_back();
-        }
-        return list;
-    }));
-
-    env->set("set", make_proc([] (List args, std::shared_ptr<Env> env) {
-        assert_argc(args, 2, "set");
-
-        auto symbol = to_symbol_or_throw(eval(car(args), env), "set");
-        auto value = eval(cadr(args), env);
-        env->set(symbol.name(), value);
-        return value;
-    }));
-
-    env->set("if", make_proc([] (List args, std::shared_ptr<Env> env) {
-        assert_argc_range(args, 2, 3, "if");
-
-        auto cond = car(args);
-        auto body = cdr(args);
-        auto then_arm = car(body);
-        auto else_arm = cadr(body);
-        if (eval(cond, env)) {
-            return eval(then_arm, env);
-        }
-        return eval(else_arm, env);
-    }));
-
-    env->set("print", make_proc([] (List args, std::shared_ptr<Env> env) -> Node {
-        Node ret;
-        auto first = true;
-        while (args) {
-            if (first) {
-                first = false;
-            }
-            else {
-                std::cout << " ";
-            }
-            std::cout << (ret = eval(car(args), env));
-            args = cdr(args);
-        }
-        std::cout << std::endl;
-        return ret;
-    }));
-
-    env->set("load", make_proc([] (List args, std::shared_ptr<Env> env) -> Node {
-        assert_argc(args, 1, "load");
-        auto filename = to_string_or_throw(car(args), "load");
-        if (!eval_file(env, filename.text().c_str())) {
-            return make_symbol("t");
-        }
-        return {};
-    }));
-}
-
-void set_primitive_operators(std::shared_ptr<Env> env)
-{
-    // "quote" is already built into the Parser/eval()
-    //env->set("quote", make_proc([](List args, Env) {
-    //    return car(args);
-    //}));
-
-    env->set("atom", make_proc([] (List args, std::shared_ptr<Env> env) -> Node {
-        auto list = to_list(eval(car(args), env));
-        if (!list || !*list) {
-            return make_symbol("t");
-        }
-        return {};
-    }));
-
-    env->set("eq", make_proc([] (List args, std::shared_ptr<Env> env) -> Node {
-        if (!car(args) || !cadr(args)) {
-            throw EvalError("eq: too few args given");
-        }
-        else if (caddr(args)) {
-            throw EvalError("eq: too many args given");
-        }
-        if (eval(car(args), env) == eval(cadr(args), env)) {
-            return make_symbol("t");
-        }
-        return {};
-    }));
-
-    env->set("car", make_proc([] (List args, std::shared_ptr<Env> env) {
-        if (cdr(args)) {
-            throw EvalError("car: too many args given");
-        }
-        return car(to_list_or_throw(eval(car(args), env), "car"));
-    }));
-
-    env->set("cdr", make_proc([] (List args, std::shared_ptr<Env> env) {
-        if (cdr(args)) {
-            throw EvalError("cdr: too many args given");
-        }
-        return cdr(to_list_or_throw(eval(car(args), env), "cdr"));
-    }));
-
-    env->set("cons", make_proc([] (List args, std::shared_ptr<Env> env) {
-        if (!cdr(args)) {
-            throw EvalError("cons: not enough args");
-        }
-
-        auto head = eval(car(args), env);
-        auto tail = to_list_or_throw(eval(cadr(args), env), "cons");
-
-        return cons(head, tail);
-    }));
-
-    env->set("cond", make_proc([] (List args, std::shared_ptr<Env> env) -> Node {
-        while (args) {
-            auto clause = to_list_or_throw(car(args), "cond");
-            auto pred = car(clause);
-            if (eval(pred, env)) {
-                Node result;
-                for (auto expr = cdr(clause); expr; expr = cdr(expr)) {
-                    result = eval(car(expr), env);
-                }
-                return result;
-            }
-            args = cdr(args);
-        }
-        return {};
-    }));
-
-    env->set("lambda", make_proc([] (List args, std::shared_ptr<Env> env) {
-        if (cdr(cdr(args))) {
-            throw EvalError("lambda: too many args");
-        }
-
-        auto formal_args = to_formal_args(car(args), "lambda");
-        auto lambda_body = cadr(args);
-        auto creator_env = env;
-
-        return make_proc([formal_args, lambda_body, creator_env] (List args, std::shared_ptr<Env> env) {
-            auto lambda_env = creator_env->derive_new();
-
-            auto syms = formal_args;
-            while (syms) {
-                if (!args) {
-                    EvalError("Proc: too few args");
-                }
-
-                assert(is_symbol(car(syms)));
-
-                auto sym = to_symbol(car(syms));
-                auto val = eval(car(args), env);
-                lambda_env->set(sym->name(), val);
-                syms = cdr(syms);
-                args = cdr(args);
-            }
-
-            if (args) {
-                EvalError("Proc: too many args");
-            }
-
-            return eval(lambda_body, lambda_env);
-        });
-    }));
-
-    env->set("label", make_proc([] (List args, std::shared_ptr<Env> env) {
-        if (!args || !cdr(args)) {
-            throw EvalError("label: too few parameters");
-        }
-        if (cdr(cdr(args))) {
-            throw EvalError("label: too many parameters");
-        }
-
-        auto symbol = to_symbol_or_throw(car(args), "label");
-        auto value = eval(cadr(args), env);
-        env->set(symbol.name(), value);
-
-        return value;
-    }));
-
-    env->set("defun", make_proc([] (List args, std::shared_ptr<Env> env) {
-        auto name = car(args);
-        auto body = cons(make_symbol("lambda"), cdr(args));
-        return eval(cons(make_symbol("label"), cons(name, cons(body, {}))), env);
-    }));
-}
+#include "eval.hpp"
+#include "operators.hpp"
 
 bool get_line(char const* prompt, std::string& line)
 {
@@ -439,9 +41,9 @@ bool get_line(char const* prompt, std::string& line)
     return false;
 }
 
-int repl(std::shared_ptr<Env> env)
+int repl(std::shared_ptr<mll::Env> env)
 {
-    auto parser = Parser{};
+    auto parser = mll::Parser{};
 
     while (true) {
         char const* prompt;
@@ -467,10 +69,10 @@ int repl(std::shared_ptr<Env> env)
                 }
                 std::cout << eval(*expr, env) << std::endl;
             }
-            catch (ParseError& e) {
+            catch (mll::ParseError& e) {
                 std::cout << e.what() << std::endl;
             }
-            catch (EvalError& e) {
+            catch (mll::EvalError& e) {
                 std::cout << e.what() << std::endl;
             }
         }
@@ -486,52 +88,16 @@ int repl(std::shared_ptr<Env> env)
     return parser.clean() ? 0 : -1;
 }
 
-int eval_stream(std::shared_ptr<Env> env, std::istream& is, std::ostream& os)
-{
-    try {
-        auto parser = Parser{};
-
-        while (true) {
-            auto expr = parser.parse(is);
-            if (!expr) {
-                break;
-            }
-            os << eval(*expr, env) << std::endl;
-        }
-    }
-    catch (ParseError& e) {
-        std::cout << e.what() << std::endl;
-        return -1;
-    }
-    catch (EvalError& e) {
-        std::cout << e.what() << std::endl;
-        return -1;
-    }
-
-    return is.eof() ? 0 : -1;
-}
-
-int eval_file(std::shared_ptr<Env> env, const char* filename)
-{
-    auto ifs = std::ifstream{ filename };
-    if (!ifs.is_open()) {
-        return -1;
-    }
-
-    // throw-away stream
-    std::ostringstream oss;
-    oss.setstate(std::ios_base::badbit);
-
-    return eval_stream(env, ifs, oss);
-}
-
 int main(int argc, char *argv[])
 {
-    auto env = Env::create();
+    auto env = mll::Env::create();
 
     set_primitive_operators(env);
-    set_typesupport_operators(env);
     set_complementary_operators(env);
+
+    set_number_operators(env);
+    set_string_operators(env);
+    //set_symbol_operators(env);
 
     for (int i = 1; i < argc; ++i) {
         int ret = eval_file(env, argv[i]);

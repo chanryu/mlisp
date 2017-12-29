@@ -1,3 +1,6 @@
+#ifndef __MLL_HPP__
+#define __MLL_HPP__
+
 #include <cassert>
 #include <iostream>
 #include <map>
@@ -204,6 +207,25 @@ namespace mll {
 }
 
 namespace mll {
+    class BasicPrinter: public NodeVisitor {
+    public:
+        explicit BasicPrinter(std::ostream& ostream);
+
+        void print(Node node);
+
+        void visit(List list) override;
+        void visit(Proc proc) override;
+        void visit(Number num) override;
+        void visit(String str) override;
+        void visit(Symbol sym) override;
+
+    private:
+        BasicPrinter(std::ostream& ostream, bool is_head);
+
+        std::ostream& ostream_;
+        bool is_head_;
+    };
+
     std::ostream& operator << (std::ostream& os, Node const&);
 }
 
@@ -339,3 +361,5 @@ namespace mll {
         bool operator == (Optional const&) = delete;
     };
 }
+
+#endif // __MLL_HPP__
