@@ -241,12 +241,6 @@ mll::Node::operator = (Symbol const& rhs)
     return *this;
 }
 
-bool
-mll::Node::operator == (Node const& rhs)
-{
-    return data_ == rhs.data_;
-}
-
 mll::Node::operator bool() const
 {
     return !!data_;

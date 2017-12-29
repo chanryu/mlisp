@@ -51,7 +51,6 @@ namespace mll {
         Node& operator = (String const&);
         Node& operator = (Symbol const&);
 
-        bool operator == (Node const&);
         operator bool() const;
 
         void accept(NodeVisitor&);
@@ -60,6 +59,7 @@ namespace mll {
         std::shared_ptr<Data> const& data() const;
 
     private:
+        bool operator == (Node const&) const = delete;
         std::shared_ptr<Data> data_;
     };
 

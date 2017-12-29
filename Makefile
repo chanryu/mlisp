@@ -10,7 +10,7 @@ CXXFLAGS += -Wall -DNDEBUG -pedantic -O2 -g -std=c++11
 
 .PHONY: clean test
 
-all: test
+all: $(MLISP)
 
 $(MLISP): $(MLL_OBJS) $(MLISP_OBJS)
 	$(CXX) -o $@ $(MLL_OBJS) $(MLISP_OBJS) -L/usr/local/lib -lreadline
