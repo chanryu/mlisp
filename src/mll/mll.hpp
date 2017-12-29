@@ -35,33 +35,33 @@ namespace mll {
 
     class Node final {
     public:
-        Node() noexcept = default;
+        Node() = default;
 
-        Node(Node const&) noexcept;
-        Node(List const&) noexcept;
-        Node(Proc const&) noexcept;
-        Node(Number const&) noexcept;
-        Node(String const&) noexcept;
-        Node(Symbol const&) noexcept;
+        Node(Node const&);
+        Node(List const&);
+        Node(Proc const&);
+        Node(Number const&);
+        Node(String const&);
+        Node(Symbol const&);
 
-        Node& operator = (Node const&) noexcept;
-        Node& operator = (List const&) noexcept;
-        Node& operator = (Proc const&) noexcept;
-        Node& operator = (Number const&) noexcept;
-        Node& operator = (String const&) noexcept;
-        Node& operator = (Symbol const&) noexcept;
+        Node& operator = (Node const&);
+        Node& operator = (List const&);
+        Node& operator = (Proc const&);
+        Node& operator = (Number const&);
+        Node& operator = (String const&);
+        Node& operator = (Symbol const&);
 
-        bool operator == (Node const&) noexcept;
-        operator bool() const noexcept;
+        bool operator == (Node const&);
+        operator bool() const;
 
         void accept(NodeVisitor&);
 
         struct Data;
-        friend Optional<List> to_list(Node) noexcept;
-        friend Optional<Proc> to_proc(Node) noexcept;
-        friend Optional<Number> to_number(Node) noexcept;
-        friend Optional<String> to_string(Node) noexcept;
-        friend Optional<Symbol> to_symbol(Node) noexcept;
+        friend Optional<List> to_list(Node);
+        friend Optional<Proc> to_proc(Node);
+        friend Optional<Number> to_number(Node);
+        friend Optional<String> to_string(Node);
+        friend Optional<Symbol> to_symbol(Node);
 
     private:
         std::shared_ptr<Data> data_;
@@ -69,12 +69,12 @@ namespace mll {
 
     class List final {
     public:
-        List() noexcept = default;
+        List() = default;
 
-        List(Node head, List tail) noexcept;
-        List(List const&) noexcept;
+        List(Node head, List tail);
+        List(List const&);
 
-        operator bool() const noexcept;
+        operator bool() const;
 
         Node head() const;
         List tail() const;
@@ -82,78 +82,78 @@ namespace mll {
     public:
         struct Data;
         friend class Node;
-        friend Optional<List> to_list(Node) noexcept;
+        friend Optional<List> to_list(Node);
 
     private:
-        List(std::shared_ptr<Data>) noexcept;
+        List(std::shared_ptr<Data>);
         std::shared_ptr<Data> data_;
     };
 
     class Proc final {
     public:
-        explicit Proc(Func) noexcept;
-        Proc(Proc const&) noexcept;
+        explicit Proc(Func);
+        Proc(Proc const&);
 
         Node call(List, std::shared_ptr<Env>) const;
 
     public:
         struct Data;
         friend class Node;
-        friend Optional<Proc> to_proc(Node) noexcept;
+        friend Optional<Proc> to_proc(Node);
 
     private:
-        Proc(std::shared_ptr<Data>) noexcept;
+        Proc(std::shared_ptr<Data>);
         std::shared_ptr<Data> data_;
     };
 
     class Number final {
     public:
-        explicit Number(double) noexcept;
-        Number(Number const&) noexcept;
+        explicit Number(double);
+        Number(Number const&);
 
         double value() const;
 
     public:
         struct Data;
         friend class Node;
-        friend Optional<Number> to_number(Node) noexcept;
+        friend Optional<Number> to_number(Node);
 
     private:
-        Number(std::shared_ptr<Data>) noexcept;
+        Number(std::shared_ptr<Data>);
         std::shared_ptr<Data> data_;
     };
 
     class String final {
     public:
-        explicit String(std::string) noexcept;
-        String(String const&) noexcept;
+        explicit String(std::string);
+        String(String const&);
 
         std::string const& text() const;
 
     public:
         struct Data;
         friend class Node;
-        friend Optional<String> to_string(Node) noexcept;
+        friend Optional<String> to_string(Node);
 
     private:
-        String(std::shared_ptr<Data>) noexcept;
+        String(std::shared_ptr<Data>);
         std::shared_ptr<Data> data_;
     };
 
     class Symbol final {
     public:
-        explicit Symbol(std::string) noexcept;
-        Symbol(Symbol const&) noexcept;
+        explicit Symbol(std::string);
+        Symbol(Symbol const&);
 
         std::string const& name() const;
 
     public:
         struct Data;
         friend class Node;
-        friend Optional<Symbol> to_symbol(Node) noexcept;
+        friend Optional<Symbol> to_symbol(Node);
 
     private:
-        Symbol(std::shared_ptr<Data>) noexcept;
+        Symbol(std::shared_ptr<Data>);
         std::shared_ptr<Data> data_;
     };
 }
@@ -165,7 +165,7 @@ namespace mll {
     class Parser {
     public:
         Optional<Node> parse(std::istream&);
-        bool clean() const noexcept;
+        bool clean() const;
 
     protected:
         virtual std::string translate(std::string token) const;
@@ -237,11 +237,11 @@ namespace mll {
 
     // Casting functions
 
-    Optional<List> to_list(Node) noexcept;
-    Optional<Proc> to_proc(Node) noexcept;
-    Optional<Number> to_number(Node) noexcept;
-    Optional<String> to_string(Node) noexcept;
-    Optional<Symbol> to_symbol(Node) noexcept;
+    Optional<List> to_list(Node);
+    Optional<Proc> to_proc(Node);
+    Optional<Number> to_number(Node);
+    Optional<String> to_string(Node);
+    Optional<Symbol> to_symbol(Node);
 }
 
 namespace mll {
@@ -272,37 +272,37 @@ namespace mll {
 
     // Convience wrappers
 
-    inline Proc make_proc(Func func) noexcept
+    inline Proc make_proc(Func func)
     {
         return Proc{ func };
     }
 
-    inline Number make_number(double value) noexcept
+    inline Number make_number(double value)
     {
         return Number{ value };
     }
 
-    inline String make_string(std::string text) noexcept
+    inline String make_string(std::string text)
     {
         return String{ std::move(text) };
     }
 
-    inline Symbol make_symbol(std::string name) noexcept
+    inline Symbol make_symbol(std::string name)
     {
         return Symbol{ std::move(name) };
     }
 
-    inline List cons(Node const& head, List const& tail) noexcept
+    inline List cons(Node const& head, List const& tail)
     {
         return List{ head, tail };
     }
 
-    inline Node car(List const& list) noexcept
+    inline Node car(List const& list)
     {
         return list.head();
     }
 
-    inline List cdr(List const& list) noexcept
+    inline List cdr(List const& list)
     {
         return list.tail();
     }
@@ -313,16 +313,16 @@ namespace mll {
     // A quasy replacement for std::experimental::optional
     template <typename T> class Optional final {
     public:
-        Optional() noexcept : engaged_{false}
+        Optional() : engaged_{false}
         {
         }
 
-        Optional(T t) noexcept : engaged_{true}
+        Optional(T t) : engaged_{true}
         {
             new (&value_) T(t);
         }
 
-        Optional(Optional const& other) noexcept : engaged_{other.engaged_}
+        Optional(Optional const& other) : engaged_{other.engaged_}
         {
             if (engaged_) {
                 new (&value_) T(other.value_);
@@ -336,7 +336,7 @@ namespace mll {
             }
         }
 
-        operator bool() const noexcept
+        operator bool() const
         {
             return engaged_;
         }

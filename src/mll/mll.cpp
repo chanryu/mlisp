@@ -85,7 +85,7 @@ struct mll::Node::Data: std::enable_shared_from_this<Node::Data> {
 
 struct mll::List::Data: mll::Node::Data {
 
-    Data(Node h, List t) noexcept : head{h}, tail{t} { }
+    Data(Node h, List t) : head{h}, tail{t} { }
 
     void accept(NodeVisitor& visitor) override
     {
@@ -103,7 +103,7 @@ struct mll::List::Data: mll::Node::Data {
 
 struct mll::Proc::Data: mll::Node::Data {
 
-    explicit Data(Func f) noexcept : func{std::move(f)} { }
+    explicit Data(Func f) : func{std::move(f)} { }
 
     void accept(NodeVisitor& visitor) override
     {
@@ -120,7 +120,7 @@ struct mll::Proc::Data: mll::Node::Data {
 
 struct mll::Number::Data: mll::Node::Data {
 
-    explicit Data(double v) noexcept : value{v} { }
+    explicit Data(double v) : value{v} { }
 
     void accept(NodeVisitor& visitor) override
     {
@@ -137,7 +137,7 @@ struct mll::Number::Data: mll::Node::Data {
 
 struct mll::String::Data: mll::Node::Data {
 
-    explicit Data(std::string t) noexcept : text{std::move(t)} { }
+    explicit Data(std::string t) : text{std::move(t)} { }
 
     void accept(NodeVisitor& visitor) override
     {
@@ -154,7 +154,7 @@ struct mll::String::Data: mll::Node::Data {
 
 struct mll::Symbol::Data: mll::Node::Data {
 
-    explicit Data(std::string n) noexcept : name{std::move(n)} { }
+    explicit Data(std::string n) : name{std::move(n)} { }
 
     void accept(NodeVisitor& visitor) override
     {
@@ -169,85 +169,85 @@ struct mll::Symbol::Data: mll::Node::Data {
 ////////////////////////////////////////////////////////////////////////////////
 // Object
 
-mll::Node::Node(Node const& other) noexcept
+mll::Node::Node(Node const& other)
     : data_{other.data_}
 {
 }
 
-mll::Node::Node(List const& list) noexcept
+mll::Node::Node(List const& list)
     : data_{list.data_}
 {
 }
 
-mll::Node::Node(Proc const& proc) noexcept
+mll::Node::Node(Proc const& proc)
     : data_{proc.data_}
 {
 }
 
-mll::Node::Node(Number const& number) noexcept
+mll::Node::Node(Number const& number)
     : data_{number.data_}
 {
 }
 
-mll::Node::Node(String const& string) noexcept
+mll::Node::Node(String const& string)
     : data_{string.data_}
 {
 }
 
-mll::Node::Node(Symbol const& symbol) noexcept
+mll::Node::Node(Symbol const& symbol)
     : data_{symbol.data_}
 {
 }
 
 mll::Node&
-mll::Node::operator = (Node const& rhs) noexcept
+mll::Node::operator = (Node const& rhs)
 {
     data_ = rhs.data_;
     return *this;
 }
 
 mll::Node&
-mll::Node::operator = (List const& rhs) noexcept
+mll::Node::operator = (List const& rhs)
 {
     data_ = rhs.data_;
     return *this;
 }
 
 mll::Node&
-mll::Node::operator = (Proc const& rhs) noexcept
+mll::Node::operator = (Proc const& rhs)
 {
     data_ = rhs.data_;
     return *this;
 }
 
 mll::Node&
-mll::Node::operator = (Number const& rhs) noexcept
+mll::Node::operator = (Number const& rhs)
 {
     data_ = rhs.data_;
     return *this;
 }
 
 mll::Node&
-mll::Node::operator = (String const& rhs) noexcept
+mll::Node::operator = (String const& rhs)
 {
     data_ = rhs.data_;
     return *this;
 }
 
 mll::Node&
-mll::Node::operator = (Symbol const& rhs) noexcept
+mll::Node::operator = (Symbol const& rhs)
 {
     data_ = rhs.data_;
     return *this;
 }
 
 bool
-mll::Node::operator == (Node const& rhs) noexcept
+mll::Node::operator == (Node const& rhs)
 {
     return data_ == rhs.data_;
 }
 
-mll::Node::operator bool() const noexcept
+mll::Node::operator bool() const
 {
     return !!data_;
 }
@@ -263,22 +263,22 @@ mll::Node::accept(NodeVisitor& visitor)
 ////////////////////////////////////////////////////////////////////////////////
 // List
 
-mll::List::List(Node head, List tail) noexcept
+mll::List::List(Node head, List tail)
     : data_{ std::make_shared<Data>(head, tail) }
 {
 }
 
-mll::List::List(List const& other) noexcept
+mll::List::List(List const& other)
     : data_{other.data_}
 {
 }
 
-mll::List::List(std::shared_ptr<Data> data) noexcept
+mll::List::List(std::shared_ptr<Data> data)
     : data_{data}
 {
 }
 
-mll::List::operator bool() const noexcept
+mll::List::operator bool() const
 {
     return !!data_;
 }
@@ -299,17 +299,17 @@ mll::List::tail() const
 ////////////////////////////////////////////////////////////////////////////////
 // Proc
 
-mll::Proc::Proc(Func func) noexcept
+mll::Proc::Proc(Func func)
     : data_{ std::make_shared<Data>(func) }
 {
 }
 
-mll::Proc::Proc(Proc const& other) noexcept
+mll::Proc::Proc(Proc const& other)
     : data_{other.data_}
 {
 }
 
-mll::Proc::Proc(std::shared_ptr<Data> data) noexcept
+mll::Proc::Proc(std::shared_ptr<Data> data)
     : data_{data}
 {
 }
@@ -326,17 +326,17 @@ mll::Proc::call(List args, std::shared_ptr<Env> env) const
 ////////////////////////////////////////////////////////////////////////////////
 // Number
 
-mll::Number::Number(double value) noexcept
+mll::Number::Number(double value)
     : data_{ std::make_shared<Data>(value) }
 {
 }
 
-mll::Number::Number(Number const& other) noexcept
+mll::Number::Number(Number const& other)
     : data_{other.data_}
 {
 }
 
-mll::Number::Number(std::shared_ptr<Data> data) noexcept
+mll::Number::Number(std::shared_ptr<Data> data)
     : data_{data}
 {
 }
@@ -350,17 +350,17 @@ mll::Number::value() const
 ////////////////////////////////////////////////////////////////////////////////
 // String
 
-mll::String::String(std::string text) noexcept
+mll::String::String(std::string text)
     : data_{ std::make_shared<Data>(std::move(text)) }
 {
 }
 
-mll::String::String(String const& other) noexcept
+mll::String::String(String const& other)
     : data_{other.data_}
 {
 }
 
-mll::String::String(std::shared_ptr<Data> data) noexcept
+mll::String::String(std::shared_ptr<Data> data)
     : data_{data}
 {
 }
@@ -374,7 +374,7 @@ mll::String::text() const
 ////////////////////////////////////////////////////////////////////////////////
 // Symbol
 
-mll::Symbol::Symbol(std::string name) noexcept
+mll::Symbol::Symbol(std::string name)
 {
     thread_local std::map<std::string, std::shared_ptr<Data>> symbols;
 
@@ -387,12 +387,12 @@ mll::Symbol::Symbol(std::string name) noexcept
     }
 }
 
-mll::Symbol::Symbol(Symbol const& other) noexcept
+mll::Symbol::Symbol(Symbol const& other)
     : data_{other.data_}
 {
 }
 
-mll::Symbol::Symbol(std::shared_ptr<Data> data) noexcept
+mll::Symbol::Symbol(std::shared_ptr<Data> data)
     : data_{data}
 {
 }
@@ -493,7 +493,7 @@ mll::Parser::parse(std::istream& istream)
 }
 
 bool
-mll::Parser::clean() const noexcept
+mll::Parser::clean() const
 {
     return stack_.empty();
 }
@@ -827,7 +827,7 @@ std::to_string(mll::Node const& node)
 // Optional, to_xxx
 
 mll::Optional<mll::List>
-mll::to_list(Node node) noexcept
+mll::to_list(Node node)
 {
     if (!node.data_) {
         return nil;
@@ -842,7 +842,7 @@ mll::to_list(Node node) noexcept
 }
 
 mll::Optional<mll::Proc>
-mll::to_proc(Node node) noexcept
+mll::to_proc(Node node)
 {
     auto data = std::dynamic_pointer_cast<Proc::Data>(node.data_);
     if (data) {
@@ -853,7 +853,7 @@ mll::to_proc(Node node) noexcept
 }
 
 mll::Optional<mll::Number>
-mll::to_number(Node node) noexcept
+mll::to_number(Node node)
 {
     auto data = std::dynamic_pointer_cast<Number::Data>(node.data_);
     if (data) {
@@ -864,7 +864,7 @@ mll::to_number(Node node) noexcept
 }
 
 mll::Optional<mll::String>
-mll::to_string(Node node) noexcept
+mll::to_string(Node node)
 {
     auto data = std::dynamic_pointer_cast<String::Data>(node.data_);
     if (data) {
@@ -875,7 +875,7 @@ mll::to_string(Node node) noexcept
 }
 
 mll::Optional<mll::Symbol>
-mll::to_symbol(Node node) noexcept
+mll::to_symbol(Node node)
 {
     auto data = std::dynamic_pointer_cast<Symbol::Data>(node.data_);
     if (data) {
