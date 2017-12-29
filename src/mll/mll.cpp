@@ -699,7 +699,7 @@ namespace mll {
         void visit(Symbol sym) override
         {
             if (sym.name() == MLL_QUOTE) {
-                thread_local auto quote_proc = make_proc([](List args, std::shared_ptr<Env>) {
+                static auto quote_proc = make_proc([](List args, std::shared_ptr<Env>) {
                     return car(args);
                 });
                 result_ = quote_proc;

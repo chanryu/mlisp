@@ -4,8 +4,10 @@
 
 #include <unistd.h> // isatty
 
+#ifdef MLISP_READLINE
 #include <readline/readline.h>
 #include <readline/history.h>
+#endif
 
 #include "../mll/mll.hpp"
 
@@ -407,8 +409,9 @@ void set_primitive_operators(std::shared_ptr<Env> env)
     }));
 }
 
-int repl(std::shared_ptr<Env> env)
+bool get_line(char const* prompt, std::string& line)
 {
+#ifdef MLISP_READLINE
     static bool once = true;
     if (once) {
         once = false;
@@ -417,20 +420,27 @@ int repl(std::shared_ptr<Env> env)
         rl_bind_key('\t', rl_insert);
     }
 
-    auto get_line = [] (char const* prompt, std::string& line) -> bool {
-        auto buf = readline(prompt);
-        if (buf) {
-            line = buf;
-            free(buf);
-            if (!line.empty()) {
-                add_history(line.c_str());
-            }
-            line.push_back('\n');
-            return true;
+    auto buf = readline(prompt);
+    if (buf) {
+        line = buf;
+        free(buf);
+        if (!line.empty()) {
+            add_history(line.c_str());
         }
-        return false;
-    };
+        line.push_back('\n');
+        return true;
+    }
+#else
+    if (std::getline(std::cin, line)) {
+        line.push_back('\n');
+        return true;
+    }
+#endif
+    return false;
+}
 
+int repl(std::shared_ptr<Env> env)
+{
     auto parser = Parser{};
 
     while (true) {
