@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <experimental/optional>
 
 namespace mll {
 
@@ -31,7 +32,8 @@ namespace mll {
         virtual void visit(Symbol) = 0;
     };
 
-    template <typename T> class Optional;
+    template <typename T>
+    using Optional = std::experimental::optional<T>;
 
     class Node final {
     public:
@@ -295,60 +297,6 @@ namespace mll {
     {
         return list.tail();
     }
-}
-
-namespace mll {
-
-    // A quasy replacement for std::experimental::optional
-    template <typename T> class Optional final {
-    public:
-        Optional() : engaged_{false}
-        {
-        }
-
-        Optional(T t) : engaged_{true}
-        {
-            new (&value_) T(t);
-        }
-
-        Optional(Optional const& other) : engaged_{other.engaged_}
-        {
-            if (engaged_) {
-                new (&value_) T(other.value_);
-            }
-        }
-
-        ~Optional()
-        {
-            if (engaged_) {
-                value_.~T();
-            }
-        }
-
-        operator bool() const
-        {
-            return engaged_;
-        }
-
-        T& operator *() const
-        {
-            assert(engaged_);
-            return value_;
-        }
-
-        T* operator ->() const
-        {
-            assert(engaged_);
-            return &value_;
-        }
-
-    private:
-        bool engaged_;
-        union {
-            T value_;
-        };
-        bool operator == (Optional const&) = delete;
-    };
 }
 
 #endif // __MLL_HPP__
