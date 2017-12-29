@@ -797,30 +797,36 @@ mll::eval(Node expr, std::shared_ptr<Env> env)
 // Printer
 
 mll::BasicPrinter::BasicPrinter(std::ostream& ostream)
-    : ostream_(ostream), is_head_(true)
-{
-}
-
-mll::BasicPrinter::BasicPrinter(std::ostream& ostream, bool is_head)
-    : ostream_(ostream), is_head_(is_head)
+    : ostream_(ostream)
 {
 }
 
 void
 mll::BasicPrinter::print(Node node)
 {
+    print(node, true);
+}
+
+void
+mll::BasicPrinter::print(Node node, bool is_head)
+{
+    is_head_stack_.push(is_head);
     if (node) {
         node.accept(*this);
     }
     else {
-        ostream_ << "()";
+        visit(nil);
     }
+    is_head_stack_.pop();
 }
 
 void
 mll::BasicPrinter::visit(List list)
 {
-    assert(list);
+    if (!list) {
+        ostream_ << "()";
+        return;
+    }
 
     auto quoted = false;
     auto symbol = to_symbol(car(list));
@@ -830,21 +836,21 @@ mll::BasicPrinter::visit(List list)
         quoted = true;
     }
 
-    if (!quoted && is_head_) {
+    if (!quoted && is_head()) {
         ostream_ << '(';
     }
     if (!quoted) {
         auto head = car(list);
-        BasicPrinter{ostream_, true}.print(head);
+        print(head, /* is_head */ true);
     }
     auto tail = cdr(list);
     if (tail) {
         if (!quoted) {
             ostream_ << ' ';
         }
-        BasicPrinter{ostream_, false}.print(tail);
+        print(tail, /* is_head */ false);
     }
-    if (!quoted && is_head_) {
+    if (!quoted && is_head()) {
         ostream_ << ')';
     }
 }
@@ -873,3 +879,8 @@ mll::BasicPrinter::visit(Proc proc)
     ostream_ << "<#proc>";
 }
 
+bool
+mll::BasicPrinter::is_head() const
+{
+    return is_head_stack_.top();
+}

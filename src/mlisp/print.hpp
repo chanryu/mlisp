@@ -6,6 +6,8 @@
 class PrettyPrinter: public mll::BasicPrinter {
 public:
     using BasicPrinter::BasicPrinter;
+
+    void visit(mll::List list) override;
 };
 
 inline std::ostream& operator << (std::ostream& os, mll::Node const& node)

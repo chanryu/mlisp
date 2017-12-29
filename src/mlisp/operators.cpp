@@ -1,6 +1,13 @@
 #include "operators.hpp"
 #include "eval.hpp"
 
+#define MLISP_DEFUN(cmd__, proc)\
+        do {\
+            char const* cmd = cmd__;\
+            env->set(cmd, proc);\
+        } while (0)
+
+
 using namespace mll;
 using namespace std::string_literals;
 
@@ -19,6 +26,16 @@ inline bool is_symbol(Node const& node)
     return !!to_symbol(node);
 }
 
+inline Node cadr(List const& list)
+{
+    return car(cdr(list));
+}
+
+inline Node bool_to_node(bool value)
+{
+    return value ? make_symbol("t") : Node{};
+}
+
 static void iterate(List list, std::function<void(Node)> callback) {
     for (; list; list = cdr(list)) {
         callback(car(list));
@@ -27,17 +44,12 @@ static void iterate(List list, std::function<void(Node)> callback) {
 
 static size_t length(List list)
 {
-    size_t l = 0;
+    size_t len = 0;
     while (list) {
-        l += 1;
+        len ++;
         list = cdr(list);
     }
-    return l;
-}
-
-inline Node bool_to_node(bool value)
-{
-    return value ? make_symbol("t") : Node{};
+    return len;
 }
 
 static void assert_argc(List args, size_t count, char const *cmd)
@@ -113,11 +125,6 @@ static List to_formal_args(Node const& node, char const* cmd)
     }
 
     return args;
-}
-
-inline Node cadr(List const& list)
-{
-    return car(cdr(list));
 }
 
 void set_primitive_operators(std::shared_ptr<Env> env)
@@ -364,31 +371,25 @@ void set_number_operators(std::shared_ptr<Env> env)
         return make_number(result);
     }));
 
-    env->set("/", make_proc([] (List args, std::shared_ptr<Env> env) {
-        assert_argc_gte(args, 2, "/");
+    MLISP_DEFUN("/", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+        assert_argc_gte(args, 2, cmd);
 
-        auto result = to_number_or_throw(eval(car(args), env), "/").value();
-        for (args = cdr(args); args; args = cdr(args)) {
-            auto arg = eval(car(args), env);
-            result /= to_number_or_throw(arg, "/").value();
-        }
-
+        auto result = to_number_or_throw(eval(car(args), env), cmd).value();
+        iterate(cdr(args), [&result, cmd, env](Node arg) {
+            result /= to_number_or_throw(eval(arg, env), cmd).value();
+        });
         return make_number(result);
     }));
 }
 
 void set_string_operators(std::shared_ptr<Env> env)
 {
-    char const* cmd;
-
-    cmd = "string?";
-    env->set(cmd, make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+    MLISP_DEFUN("string?", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
         assert_argc(args, 1, cmd);
         return bool_to_node(is_string(eval(car(args), env)));
     }));
 
-    cmd = "string-equal?";
-    env->set(cmd, make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+    MLISP_DEFUN("string-equal?", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
         assert_argc(args, 2, cmd);
 
         auto str1 = to_string_or_throw(eval(car(args), env), cmd);
@@ -397,13 +398,6 @@ void set_string_operators(std::shared_ptr<Env> env)
         return bool_to_node(str1.text() == str2.text());
     }));
 }
-
-
-#define MLISP_DEFUN(cmd__, proc)\
-        do {\
-            char const* cmd = cmd__;\
-            env->set(cmd, proc);\
-        } while (0)
 
 void set_symbol_operators(std::shared_ptr<Env> env)
 {

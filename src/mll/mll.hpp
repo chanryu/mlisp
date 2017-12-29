@@ -222,11 +222,14 @@ namespace mll {
         void visit(String str) override;
         void visit(Symbol sym) override;
 
-    private:
-        BasicPrinter(std::ostream& ostream, bool is_head);
-
+    protected:
+        bool is_head() const;
         std::ostream& ostream_;
-        bool is_head_;
+
+    private:
+        void print(Node node, bool is_head);
+        BasicPrinter(std::ostream& ostream, bool is_head);
+        std::stack<bool, std::vector<bool>> is_head_stack_;
     };
 }
 

@@ -6,7 +6,7 @@ MLL_OBJS := $(patsubst src/mll/%.cpp, $(BUILD)/mll/%.cpp.o, $(MLL_SRCS))
 MLISP_SRCS := $(wildcard src/$(MLISP)/*.cpp)
 MLISP_OBJS := $(patsubst src/$(MLISP)/%.cpp, $(BUILD)/$(MLISP)/%.cpp.o, $(MLISP_SRCS))
 
-CXXFLAGS += -Wall -DNDEBUG -pedantic -O2 -g -std=c++11
+CXXFLAGS += -Wall -DNDEBUG -pedantic -O2 -g -std=c++14
 
 .PHONY: clean test
 
