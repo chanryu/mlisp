@@ -51,17 +51,18 @@ namespace mll {
         Node& operator = (String const&);
         Node& operator = (Symbol const&);
 
-        bool operator == (Node const&);
+        Optional<List> to_list() const;
+        Optional<Proc> to_proc() const;
+        Optional<Number> to_number() const;
+        Optional<String> to_string() const;
+        Optional<Symbol> to_symbol() const;
+
+        bool operator == (Node const&) const;
         operator bool() const;
 
         void accept(NodeVisitor&);
 
         struct Data;
-        friend Optional<List> to_list(Node);
-        friend Optional<Proc> to_proc(Node);
-        friend Optional<Number> to_number(Node);
-        friend Optional<String> to_string(Node);
-        friend Optional<Symbol> to_symbol(Node);
 
     private:
         std::shared_ptr<Data> data_;
@@ -79,12 +80,10 @@ namespace mll {
         Node head() const;
         List tail() const;
 
-    public:
+    private:
         struct Data;
         friend class Node;
-        friend Optional<List> to_list(Node);
 
-    private:
         List(std::shared_ptr<Data>);
         std::shared_ptr<Data> data_;
     };
@@ -96,12 +95,10 @@ namespace mll {
 
         Node call(List, std::shared_ptr<Env>) const;
 
-    public:
+    private:
         struct Data;
         friend class Node;
-        friend Optional<Proc> to_proc(Node);
 
-    private:
         Proc(std::shared_ptr<Data>);
         std::shared_ptr<Data> data_;
     };
@@ -113,12 +110,10 @@ namespace mll {
 
         double value() const;
 
-    public:
+    private:
         struct Data;
         friend class Node;
-        friend Optional<Number> to_number(Node);
 
-    private:
         Number(std::shared_ptr<Data>);
         std::shared_ptr<Data> data_;
     };
@@ -130,12 +125,10 @@ namespace mll {
 
         std::string const& text() const;
 
-    public:
+    private:
         struct Data;
         friend class Node;
-        friend Optional<String> to_string(Node);
 
-    private:
         String(std::shared_ptr<Data>);
         std::shared_ptr<Data> data_;
     };
@@ -147,12 +140,10 @@ namespace mll {
 
         std::string const& name() const;
 
-    public:
+    private:
         struct Data;
         friend class Node;
-        friend Optional<Symbol> to_symbol(Node);
 
-    private:
         Symbol(std::shared_ptr<Data>);
         std::shared_ptr<Data> data_;
     };
@@ -231,17 +222,6 @@ namespace mll {
 
 namespace std {
     string to_string(mll::Node const&);
-}
-
-namespace mll {
-
-    // Casting functions
-
-    Optional<List> to_list(Node);
-    Optional<Proc> to_proc(Node);
-    Optional<Number> to_number(Node);
-    Optional<String> to_string(Node);
-    Optional<Symbol> to_symbol(Node);
 }
 
 namespace mll {

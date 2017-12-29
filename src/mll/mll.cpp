@@ -241,8 +241,67 @@ mll::Node::operator = (Symbol const& rhs)
     return *this;
 }
 
+mll::Optional<mll::List>
+mll::Node::to_list() const
+{
+    if (!data_) {
+        return List{};
+    }
+
+    auto list_data = std::dynamic_pointer_cast<List::Data>(data_);
+    if (list_data) {
+        return List{ list_data };
+    }
+
+    return {};
+}
+
+mll::Optional<mll::Proc>
+mll::Node::to_proc() const
+{
+    auto proc_data = std::dynamic_pointer_cast<Proc::Data>(data_);
+    if (proc_data) {
+        return Proc{ proc_data };
+    }
+
+    return {};
+}
+
+mll::Optional<mll::Number>
+mll::Node::to_number() const
+{
+    auto num_data = std::dynamic_pointer_cast<Number::Data>(data_);
+    if (num_data) {
+        return Number{ num_data };
+    }
+
+    return {};
+}
+
+mll::Optional<mll::String>
+mll::Node::to_string() const
+{
+    auto str_data = std::dynamic_pointer_cast<String::Data>(data_);
+    if (str_data) {
+        return String{ str_data };
+    }
+
+    return {};
+}
+
+mll::Optional<mll::Symbol>
+mll::Node::to_symbol() const
+{
+    auto sym_data = std::dynamic_pointer_cast<Symbol::Data>(data_);
+    if (sym_data) {
+        return Symbol{ sym_data };
+    }
+
+    return {};
+}
+
 bool
-mll::Node::operator == (Node const& rhs)
+mll::Node::operator == (Node const& rhs) const
 {
     return data_ == rhs.data_;
 }
@@ -678,7 +737,7 @@ namespace mll {
         void visit(List list) override
         {
             auto node = eval(car(list), env_);
-            auto proc = to_proc(node);
+            auto proc = node.to_proc();
             if (!proc) {
                 throw EvalError(std::to_string(node) + " is not a proc.");
             }
@@ -760,7 +819,7 @@ mll::BasicPrinter::visit(List list)
     assert(list);
 
     auto quoted = false;
-    auto symbol = to_symbol(car(list));
+    auto symbol = car(list).to_symbol();
 
     if (symbol && symbol->name() == MLL_QUOTE) {
         ostream_ << "'";
@@ -823,64 +882,3 @@ std::to_string(mll::Node const& node)
     return (ostringstream{} << node).str();
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// Optional, to_xxx
-
-mll::Optional<mll::List>
-mll::to_list(Node node)
-{
-    if (!node.data_) {
-        return nil;
-    }
-
-    auto data = std::dynamic_pointer_cast<List::Data>(node.data_);
-    if (data) {
-        return { List{ data } };
-    }
-
-    return {};
-}
-
-mll::Optional<mll::Proc>
-mll::to_proc(Node node)
-{
-    auto data = std::dynamic_pointer_cast<Proc::Data>(node.data_);
-    if (data) {
-        return { Proc{ data } };
-    }
-
-    return {};
-}
-
-mll::Optional<mll::Number>
-mll::to_number(Node node)
-{
-    auto data = std::dynamic_pointer_cast<Number::Data>(node.data_);
-    if (data) {
-        return { Number{ data } };
-    }
-
-    return {};
-}
-
-mll::Optional<mll::String>
-mll::to_string(Node node)
-{
-    auto data = std::dynamic_pointer_cast<String::Data>(node.data_);
-    if (data) {
-        return { String{ data } };
-    }
-
-    return {};
-}
-
-mll::Optional<mll::Symbol>
-mll::to_symbol(Node node)
-{
-    auto data = std::dynamic_pointer_cast<Symbol::Data>(node.data_);
-    if (data) {
-        return { Symbol{ data } };
-    }
-
-    return {};
-}
