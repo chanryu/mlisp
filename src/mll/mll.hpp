@@ -57,11 +57,7 @@ namespace mll {
         void accept(NodeVisitor&);
 
         struct Data;
-        friend Optional<List> to_list(Node);
-        friend Optional<Proc> to_proc(Node);
-        friend Optional<Number> to_number(Node);
-        friend Optional<String> to_string(Node);
-        friend Optional<Symbol> to_symbol(Node);
+        std::shared_ptr<Data> const& data() const;
 
     private:
         std::shared_ptr<Data> data_;
@@ -82,7 +78,7 @@ namespace mll {
     public:
         struct Data;
         friend class Node;
-        friend Optional<List> to_list(Node);
+        friend Optional<List> to_list(Node const&);
 
     private:
         List(std::shared_ptr<Data>);
@@ -99,7 +95,7 @@ namespace mll {
     public:
         struct Data;
         friend class Node;
-        friend Optional<Proc> to_proc(Node);
+        friend Optional<Proc> to_proc(Node const&);
 
     private:
         Proc(std::shared_ptr<Data>);
@@ -116,7 +112,7 @@ namespace mll {
     public:
         struct Data;
         friend class Node;
-        friend Optional<Number> to_number(Node);
+        friend Optional<Number> to_number(Node const&);
 
     private:
         Number(std::shared_ptr<Data>);
@@ -133,7 +129,7 @@ namespace mll {
     public:
         struct Data;
         friend class Node;
-        friend Optional<String> to_string(Node);
+        friend Optional<String> to_string(Node const&);
 
     private:
         String(std::shared_ptr<Data>);
@@ -150,12 +146,19 @@ namespace mll {
     public:
         struct Data;
         friend class Node;
-        friend Optional<Symbol> to_symbol(Node);
+        friend Optional<Symbol> to_symbol(Node const&);
 
     private:
         Symbol(std::shared_ptr<Data>);
         std::shared_ptr<Data> data_;
     };
+
+    // casting functions
+    Optional<List>   to_list(Node const&);
+    Optional<Proc>   to_proc(Node const&);
+    Optional<Number> to_number(Node const&);
+    Optional<String> to_string(Node const&);
+    Optional<Symbol> to_symbol(Node const&);
 }
 
 namespace mll {
@@ -231,17 +234,6 @@ namespace mll {
 
 namespace std {
     string to_string(mll::Node const&);
-}
-
-namespace mll {
-
-    // Casting functions
-
-    Optional<List> to_list(Node);
-    Optional<Proc> to_proc(Node);
-    Optional<Number> to_number(Node);
-    Optional<String> to_string(Node);
-    Optional<Symbol> to_symbol(Node);
 }
 
 namespace mll {

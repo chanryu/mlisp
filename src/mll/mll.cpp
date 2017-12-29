@@ -260,6 +260,12 @@ mll::Node::accept(NodeVisitor& visitor)
     }
 }
 
+std::shared_ptr<mll::Node::Data> const&
+mll::Node::data() const
+{
+    return data_;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // List
 
@@ -403,6 +409,67 @@ mll::Symbol::name() const
     return data_->name;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Casting functions
+
+mll::Optional<mll::List>
+mll::to_list(Node const& node)
+{
+    if (!node.data()) {
+        return nil;
+    }
+
+    auto data = std::dynamic_pointer_cast<List::Data>(node.data());
+    if (data) {
+        return { List{ data } };
+    }
+
+    return {};
+}
+
+mll::Optional<mll::Proc>
+mll::to_proc(Node const& node)
+{
+    auto data = std::dynamic_pointer_cast<Proc::Data>(node.data());
+    if (data) {
+        return { Proc{ data } };
+    }
+
+    return {};
+}
+
+mll::Optional<mll::Number>
+mll::to_number(Node const& node)
+{
+    auto data = std::dynamic_pointer_cast<Number::Data>(node.data());
+    if (data) {
+        return { Number{ data } };
+    }
+
+    return {};
+}
+
+mll::Optional<mll::String>
+mll::to_string(Node const& node)
+{
+    auto data = std::dynamic_pointer_cast<String::Data>(node.data());
+    if (data) {
+        return { String{ data } };
+    }
+
+    return {};
+}
+
+mll::Optional<mll::Symbol>
+mll::to_symbol(Node const& node)
+{
+    auto data = std::dynamic_pointer_cast<Symbol::Data>(node.data());
+    if (data) {
+        return { Symbol{ data } };
+    }
+
+    return {};
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Parser
@@ -821,66 +888,4 @@ std::string
 std::to_string(mll::Node const& node)
 {
     return (ostringstream{} << node).str();
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// Optional, to_xxx
-
-mll::Optional<mll::List>
-mll::to_list(Node node)
-{
-    if (!node.data_) {
-        return nil;
-    }
-
-    auto data = std::dynamic_pointer_cast<List::Data>(node.data_);
-    if (data) {
-        return { List{ data } };
-    }
-
-    return {};
-}
-
-mll::Optional<mll::Proc>
-mll::to_proc(Node node)
-{
-    auto data = std::dynamic_pointer_cast<Proc::Data>(node.data_);
-    if (data) {
-        return { Proc{ data } };
-    }
-
-    return {};
-}
-
-mll::Optional<mll::Number>
-mll::to_number(Node node)
-{
-    auto data = std::dynamic_pointer_cast<Number::Data>(node.data_);
-    if (data) {
-        return { Number{ data } };
-    }
-
-    return {};
-}
-
-mll::Optional<mll::String>
-mll::to_string(Node node)
-{
-    auto data = std::dynamic_pointer_cast<String::Data>(node.data_);
-    if (data) {
-        return { String{ data } };
-    }
-
-    return {};
-}
-
-mll::Optional<mll::Symbol>
-mll::to_symbol(Node node)
-{
-    auto data = std::dynamic_pointer_cast<Symbol::Data>(node.data_);
-    if (data) {
-        return { Symbol{ data } };
-    }
-
-    return {};
 }
