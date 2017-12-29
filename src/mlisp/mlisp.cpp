@@ -10,6 +10,7 @@
 
 #include "eval.hpp"
 #include "operators.hpp"
+#include "print.hpp"
 
 bool get_line(char const* prompt, std::string& line)
 {
@@ -97,7 +98,7 @@ int main(int argc, char *argv[])
 
     set_number_operators(env);
     set_string_operators(env);
-    //set_symbol_operators(env);
+    set_symbol_operators(env);
 
     for (int i = 1; i < argc; ++i) {
         int ret = eval_file(env, argv[i]);

@@ -228,12 +228,6 @@ namespace mll {
         std::ostream& ostream_;
         bool is_head_;
     };
-
-    std::ostream& operator << (std::ostream& os, Node const&);
-}
-
-namespace std {
-    string to_string(mll::Node const&);
 }
 
 namespace mll {

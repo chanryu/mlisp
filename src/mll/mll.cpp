@@ -741,7 +741,9 @@ namespace mll {
             auto node = eval(car(list), env_);
             auto proc = to_proc(node);
             if (!proc) {
-                throw EvalError(std::to_string(node) + " is not a proc.");
+                std::ostringstream oss;
+                BasicPrinter{oss}.print(node);
+                throw EvalError(oss.str() + " is not a proc.");
             }
 
             result_ = proc->call(cdr(list), env_);
@@ -871,15 +873,3 @@ mll::BasicPrinter::visit(Proc proc)
     ostream_ << "<#proc>";
 }
 
-std::ostream&
-mll::operator << (std::ostream& ostream, mll::Node const& node)
-{
-    BasicPrinter{ostream}.print(node);
-    return ostream;
-}
-
-std::string
-std::to_string(mll::Node const& node)
-{
-    return (ostringstream{} << node).str();
-}
