@@ -33,7 +33,7 @@ $(BUILD)/mll/mll.cpp.o: src/mll/mll.cpp src/mll/mll.hpp
 include $(shell find $(BUILD) -type f -name '*.P' 2> /dev/null)
 
 test: $(MLISP)
-	@./mlisp-test.sh
+	@cd test && ./mlisp-test.sh
 
 clean:
 	rm -f  mlisp
