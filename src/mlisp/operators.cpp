@@ -1,3 +1,5 @@
+#include <cassert>
+
 #include "operators.hpp"
 #include "eval.hpp"
 

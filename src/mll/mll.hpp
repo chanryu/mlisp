@@ -1,7 +1,6 @@
 #ifndef __MLL_HPP__
 #define __MLL_HPP__
 
-#include <cassert>
 #include <iostream>
 #include <map>
 #include <memory>
@@ -165,8 +164,6 @@ namespace mll {
 
 namespace mll {
 
-    // Parser
-
     class Parser {
     public:
         Optional<Node> parse(std::istream&);
@@ -188,6 +185,10 @@ namespace mll {
         };
         std::stack<Context> stack_;
     };
+
+    struct ParseError: std::runtime_error {
+        using runtime_error::runtime_error;
+    };
 }
 
 namespace mll {
@@ -208,11 +209,15 @@ namespace mll {
         std::map<std::string, Node> vars_;
     };
 
+    struct EvalError: std::runtime_error {
+        using runtime_error::runtime_error;
+    };
+
     Node eval(Node expr, std::shared_ptr<Env> env); // throws EvalError
 }
 
 namespace mll {
-    class BasicPrinter: public NodeVisitor {
+    class BasicPrinter: NodeVisitor {
     public:
         explicit BasicPrinter(std::ostream& ostream);
 
@@ -230,39 +235,14 @@ namespace mll {
 
     private:
         void print(Node node, bool is_head);
-        BasicPrinter(std::ostream& ostream, bool is_head);
         std::stack<bool, std::vector<bool>> is_head_stack_;
     };
 
-    inline std::ostream& operator << (std::ostream& os, mll::Node const& node)
+    inline std::ostream& operator << (std::ostream& os, Node const& node)
     {
         BasicPrinter{os}.print(node);
         return os;
     }
-}
-
-namespace mll {
-
-    // Exceptions
-
-    namespace detail {
-        template <int TAG>
-        class UniqueRuntimeError: public std::runtime_error {
-        public:
-            explicit UniqueRuntimeError(char const* what)
-                : std::runtime_error{what} {}
-            explicit UniqueRuntimeError(std::string const& what)
-                : std::runtime_error{what} {}
-        };
-    }
-
-    struct ParseError: detail::UniqueRuntimeError<0> {
-        using UniqueRuntimeError::UniqueRuntimeError;
-    };
-
-    struct EvalError: detail::UniqueRuntimeError<1> {
-        using UniqueRuntimeError::UniqueRuntimeError;
-    };
 }
 
 namespace mll {
