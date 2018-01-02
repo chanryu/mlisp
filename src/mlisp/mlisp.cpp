@@ -10,9 +10,9 @@
 
 #include "eval.hpp"
 #include "operators.hpp"
-#include "print.hpp"
 
-bool get_line(char const* prompt, std::string& line)
+bool
+get_line(char const* prompt, std::string& line)
 {
 #ifdef MLISP_READLINE
     static bool once = true;
@@ -42,7 +42,8 @@ bool get_line(char const* prompt, std::string& line)
     return false;
 }
 
-int repl(std::shared_ptr<mll::Env> env)
+int
+repl(std::shared_ptr<mll::Env> env)
 {
     auto parser = mll::Parser{};
 
@@ -60,7 +61,7 @@ int repl(std::shared_ptr<mll::Env> env)
             break;
         }
 
-        auto is = std::istringstream(line);
+        std::istringstream is(line);
 
         while (!is.eof()) {
             try {
@@ -101,9 +102,8 @@ int main(int argc, char *argv[])
     set_symbol_operators(env);
 
     for (int i = 1; i < argc; ++i) {
-        int ret = eval_file(env, argv[i]);
-        if (ret != 0) {
-            return ret;
+        if (!eval_file(env, argv[i])) {
+            return -1;
         }
     }
 
@@ -112,7 +112,7 @@ int main(int argc, char *argv[])
     }();
 
     if (cin_piped) {
-        return eval_stream(env, std::cin, std::cout);
+        return eval_stream(env, std::cin, std::cout) ? 0 : -1;
     }
 
     if (argc > 1) {

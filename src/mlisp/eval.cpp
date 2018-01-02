@@ -2,9 +2,9 @@
 #include <sstream>
 
 #include "eval.hpp"
-#include "print.hpp"
 
-int eval_stream(std::shared_ptr<mll::Env> env, std::istream& is, std::ostream& os)
+bool
+eval_stream(std::shared_ptr<mll::Env> env, std::istream& is, std::ostream& os)
 {
     try {
         auto parser = mll::Parser{};
@@ -19,17 +19,18 @@ int eval_stream(std::shared_ptr<mll::Env> env, std::istream& is, std::ostream& o
     }
     catch (mll::ParseError& e) {
         std::cout << e.what() << std::endl;
-        return -1;
+        return false;
     }
     catch (mll::EvalError& e) {
         std::cout << e.what() << std::endl;
-        return -1;
+        return false;
     }
 
-    return is.eof() ? 0 : -1;
+    return is.eof();
 }
 
-int eval_file(std::shared_ptr<mll::Env> env, const char* filename)
+int
+eval_file(std::shared_ptr<mll::Env> env, const char* filename)
 {
     auto ifs = std::ifstream{ filename };
     if (!ifs.is_open()) {

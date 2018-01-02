@@ -233,6 +233,12 @@ namespace mll {
         BasicPrinter(std::ostream& ostream, bool is_head);
         std::stack<bool, std::vector<bool>> is_head_stack_;
     };
+
+    inline std::ostream& operator << (std::ostream& os, mll::Node const& node)
+    {
+        BasicPrinter{os}.print(node);
+        return os;
+    }
 }
 
 namespace mll {
