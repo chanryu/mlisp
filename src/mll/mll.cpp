@@ -242,16 +242,13 @@ mll::Node::operator = (Symbol const& rhs)
     return *this;
 }
 
-mll::Node::operator bool() const
-{
-    return !!data_;
-}
-
 void
 mll::Node::accept(NodeVisitor& visitor)
 {
     if (data_) {
         data_->accept(visitor);
+    } else {
+        visitor.visit(nil);
     }
 }
 
@@ -727,19 +724,18 @@ namespace mll {
 
         Node evaluate(Node expr)
         {
-            if (expr) {
-                expr.accept(*this);
-            }
-            else {
-                result_ = nil;
-            }
-
+            expr.accept(*this);
             return result_;
         }
 
     private:
         void visit(List list) override
         {
+            if (list.empty()) {
+                result_ = nil;
+                return;
+            }
+
             auto node = eval(car(list), env_);
             auto proc = to_proc(node);
             if (!proc) {
@@ -813,12 +809,7 @@ void
 mll::BasicPrinter::print(Node node, bool is_head)
 {
     is_head_stack_.push(is_head);
-    if (node) {
-        node.accept(*this);
-    }
-    else {
-        visit(nil);
-    }
+    node.accept(*this);
     is_head_stack_.pop();
 }
 

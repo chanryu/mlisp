@@ -1,7 +1,10 @@
 #include <cassert>
+#include <sstream>
 
 #include "operators.hpp"
+
 #include "eval.hpp"
+#include "print.hpp"
 
 #define MLISP_DEFUN(cmd__, proc)\
         do {\
@@ -12,6 +15,15 @@
 
 using namespace mll;
 using namespace std::string_literals;
+
+namespace std {
+    inline string to_string(mll::Node const& node)
+    {
+        ostringstream ss;
+        mll::BasicPrinter{ss}.print(node);
+        return ss.str();
+    }
+}
 
 inline bool is_number(Node const& node)
 {
@@ -33,7 +45,16 @@ inline Node cadr(List const& list)
     return car(cdr(list));
 }
 
-inline Node bool_to_node(bool value)
+inline bool to_bool(Node const& node)
+{
+    auto list = to_list(node);
+    if (list && list->empty()) {
+        return false;
+    }
+    return true;
+}
+
+inline Node to_node(bool value)
 {
     return value ? make_symbol("t") : Node{};
 }
@@ -142,7 +163,7 @@ void set_primitive_operators(std::shared_ptr<Env> env)
     MLISP_DEFUN("atom", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
         assert_argc(args, 1, cmd);
         auto list = to_list(eval(car(args), env));
-        return bool_to_node(!list || list->empty());
+        return to_node(!list || list->empty());
     }));
 
     MLISP_DEFUN("eq", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
@@ -150,7 +171,7 @@ void set_primitive_operators(std::shared_ptr<Env> env)
 
         auto lhs = eval(car(args), env);
         auto rhs = eval(cadr(args), env);
-        return bool_to_node(lhs.data() == rhs.data());
+        return to_node(lhs.data() == rhs.data());
     }));
 
     MLISP_DEFUN("car", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
@@ -176,7 +197,7 @@ void set_primitive_operators(std::shared_ptr<Env> env)
         while (!args.empty()) {
             auto clause = to_list_or_throw(car(args), cmd);
             auto pred = car(clause);
-            if (eval(pred, env)) {
+            if (to_bool(eval(pred, env))) {
                 for (auto expr = cdr(clause); !expr.empty(); expr = cdr(expr)) {
                     result = eval(car(expr), env);
                 }
@@ -272,7 +293,7 @@ void set_complementary_operators(std::shared_ptr<Env> env)
         auto body = cdr(args);
         auto then_arm = car(body);
         auto else_arm = cadr(body);
-        if (eval(cond, env)) {
+        if (to_bool(eval(cond, env))) {
             return eval(then_arm, env);
         }
         return eval(else_arm, env);
@@ -298,7 +319,7 @@ void set_complementary_operators(std::shared_ptr<Env> env)
     MLISP_DEFUN("load", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
         assert_argc(args, 1, cmd);
         auto filename = to_string_or_throw(car(args), cmd);
-        return bool_to_node(!eval_file(env, filename.text().c_str()));
+        return to_node(!eval_file(env, filename.text().c_str()));
     }));
 }
 
@@ -306,7 +327,7 @@ void set_number_operators(std::shared_ptr<Env> env)
 {
     MLISP_DEFUN("number?", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
         assert_argc(args, 1, cmd);
-        return bool_to_node(is_number(eval(car(args), env)));
+        return to_node(is_number(eval(car(args), env)));
     }));
 
     MLISP_DEFUN("number-equal?", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
@@ -315,7 +336,7 @@ void set_number_operators(std::shared_ptr<Env> env)
         auto num1 = to_number_or_throw(eval(car(args), env), "number-equal?");
         auto num2 = to_number_or_throw(eval(cadr(args), env), "number-equal?");
 
-        return bool_to_node(num1.value() == num2.value());
+        return to_node(num1.value() == num2.value());
     }));
 
     MLISP_DEFUN("number-less?", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
@@ -323,7 +344,7 @@ void set_number_operators(std::shared_ptr<Env> env)
 
         auto num1 = to_number_or_throw(eval(car(args), env), cmd);
         auto num2 = to_number_or_throw(eval(cadr(args), env), cmd);
-        return bool_to_node(num1.value() < num2.value());
+        return to_node(num1.value() < num2.value());
     }));
 
     MLISP_DEFUN("+", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
@@ -378,7 +399,7 @@ void set_string_operators(std::shared_ptr<Env> env)
 {
     MLISP_DEFUN("string?", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
         assert_argc(args, 1, cmd);
-        return bool_to_node(is_string(eval(car(args), env)));
+        return to_node(is_string(eval(car(args), env)));
     }));
 
     MLISP_DEFUN("string-equal?", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
@@ -387,7 +408,7 @@ void set_string_operators(std::shared_ptr<Env> env)
         auto str1 = to_string_or_throw(eval(car(args), env), cmd);
         auto str2 = to_string_or_throw(eval(cadr(args), env), cmd);
 
-        return bool_to_node(str1.text() == str2.text());
+        return to_node(str1.text() == str2.text());
     }));
 }
 
@@ -395,6 +416,6 @@ void set_symbol_operators(std::shared_ptr<Env> env)
 {
     MLISP_DEFUN("symbol?", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
         assert_argc(args, 1, cmd);
-        return bool_to_node(is_symbol(eval(car(args), env)));
+        return to_node(is_symbol(eval(car(args), env)));
     }));
 }

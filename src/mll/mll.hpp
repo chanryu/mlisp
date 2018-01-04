@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+
 #include <experimental/optional>
 
 namespace mll {
@@ -51,8 +52,6 @@ namespace mll {
         Node& operator = (Number const&);
         Node& operator = (String const&);
         Node& operator = (Symbol const&);
-
-        operator bool() const;
 
         void accept(NodeVisitor&);
 
@@ -237,12 +236,6 @@ namespace mll {
         void print(Node node, bool is_head);
         std::stack<bool, std::vector<bool>> is_head_stack_;
     };
-
-    inline std::ostream& operator << (std::ostream& os, Node const& node)
-    {
-        BasicPrinter{os}.print(node);
-        return os;
-    }
 }
 
 namespace mll {

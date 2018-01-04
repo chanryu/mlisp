@@ -2,6 +2,7 @@
 #include <sstream>
 
 #include "eval.hpp"
+#include "print.hpp"
 
 bool
 eval_stream(std::shared_ptr<mll::Env> env, std::istream& is, std::ostream& os)

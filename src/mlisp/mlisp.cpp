@@ -10,6 +10,7 @@
 
 #include "eval.hpp"
 #include "operators.hpp"
+#include "print.hpp"
 
 bool
 get_line(char const* prompt, std::string& line)
