@@ -96,12 +96,12 @@ int main(int argc, char *argv[])
 {
     auto env = mll::Env::create();
 
-    set_primitive_operators(env);
-    set_complementary_operators(env);
+    set_primitive_procs(env);
+    set_complementary_procs(env);
 
-    set_number_operators(env);
-    set_string_operators(env);
-    set_symbol_operators(env);
+    set_number_procs(env);
+    set_string_procs(env);
+    set_symbol_procs(env);
 
     for (int i = 1; i < argc; ++i) {
         if (!eval_file(env, argv[i])) {

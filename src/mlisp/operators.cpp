@@ -153,7 +153,7 @@ static List to_formal_args(Node const& node, char const* cmd)
     return args;
 }
 
-void set_primitive_operators(std::shared_ptr<Env> env)
+void set_primitive_procs(std::shared_ptr<Env> env)
 {
     // "quote" is already built into the Parser/eval()
     //env->set("quote", make_proc([](List args, Env) {
@@ -258,7 +258,7 @@ void set_primitive_operators(std::shared_ptr<Env> env)
     }));
 }
 
-void set_complementary_operators(std::shared_ptr<Env> env)
+void set_complementary_procs(std::shared_ptr<Env> env)
 {
     MLISP_DEFUN("list", make_proc([] (List args, std::shared_ptr<Env> env) {
         std::vector<Node> objs;
@@ -323,7 +323,7 @@ void set_complementary_operators(std::shared_ptr<Env> env)
     }));
 }
 
-void set_number_operators(std::shared_ptr<Env> env)
+void set_number_procs(std::shared_ptr<Env> env)
 {
     MLISP_DEFUN("number?", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
         assert_argc(args, 1, cmd);
@@ -395,7 +395,7 @@ void set_number_operators(std::shared_ptr<Env> env)
     }));
 }
 
-void set_string_operators(std::shared_ptr<Env> env)
+void set_string_procs(std::shared_ptr<Env> env)
 {
     MLISP_DEFUN("string?", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
         assert_argc(args, 1, cmd);
@@ -412,7 +412,7 @@ void set_string_operators(std::shared_ptr<Env> env)
     }));
 }
 
-void set_symbol_operators(std::shared_ptr<Env> env)
+void set_symbol_procs(std::shared_ptr<Env> env)
 {
     MLISP_DEFUN("symbol?", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
         assert_argc(args, 1, cmd);
