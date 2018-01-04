@@ -279,9 +279,10 @@ mll::List::List(std::shared_ptr<Data> data)
 {
 }
 
-mll::List::operator bool() const
+bool
+mll::List::empty() const
 {
-    return !!data_;
+    return !data_;
 }
 
 mll::Node
@@ -506,7 +507,7 @@ mll::Parser::parse(std::istream& istream)
                 stack_.pop();
                 if (c.head_empty) {
                     assert(c.type == Context::Type::paren);
-                    assert(!list);
+                    assert(list.empty());
                 }
                 else {
                     list = cons(c.head, list);
@@ -824,7 +825,7 @@ mll::BasicPrinter::print(Node node, bool is_head)
 void
 mll::BasicPrinter::visit(List list)
 {
-    if (!list) {
+    if (list.empty()) {
         ostream_ << "()";
         return;
     }
@@ -845,7 +846,7 @@ mll::BasicPrinter::visit(List list)
         print(head, /* is_head */ true);
     }
     auto tail = cdr(list);
-    if (tail) {
+    if (!tail.empty()) {
         if (!quoted) {
             ostream_ << ' ';
         }

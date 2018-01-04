@@ -38,16 +38,19 @@ inline Node bool_to_node(bool value)
     return value ? make_symbol("t") : Node{};
 }
 
-static void iterate(List list, std::function<void(Node)> callback) {
-    for (; list; list = cdr(list)) {
-        callback(car(list));
+template <typename Func>
+void for_each(List list, Func func)
+{
+    while (!list.empty()) {
+        func(car(list));
+        list = cdr(list);
     }
 };
 
 static size_t length(List list)
 {
     size_t len = 0;
-    while (list) {
+    while (!list.empty()) {
         len ++;
         list = cdr(list);
     }
@@ -61,7 +64,7 @@ static void assert_argc(List args, size_t count, char const *cmd)
     }
 }
 
-static void assert_argc_gte(List const& args, size_t min, char const *cmd)
+static void assert_argc_min(List const& args, size_t min, char const *cmd)
 {
     auto len = length(args);
     if (len < min) {
@@ -120,7 +123,7 @@ static List to_formal_args(Node const& node, char const* cmd)
     auto args = to_list_or_throw(node, cmd);
 
     // validate args (must be list of symbols)
-    for (auto c = args; c; c = cdr(c)) {
+    for (auto c = args; !c.empty(); c = cdr(c)) {
         if (!is_symbol(car(c))) {
             throw EvalError(cmd + (": " + std::to_string(car(c))) + " is not a symbol");
         }
@@ -136,51 +139,45 @@ void set_primitive_operators(std::shared_ptr<Env> env)
     //    return car(args);
     //}));
 
-    env->set("atom", make_proc([] (List args, std::shared_ptr<Env> env) {
+    MLISP_DEFUN("atom", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+        assert_argc(args, 1, cmd);
         auto list = to_list(eval(car(args), env));
-        return bool_to_node(!list || !*list);
+        return bool_to_node(!list || list->empty());
     }));
 
-    env->set("eq", make_proc([] (List args, std::shared_ptr<Env> env) {
-        assert_argc(args, 2, "eq");
+    MLISP_DEFUN("eq", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+        assert_argc(args, 2, cmd);
 
         auto lhs = eval(car(args), env);
         auto rhs = eval(cadr(args), env);
         return bool_to_node(lhs.data() == rhs.data());
     }));
 
-    env->set("car", make_proc([] (List args, std::shared_ptr<Env> env) {
-        if (cdr(args)) {
-            throw EvalError("car: too many args given");
-        }
-        return car(to_list_or_throw(eval(car(args), env), "car"));
+    MLISP_DEFUN("car", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+        assert_argc(args, 1, cmd);
+        return car(to_list_or_throw(eval(car(args), env), cmd));
     }));
 
-    env->set("cdr", make_proc([] (List args, std::shared_ptr<Env> env) {
-        if (cdr(args)) {
-            throw EvalError("cdr: too many args given");
-        }
-        return cdr(to_list_or_throw(eval(car(args), env), "cdr"));
+    MLISP_DEFUN("cdr", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+        assert_argc(args, 1, cmd);
+        return cdr(to_list_or_throw(eval(car(args), env), cmd));
     }));
 
-    env->set("cons", make_proc([] (List args, std::shared_ptr<Env> env) {
-        if (!cdr(args)) {
-            throw EvalError("cons: not enough args");
-        }
-
+    MLISP_DEFUN("cons", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+        assert_argc(args, 2, cmd);
         auto head = eval(car(args), env);
-        auto tail = to_list_or_throw(eval(cadr(args), env), "cons");
+        auto tail = to_list_or_throw(eval(cadr(args), env), cmd);
 
         return cons(head, tail);
     }));
 
-    env->set("cond", make_proc([] (List args, std::shared_ptr<Env> env) {
+    MLISP_DEFUN("cond", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
         Node result;
-        while (args) {
-            auto clause = to_list_or_throw(car(args), "cond");
+        while (!args.empty()) {
+            auto clause = to_list_or_throw(car(args), cmd);
             auto pred = car(clause);
             if (eval(pred, env)) {
-                for (auto expr = cdr(clause); expr; expr = cdr(expr)) {
+                for (auto expr = cdr(clause); !expr.empty(); expr = cdr(expr)) {
                     result = eval(car(expr), env);
                 }
                 return result;
@@ -190,12 +187,10 @@ void set_primitive_operators(std::shared_ptr<Env> env)
         return result;
     }));
 
-    env->set("lambda", make_proc([] (List args, std::shared_ptr<Env> env) {
-        if (cdr(cdr(args))) {
-            throw EvalError("lambda: too many args");
-        }
+    MLISP_DEFUN("lambda", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+        assert_argc_min(args, 2, cmd);
 
-        auto formal_args = to_formal_args(car(args), "lambda");
+        auto formal_args = to_formal_args(car(args), cmd);
         auto lambda_body = cadr(args);
         auto creator_env = env;
 
@@ -203,8 +198,8 @@ void set_primitive_operators(std::shared_ptr<Env> env)
             auto lambda_env = creator_env->derive_new();
 
             auto syms = formal_args;
-            while (syms) {
-                if (!args) {
+            while (!syms.empty()) {
+                if (args.empty()) {
                     EvalError("Proc: too few args");
                 }
 
@@ -217,7 +212,7 @@ void set_primitive_operators(std::shared_ptr<Env> env)
                 args = cdr(args);
             }
 
-            if (args) {
+            if (!args.empty()) {
                 EvalError("Proc: too many args");
             }
 
@@ -225,22 +220,17 @@ void set_primitive_operators(std::shared_ptr<Env> env)
         });
     }));
 
-    env->set("label", make_proc([] (List args, std::shared_ptr<Env> env) {
-        if (!args || !cdr(args)) {
-            throw EvalError("label: too few parameters");
-        }
-        if (cdr(cdr(args))) {
-            throw EvalError("label: too many parameters");
-        }
+    MLISP_DEFUN("label", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+        assert_argc(args, 2, cmd);
 
-        auto symbol = to_symbol_or_throw(car(args), "label");
+        auto symbol = to_symbol_or_throw(car(args), cmd);
         auto value = eval(cadr(args), env);
         env->set(symbol.name(), value);
 
         return value;
     }));
 
-    env->set("defun", make_proc([] (List args, std::shared_ptr<Env> env) {
+    MLISP_DEFUN("defun", make_proc([] (List args, std::shared_ptr<Env> env) {
         auto name = car(args);
         auto body = cons(make_symbol("lambda"), cdr(args));
         return eval(cons(make_symbol("label"), cons(name, cons(body, {}))), env);
@@ -249,10 +239,13 @@ void set_primitive_operators(std::shared_ptr<Env> env)
 
 void set_complementary_operators(std::shared_ptr<Env> env)
 {
-    env->set("list", make_proc([] (List args, std::shared_ptr<Env> env) {
+    MLISP_DEFUN("list", make_proc([] (List args, std::shared_ptr<Env> env) {
         std::vector<Node> objs;
-        for (; args; args = cdr(args)) {
-            objs.push_back(eval(car(args), env));
+        for_each(args, [&objs, env] (auto const& arg) {
+            objs.push_back(eval(arg, env));
+        });
+        while (!args.empty()) {
+            args = cdr(args);
         }
 
         List list;
@@ -263,17 +256,17 @@ void set_complementary_operators(std::shared_ptr<Env> env)
         return list;
     }));
 
-    env->set("set", make_proc([] (List args, std::shared_ptr<Env> env) {
-        assert_argc(args, 2, "set");
+    MLISP_DEFUN("set", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+        assert_argc(args, 2, cmd);
 
-        auto symbol = to_symbol_or_throw(eval(car(args), env), "set");
+        auto symbol = to_symbol_or_throw(eval(car(args), env), cmd);
         auto value = eval(cadr(args), env);
         env->set(symbol.name(), value);
         return value;
     }));
 
-    env->set("if", make_proc([] (List args, std::shared_ptr<Env> env) {
-        assert_argc_range(args, 2, 3, "if");
+    MLISP_DEFUN("if", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+        assert_argc_range(args, 2, 3, cmd);
 
         auto cond = car(args);
         auto body = cdr(args);
@@ -285,10 +278,10 @@ void set_complementary_operators(std::shared_ptr<Env> env)
         return eval(else_arm, env);
     }));
 
-    env->set("print", make_proc([] (List args, std::shared_ptr<Env> env) {
+    MLISP_DEFUN("print", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
         Node result;
         auto first = true;
-        iterate(args, [&first, env, &result] (Node arg) {
+        for_each(args, [&first, env, &result] (auto const& arg) {
             if (first) {
                 first = false;
             }
@@ -302,23 +295,22 @@ void set_complementary_operators(std::shared_ptr<Env> env)
         return result;
     }));
 
-    env->set("load", make_proc([] (List args, std::shared_ptr<Env> env) {
-        assert_argc(args, 1, "load");
-        auto filename = to_string_or_throw(car(args), "load");
+    MLISP_DEFUN("load", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+        assert_argc(args, 1, cmd);
+        auto filename = to_string_or_throw(car(args), cmd);
         return bool_to_node(!eval_file(env, filename.text().c_str()));
     }));
 }
 
 void set_number_operators(std::shared_ptr<Env> env)
 {
-    env->set("number?", make_proc([] (List args, std::shared_ptr<Env> env) {
+    MLISP_DEFUN("number?", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+        assert_argc(args, 1, cmd);
         return bool_to_node(is_number(eval(car(args), env)));
     }));
 
-    env->set("number-equal?", make_proc([] (List args, std::shared_ptr<Env> env) {
-        if (length(args) != 2) {
-            throw EvalError("number-equal?: must be given 2 parameters");
-        }
+    MLISP_DEFUN("number-equal?", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+        assert_argc(args, 2, cmd);
 
         auto num1 = to_number_or_throw(eval(car(args), env), "number-equal?");
         auto num2 = to_number_or_throw(eval(cadr(args), env), "number-equal?");
@@ -326,58 +318,56 @@ void set_number_operators(std::shared_ptr<Env> env)
         return bool_to_node(num1.value() == num2.value());
     }));
 
-    env->set("number-less?", make_proc([] (List args, std::shared_ptr<Env> env) {
-        if (length(args) != 2) {
-            throw EvalError("<: must be given 2 parameters");
-        }
+    MLISP_DEFUN("number-less?", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+        assert_argc(args, 2, cmd);
 
-        auto num1 = to_number_or_throw(eval(car(args), env), "<");
-        auto num2 = to_number_or_throw(eval(cadr(args), env), "<");
-
+        auto num1 = to_number_or_throw(eval(car(args), env), cmd);
+        auto num2 = to_number_or_throw(eval(cadr(args), env), cmd);
         return bool_to_node(num1.value() < num2.value());
     }));
 
-    env->set("+", make_proc([] (List args, std::shared_ptr<Env> env) {
+    MLISP_DEFUN("+", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
         auto result = 0.0;
-        iterate(args, [&result, env](Node arg) {
-            result += to_number_or_throw(eval(arg, env), "+").value();
+        for_each(args, [&result, env, cmd](auto const& arg) {
+            result += to_number_or_throw(eval(arg, env), cmd).value();
         });
         return make_number(result);
     }));
 
-    env->set("-", make_proc([] (List args, std::shared_ptr<Env> env) {
-        assert_argc_gte(args, 1, "-");
+    MLISP_DEFUN("-", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+        assert_argc_min(args, 1, cmd);
 
-        auto result = to_number_or_throw(eval(car(args), env), "-").value();
+        auto result = to_number_or_throw(eval(car(args), env), cmd).value();
         args = cdr(args);
-        if (args) {
-            iterate(args, [&result, env](Node arg) {
-                result -= to_number_or_throw(eval(arg, env), "-").value();
-            });
-        }
-        else {
+        if (args.empty()) {
             // unary minus
             result = -result;
+        }
+        else {
+            for_each(args, [&result, env, cmd](auto const& arg) {
+                result -= to_number_or_throw(eval(arg, env), cmd).value();
+            });
         }
 
         return make_number(result);
     }));
 
-    env->set("*", make_proc([] (List args, std::shared_ptr<Env> env) {
+    MLISP_DEFUN("*", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
         auto result = 1.0;
-        for (; args; args = cdr(args)) {
+        while (!args.empty()) {
             auto arg = eval(car(args), env);
-            result *= to_number_or_throw(arg, "*").value();
+            result *= to_number_or_throw(arg, cmd).value();
+            args = cdr(args);
         }
 
         return make_number(result);
     }));
 
     MLISP_DEFUN("/", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
-        assert_argc_gte(args, 2, cmd);
+        assert_argc_min(args, 2, cmd);
 
         auto result = to_number_or_throw(eval(car(args), env), cmd).value();
-        iterate(cdr(args), [&result, cmd, env](Node arg) {
+        for_each(cdr(args), [&result, cmd, env](auto const& arg) {
             result /= to_number_or_throw(eval(arg, env), cmd).value();
         });
         return make_number(result);

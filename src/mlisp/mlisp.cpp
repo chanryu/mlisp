@@ -34,6 +34,7 @@ get_line(char const* prompt, std::string& line)
         return true;
     }
 #else
+    std::cout << prompt;
     if (std::getline(std::cin, line)) {
         line.push_back('\n');
         return true;

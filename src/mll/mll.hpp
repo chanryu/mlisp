@@ -71,7 +71,7 @@ namespace mll {
         List(Node head, List tail);
         List(List const&);
 
-        operator bool() const;
+        bool empty() const;
 
         Node head() const;
         List tail() const;
