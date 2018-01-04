@@ -515,14 +515,8 @@ mll::Parser::parse(std::istream& istream)
             }
             node = list;
         }
-        else if (is_number_token(token_)) {
-            node = make_number(std::stod(token_));
-        }
-        else if (is_string_token(token_)) {
-            node = make_string(translate(std::move(token_)));
-        }
         else {
-            node = make_symbol(std::move(token_));
+            node = make_node(std::move(token_));
         }
 
         token_.clear();
@@ -586,6 +580,20 @@ mll::Parser::translate(std::string token) const
     }
 
     return text;
+}
+
+mll::Node
+mll::Parser::make_node(std::string token)
+{
+    if (is_number_token(token)) {
+        return make_number(std::stod(token));
+    }
+
+    if (is_string_token(token)) {
+        return make_string(translate(std::move(token)));
+    }
+
+    return make_symbol(std::move(token));
 }
 
 bool

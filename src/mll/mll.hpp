@@ -169,9 +169,10 @@ namespace mll {
         bool clean() const;
 
     protected:
-        virtual std::string translate(std::string token) const;
+        virtual Node make_node(std::string token);
 
     private:
+        std::string translate(std::string token) const;
         bool get_token(std::istream& istream);
         std::string token_;
         bool token_escaped_;
