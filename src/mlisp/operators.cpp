@@ -17,10 +17,10 @@ using namespace mll;
 using namespace std::string_literals;
 
 namespace std {
-    inline string to_string(mll::Node const& node)
+    inline string to_string(Node const& node)
     {
         ostringstream ss;
-        mll::BasicPrinter{ss}.print(node);
+        BasicPrinter{ss}.print(node);
         return ss.str();
     }
 }
