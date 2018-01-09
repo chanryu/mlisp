@@ -1,3 +1,4 @@
+#include <array>
 #include <cassert>
 #include <sstream>
 
@@ -66,6 +67,21 @@ namespace {
     {
         assert(!token.empty());
         return token[0] == '"';
+    }
+
+    std::string quote_text(std::string const& text)
+    {
+        std::string quoted_text;
+        quoted_text.reserve(static_cast<size_t>(text.size() * 1.5) + 2);
+        quoted_text.push_back('\"');
+        for (auto c: text) {
+            if (c == '\"') {
+                quoted_text.push_back('\\');
+            }
+            quoted_text.push_back(c);
+        }
+        quoted_text.push_back('\"');
+        return quoted_text;
     }
 
     static mll::List const nil;
@@ -552,36 +568,6 @@ mll::Parser::clean() const
     return stack_.empty();
 }
 
-std::string
-mll::Parser::translate(std::string token) const
-{
-    assert(token.length() >= 2);
-    assert(token.front() == '"' && token.back() == '"');
-
-    std::string text;
-
-    auto escaped = false;
-    for (size_t i = 1; i < token.size() - 1; ++i) {
-        auto c = token[i];
-        if (escaped) {
-            escaped = false;
-            // FIXME: more escaped chars
-            if (c == 'n') {
-                c = '\n';
-            }
-            text.push_back(c);
-        }
-        else if (c == '\\') {
-            escaped = true;
-        }
-        else {
-            text.push_back(c);
-        }
-    }
-
-    return text;
-}
-
 mll::Node
 mll::Parser::make_node(std::string token)
 {
@@ -590,7 +576,53 @@ mll::Parser::make_node(std::string token)
     }
 
     if (is_string_token(token)) {
-        return make_string(translate(std::move(token)));
+        assert(token.length() >= 2);
+        assert(token.front() == '"' && token.back() == '"');
+
+        static std::array<char, 128> esctbl = {{
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, '\"', 0x00, 0x00, 0x00, 0x00, '\'',
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, '\?',
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, '\\', 0x00, 0x00, 0x00,
+            0x00, '\a', '\b', 0x00, 0x00, 0x00, '\f', 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, '\n', 0x00,
+            0x00, 0x00, '\r', 0x00, '\t', 0x00, '\v', 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        }};
+
+        std::string text;
+
+        auto escaped = false;
+        for (size_t i = 1; i < token.size() - 1; ++i) {
+            auto c = token[i];
+            if (escaped) {
+                escaped = false;
+
+                if (c >= 0 && c < esctbl.size() && esctbl[c]) {
+                    text.push_back(esctbl[c]);
+                }
+                else {
+                    text.push_back('\\');
+                    text.push_back(c);
+                }
+            }
+            else if (c == '\\') {
+                escaped = true;
+            }
+            else {
+                text.push_back(c);
+            }
+        }
+
+        return make_string(std::move(text));
     }
 
     return make_symbol(std::move(token));
@@ -865,7 +897,7 @@ mll::BasicPrinter::visit(Number num)
 void
 mll::BasicPrinter::visit(String str)
 {
-    ostream_ << str.text();
+    ostream_ << quote_text(str.text());
 }
 
 void
