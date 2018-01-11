@@ -195,7 +195,7 @@ namespace mll {
     class Env: public std::enable_shared_from_this<Env> {
     public:
         static std::shared_ptr<Env> create();
-        std::shared_ptr<Env> derive_new() const;
+        std::shared_ptr<Env> derive_new();
 
         void set(std::string const&, Node const&);
         bool update(std::string const&, Node const&);
@@ -204,7 +204,7 @@ namespace mll {
 
     private:
         Env() = default;
-        std::shared_ptr<Env const> base_;
+        std::shared_ptr<Env> base_;
         std::map<std::string, Node> vars_;
     };
 

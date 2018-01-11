@@ -707,7 +707,7 @@ mll::Env::create()
 }
 
 std::shared_ptr<mll::Env>
-mll::Env::derive_new() const
+mll::Env::derive_new()
 {
     auto derived = create();
     derived->base_ = shared_from_this();
@@ -723,10 +723,12 @@ mll::Env::set(std::string const& name, Node const& value)
 bool
 mll::Env::update(std::string const& name, Node const& value)
 {
-    auto it = vars_.find(name);
-    if (it != vars_.end()) {
-        it->second = value;
-        return true;
+    for (auto env = this; env; env = env->base_.get()) {
+        auto it = env->vars_.find(name);
+        if (it != env->vars_.end()) {
+            it->second = value;
+            return true;
+        }
     }
     return false;
 }

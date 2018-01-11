@@ -277,12 +277,33 @@ void set_complementary_procs(std::shared_ptr<Env> env)
         return list;
     }));
 
+    MLISP_DEFUN("define", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+        assert_argc(args, 2, cmd);
+
+        auto symbol = to_symbol_or_throw(car(args), cmd);
+        auto value = eval(cadr(args), env);
+        env->set(symbol.name(), value);
+        return value;
+    }));
+
     MLISP_DEFUN("set", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
         assert_argc(args, 2, cmd);
 
-        auto symbol = to_symbol_or_throw(eval(car(args), env), cmd);
+        auto symbol = to_symbol_or_throw(car(args), cmd);
         auto value = eval(cadr(args), env);
-        env->set(symbol.name(), value);
+        if (!env->update(symbol.name(), value)) {
+            throw EvalError("unbound variable: " + symbol.name());
+        }
+        return value;
+    }));
+
+    MLISP_DEFUN("begin", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+        env = env->derive_new();
+        Node value;
+        while (!args.empty()) {
+            value = eval(car(args), env);
+            args = cdr(args);
+        }
         return value;
     }));
 

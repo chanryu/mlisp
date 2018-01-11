@@ -19,10 +19,10 @@ test() {
   fi
   echo "$EVAL" | grep -q "^$2$"
   if [ $? -eq 0 ]; then
-    printf "%s $1 -> $2\n" $(green "PASS")
+	printf "%s $1 -> $2\n" $(green "PASS")
   else
+	printf "%s $1 -> $2 (actual: $EVAL)\n" $(red "FAIL")
     FAIL_COUNT=$((FAIL_COUNT + 1))
-    printf "%s $1 -> $2 (actual: $EVAL)\n" $(red "FAIL")
   fi
 }
 
@@ -32,6 +32,10 @@ test-op() {
 
 test-subst() {
   test "$1" "$2" "subst"
+}
+
+test-closure() {
+  test "$1" "$2" "closure"
 }
 
 # quote
@@ -101,7 +105,10 @@ test-op "(assoc. 'x '((x a) (y b)))" "a"
 test-op "(assoc. 'x '((x new) (x a) (y b)))" "new"
 
 # subst
-test-subst "(subst 'm 'b '(a b (a b c) d))" "(a m (a m c) d)" "subst"
+test-subst "(subst 'm 'b '(a b (a b c) d))" "(a m (a m c) d)"
+
+# closure
+test-closure "(list (counter) (counter) (counter))" "(1 2 3)"
 
 
 if [ $FAIL_COUNT -eq 0 ]; then
