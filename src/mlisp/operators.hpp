@@ -1,6 +1,6 @@
 #pragma once
 
-#include <mll.hpp>
+#include <mll/mll.hpp>
 
 void set_primitive_procs(std::shared_ptr<mll::Env> env);
 void set_complementary_procs(std::shared_ptr<mll::Env> env);
