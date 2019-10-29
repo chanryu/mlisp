@@ -113,6 +113,8 @@ test-closure "(list (counter) (counter) (counter))" "(1 2 3)"
 
 if [ $FAIL_COUNT -eq 0 ]; then
   echo "All tests passed."
+  exit 0
 else
   echo $(red "$FAIL_COUNT test(s) failed.")
+  exit 1
 fi
