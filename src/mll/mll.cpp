@@ -579,7 +579,7 @@ mll::Parser::make_node(std::string token)
         assert(token.length() >= 2);
         assert(token.front() == '"' && token.back() == '"');
 
-        static std::array<char, 128> esctbl = {{
+        static const std::array<char, 128> esctbl = {{
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -606,7 +606,7 @@ mll::Parser::make_node(std::string token)
             if (escaped) {
                 escaped = false;
 
-                if (c >= 0 && c < esctbl.size() && esctbl[c]) {
+                if (c >= 0 && static_cast<size_t>(c) < esctbl.size() && static_cast<bool>(esctbl[c])) {
                     text.push_back(esctbl[c]);
                 }
                 else {

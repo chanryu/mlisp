@@ -66,7 +66,7 @@ void for_each(List list, Func func)
         func(car(list));
         list = cdr(list);
     }
-};
+}
 
 static size_t length(List list)
 {
