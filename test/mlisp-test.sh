@@ -19,9 +19,9 @@ test() {
   fi
   echo "$EVAL" | grep -q "^$2$"
   if [ $? -eq 0 ]; then
-	printf "%s $1 -> $2\n" $(green "PASS")
+    printf "%s $1 -> $2\n" $(green "PASS")
   else
-	printf "%s $1 -> $2 (actual: $EVAL)\n" $(red "FAIL")
+    printf "%s $1 -> $2 (actual: $EVAL)\n" $(red "FAIL")
     FAIL_COUNT=$((FAIL_COUNT + 1))
   fi
 }
