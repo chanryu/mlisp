@@ -421,7 +421,7 @@ mll::Symbol::name() const
 ////////////////////////////////////////////////////////////////////////////////
 // Casting functions
 
-mll::Optional<mll::List>
+std::optional<mll::List>
 mll::to_list(Node const& node)
 {
     if (!node.data()) {
@@ -436,7 +436,7 @@ mll::to_list(Node const& node)
     return {};
 }
 
-mll::Optional<mll::Proc>
+std::optional<mll::Proc>
 mll::to_proc(Node const& node)
 {
     auto data = std::dynamic_pointer_cast<Proc::Data>(node.data());
@@ -447,7 +447,7 @@ mll::to_proc(Node const& node)
     return {};
 }
 
-mll::Optional<mll::Number>
+std::optional<mll::Number>
 mll::to_number(Node const& node)
 {
     auto data = std::dynamic_pointer_cast<Number::Data>(node.data());
@@ -458,7 +458,7 @@ mll::to_number(Node const& node)
     return {};
 }
 
-mll::Optional<mll::String>
+std::optional<mll::String>
 mll::to_string(Node const& node)
 {
     auto data = std::dynamic_pointer_cast<String::Data>(node.data());
@@ -469,7 +469,7 @@ mll::to_string(Node const& node)
     return {};
 }
 
-mll::Optional<mll::Symbol>
+std::optional<mll::Symbol>
 mll::to_symbol(Node const& node)
 {
     auto data = std::dynamic_pointer_cast<Symbol::Data>(node.data());
@@ -483,7 +483,7 @@ mll::to_symbol(Node const& node)
 ////////////////////////////////////////////////////////////////////////////////
 // Parser
 
-mll::Optional<mll::Node>
+std::optional<mll::Node>
 mll::Parser::parse(std::istream& istream)
 {
     while (true) {
@@ -733,7 +733,7 @@ mll::Env::update(std::string const& name, Node const& value)
     return false;
 }
 
-mll::Optional<mll::Node>
+std::optional<mll::Node>
 mll::Env::lookup(std::string const& name) const
 {
     for (auto env = this; env; env = env->base_.get()) {
@@ -745,7 +745,7 @@ mll::Env::lookup(std::string const& name) const
     return {};
 }
 
-mll::Optional<mll::Node>
+std::optional<mll::Node>
 mll::Env::shallow_lookup(std::string const& name) const
 {
     auto it = vars_.find(name);

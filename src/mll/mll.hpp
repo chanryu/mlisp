@@ -31,9 +31,6 @@ namespace mll {
         virtual void visit(Symbol) = 0;
     };
 
-    template <typename T>
-    using Optional = std::optional<T>;
-
     class Node final {
     public:
         Node() = default;
@@ -77,7 +74,7 @@ namespace mll {
     public:
         struct Data;
         friend class Node;
-        friend Optional<List> to_list(Node const&);
+        friend std::optional<List> to_list(Node const&);
 
     private:
         List(std::shared_ptr<Data>);
@@ -94,7 +91,7 @@ namespace mll {
     public:
         struct Data;
         friend class Node;
-        friend Optional<Proc> to_proc(Node const&);
+        friend std::optional<Proc> to_proc(Node const&);
 
     private:
         Proc(std::shared_ptr<Data>);
@@ -111,7 +108,7 @@ namespace mll {
     public:
         struct Data;
         friend class Node;
-        friend Optional<Number> to_number(Node const&);
+        friend std::optional<Number> to_number(Node const&);
 
     private:
         Number(std::shared_ptr<Data>);
@@ -128,7 +125,7 @@ namespace mll {
     public:
         struct Data;
         friend class Node;
-        friend Optional<String> to_string(Node const&);
+        friend std::optional<String> to_string(Node const&);
 
     private:
         String(std::shared_ptr<Data>);
@@ -145,7 +142,7 @@ namespace mll {
     public:
         struct Data;
         friend class Node;
-        friend Optional<Symbol> to_symbol(Node const&);
+        friend std::optional<Symbol> to_symbol(Node const&);
 
     private:
         Symbol(std::shared_ptr<Data>);
@@ -153,18 +150,18 @@ namespace mll {
     };
 
     // casting functions
-    Optional<List>   to_list(Node const&);
-    Optional<Proc>   to_proc(Node const&);
-    Optional<Number> to_number(Node const&);
-    Optional<String> to_string(Node const&);
-    Optional<Symbol> to_symbol(Node const&);
+    std::optional<List>   to_list(Node const&);
+    std::optional<Proc>   to_proc(Node const&);
+    std::optional<Number> to_number(Node const&);
+    std::optional<String> to_string(Node const&);
+    std::optional<Symbol> to_symbol(Node const&);
 }
 
 namespace mll {
 
     class Parser {
     public:
-        Optional<Node> parse(std::istream&);
+        std::optional<Node> parse(std::istream&);
         bool clean() const;
 
     protected:
@@ -198,8 +195,8 @@ namespace mll {
 
         void set(std::string const&, Node const&);
         bool update(std::string const&, Node const&);
-        Optional<Node> lookup(std::string const&) const;
-        Optional<Node> shallow_lookup(std::string const&) const;
+        std::optional<Node> lookup(std::string const&) const;
+        std::optional<Node> shallow_lookup(std::string const&) const;
 
     private:
         Env() = default;
