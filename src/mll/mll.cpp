@@ -2,7 +2,6 @@
 
 #include <array>
 #include <cassert>
-#include <functional>
 #include <sstream>
 
 namespace {
