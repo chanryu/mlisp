@@ -1,8 +1,8 @@
+#include "mll.hpp"
+
 #include <array>
 #include <cassert>
 #include <sstream>
-
-#include "mll.hpp"
 
 namespace {
     inline bool is_paren(char c)

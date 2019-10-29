@@ -1,5 +1,4 @@
-#ifndef __MLISP_PRINT_HPP__
-#define __MLISP_PRINT_HPP__
+#pragma once
 
 #include <mll.hpp>
 
@@ -9,4 +8,3 @@ inline std::ostream& operator << (std::ostream& os, mll::Node const& node)
     return os;
 }
 
-#endif

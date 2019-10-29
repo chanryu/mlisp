@@ -1,7 +1,7 @@
+#include "operators.hpp"
+
 #include <cassert>
 #include <sstream>
-
-#include "operators.hpp"
 
 #include "eval.hpp"
 #include "print.hpp"
@@ -297,7 +297,7 @@ void set_complementary_procs(std::shared_ptr<Env> env)
         return value;
     }));
 
-    MLISP_DEFUN("begin", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+    MLISP_DEFUN("begin", make_proc([/*cmd*/] (List args, std::shared_ptr<Env> env) {
         env = env->derive_new();
         Node value;
         while (!args.empty()) {
@@ -320,7 +320,7 @@ void set_complementary_procs(std::shared_ptr<Env> env)
         return eval(else_arm, env);
     }));
 
-    MLISP_DEFUN("print", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+    MLISP_DEFUN("print", make_proc([/*cmd*/] (List args, std::shared_ptr<Env> env) {
         Node result;
         auto first = true;
         for_each(args, [&first, env, &result] (auto const& arg) {

@@ -1,15 +1,13 @@
-#ifndef __MLL_HPP__
-#define __MLL_HPP__
+#pragma once
 
 #include <iostream>
 #include <map>
 #include <memory>
+#include <optional>
 #include <stack>
 #include <stdexcept>
 #include <string>
 #include <vector>
-
-#include <experimental/optional>
 
 namespace mll {
 
@@ -33,7 +31,7 @@ namespace mll {
     };
 
     template <typename T>
-    using Optional = std::experimental::optional<T>;
+    using Optional = std::optional<T>;
 
     class Node final {
     public:
@@ -278,4 +276,3 @@ namespace mll {
     }
 }
 
-#endif // __MLL_HPP__
