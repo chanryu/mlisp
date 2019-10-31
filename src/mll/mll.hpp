@@ -208,20 +208,19 @@ class BasicPrinter: NodeVisitor {
 public:
     explicit BasicPrinter(std::ostream& ostream);
 
-    void print(Node node);
+    void print(Node const&);
 
-    void visit(List const& list) override;
-    void visit(Proc const& proc) override;
-    void visit(Number const& num) override;
-    void visit(String const& str) override;
-    void visit(Symbol const& sym) override;
-
-protected:
-    bool is_head() const;
-    std::ostream& ostream_;
+    void visit(List const&) override;
+    void visit(Proc const&) override;
+    void visit(Number const&) override;
+    void visit(String const&) override;
+    void visit(Symbol const&) override;
 
 private:
-    void print(Node node, bool is_head);
+    bool is_head() const;
+    void print(Node const&, bool is_head);
+
+    std::ostream& ostream_;
     std::stack<bool, std::vector<bool>> is_head_stack_;
 };
 

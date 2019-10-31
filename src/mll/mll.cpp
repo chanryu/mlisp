@@ -845,13 +845,13 @@ BasicPrinter::BasicPrinter(std::ostream& ostream)
 }
 
 void
-BasicPrinter::print(Node node)
+BasicPrinter::print(Node const& node)
 {
-    print(node, true);
+    print(node, /* is_head */ true);
 }
 
 void
-BasicPrinter::print(Node node, bool is_head)
+BasicPrinter::print(Node const& node, bool is_head)
 {
     is_head_stack_.push(is_head);
     node.accept(*this);
