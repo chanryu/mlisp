@@ -60,6 +60,7 @@ int repl(mll::Env& env)
 
         std::string line;
         if (!get_line(prompt, line)) {
+            std::cout << '\n';
             break;
         }
 
@@ -71,23 +72,18 @@ int repl(mll::Env& env)
                 if (!expr) {
                     break;
                 }
-                std::cout << eval(*expr, env) << std::endl;
+                std::cout << eval(*expr, env) << '\n';
             }
             catch (mll::ParseError& e) {
-                std::cout << e.what() << std::endl;
+                std::cout << e.what() << '\n';
             }
             catch (mll::EvalError& e) {
-                std::cout << e.what() << std::endl;
+                std::cout << e.what() << '\n';
             }
-        }
-
-        if (std::cin.eof()) {
-            break;
         }
     }
 
-    std::cout << std::endl;
-    std::cout << "Bye." << std::endl;
+    std::cout << "Bye.\n";
 
     return parser.clean() ? 0 : -1;
 }

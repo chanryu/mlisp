@@ -336,12 +336,12 @@ void set_complementary_procs(mll::Env& env)
                 first = false;
             }
             else {
-                std::cout << " ";
+                std::cout << ' ';
             }
             result = eval(arg, env);
             std::cout << result;
         });
-        std::cout << std::endl;
+        std::cout << '\n';
         return result;
     }));
 
