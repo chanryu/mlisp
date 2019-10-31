@@ -24,11 +24,11 @@ namespace mll {
 
     class NodeVisitor {
     public:
-        virtual void visit(List) = 0;
-        virtual void visit(Proc) = 0;
-        virtual void visit(Number) = 0;
-        virtual void visit(String) = 0;
-        virtual void visit(Symbol) = 0;
+        virtual void visit(List const&) = 0;
+        virtual void visit(Proc const&) = 0;
+        virtual void visit(Number const&) = 0;
+        virtual void visit(String const&) = 0;
+        virtual void visit(Symbol const&) = 0;
     };
 
     class Node final {
@@ -218,11 +218,11 @@ namespace mll {
 
         void print(Node node);
 
-        void visit(List list) override;
-        void visit(Proc proc) override;
-        void visit(Number num) override;
-        void visit(String str) override;
-        void visit(Symbol sym) override;
+        void visit(List const& list) override;
+        void visit(Proc const& proc) override;
+        void visit(Number const& num) override;
+        void visit(String const& str) override;
+        void visit(Symbol const& sym) override;
 
     protected:
         bool is_head() const;

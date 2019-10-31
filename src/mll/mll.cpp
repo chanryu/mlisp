@@ -771,7 +771,7 @@ namespace mll {
         }
 
     private:
-        void visit(List list) override
+        void visit(List const& list) override
         {
             if (list.empty()) {
                 result_ = nil;
@@ -789,17 +789,17 @@ namespace mll {
             result_ = proc->call(cdr(list), env_);
         }
 
-        void visit(Number num) override
+        void visit(Number const& num) override
         {
             result_ = num;
         }
 
-        void visit(String str) override
+        void visit(String const& str) override
         {
             result_ = str;
         }
 
-        void visit(Symbol sym) override
+        void visit(Symbol const& sym) override
         {
             if (sym.name() == MLL_QUOTE) {
                 static auto quote_proc = make_proc([](List args, std::shared_ptr<Env>) {
@@ -816,7 +816,7 @@ namespace mll {
             }
         }
 
-        void visit(Proc proc) override
+        void visit(Proc const& proc) override
         {
             assert(false);
         }
@@ -856,7 +856,7 @@ mll::BasicPrinter::print(Node node, bool is_head)
 }
 
 void
-mll::BasicPrinter::visit(List list)
+mll::BasicPrinter::visit(List const& list)
 {
     if (list.empty()) {
         ostream_ << "()";
@@ -891,25 +891,25 @@ mll::BasicPrinter::visit(List list)
 }
 
 void
-mll::BasicPrinter::visit(Number num)
+mll::BasicPrinter::visit(Number const& num)
 {
     ostream_ << num.value();
 }
 
 void
-mll::BasicPrinter::visit(String str)
+mll::BasicPrinter::visit(String const& str)
 {
     ostream_ << quote_text(str.text());
 }
 
 void
-mll::BasicPrinter::visit(Symbol sym)
+mll::BasicPrinter::visit(Symbol const& sym)
 {
     ostream_ << sym.name();
 }
 
 void
-mll::BasicPrinter::visit(Proc proc)
+mll::BasicPrinter::visit(Proc const& proc)
 {
     ostream_ << "<#proc>";
 }
