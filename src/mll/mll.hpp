@@ -20,7 +20,7 @@ class String;
 class Symbol;
 
 class Env;
-using Func = std::function<Node(List const&, std::shared_ptr<Env> const&)>;
+using Func = std::function<Node(List const&, Env&)>;
 
 class NodeVisitor {
 public:
@@ -86,7 +86,7 @@ public:
     explicit Proc(Func);
     Proc(Proc const&);
 
-    Node call(List, std::shared_ptr<Env>) const;
+    Node call(List, Env&) const;
 
 public:
     struct Data;
@@ -202,7 +202,7 @@ struct EvalError: std::runtime_error {
     using runtime_error::runtime_error;
 };
 
-Node eval(Node expr, std::shared_ptr<Env> env); // throws EvalError
+Node eval(Node expr, Env& env); // throws EvalError
 
 class BasicPrinter: NodeVisitor {
 public:

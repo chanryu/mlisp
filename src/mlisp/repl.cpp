@@ -1,5 +1,7 @@
 #include "repl.hpp"
 
+#include <mll/mll.hpp>
+
 #ifdef MLISP_READLINE
 #include <readline/readline.h>
 #include <readline/history.h>
@@ -43,7 +45,7 @@ bool get_line(char const* prompt, std::string& line)
 }
 } // namespace
 
-int repl(std::shared_ptr<mll::Env> env)
+int repl(mll::Env& env)
 {
     auto parser = mll::Parser{};
 

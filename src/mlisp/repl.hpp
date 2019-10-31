@@ -1,9 +1,12 @@
 #pragma once
 
-#include <mll/mll.hpp>
+
+namespace mll {
+class Env;
+}
 
 namespace mlisp {
 
-int repl(std::shared_ptr<mll::Env> env);
+int repl(mll::Env& env);
 
 } // namespace mlisp

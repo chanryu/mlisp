@@ -333,7 +333,7 @@ Proc::Proc(std::shared_ptr<Data> data)
 }
 
 Node
-Proc::call(List args, std::shared_ptr<Env> env) const
+Proc::call(List args, Env& env) const
 {
     if (data_->func) {
         return data_->func(args, env);
@@ -765,7 +765,7 @@ namespace {
 
     class Evaluator: NodeVisitor {
     public:
-        explicit Evaluator(std::shared_ptr<Env> env) : env_(env) { }
+        explicit Evaluator(Env& env) : env_(env) { }
 
         Node evaluate(Node expr)
         {
@@ -805,13 +805,13 @@ namespace {
         void visit(Symbol const& sym) override
         {
             if (sym.name() == MLL_QUOTE) {
-                static auto quote_proc = make_proc([](List args, std::shared_ptr<Env>) {
+                static auto quote_proc = make_proc([](List const& args, Env&) {
                     return car(args);
                 });
                 result_ = quote_proc;
             }
             else {
-                auto value = env_->lookup(sym.name());
+                auto value = env_.lookup(sym.name());
                 if (!value) {
                     throw EvalError("Unknown symbol: " + sym.name());
                 }
@@ -825,13 +825,13 @@ namespace {
         }
 
     private:
-        std::shared_ptr<Env> env_;
+        Env& env_;
         Node result_;
     };
 }
 
 Node
-eval(Node expr, std::shared_ptr<Env> env)
+eval(Node expr, Env& env)
 {
     return Evaluator(env).evaluate(expr);
 }

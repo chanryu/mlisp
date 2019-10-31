@@ -1,15 +1,17 @@
 #include "operators.hpp"
 
+#include <mll/mll.hpp>
+
 #include <cassert>
 #include <sstream>
 
 #include "eval.hpp"
 #include "print.hpp"
 
-#define MLISP_DEFUN(cmd__, proc)\
+#define MLISP_DEFUN(cmd__, proc__)\
         do {\
             char const* cmd = cmd__;\
-            env->set(cmd, proc);\
+            env.set(cmd, proc__);\
         } while (0)
 
 
@@ -156,7 +158,7 @@ mll::List to_formal_args(mll::Node const& node, char const* cmd)
 }
 } // namespace
 
-void set_primitive_procs(std::shared_ptr<mll::Env> env)
+void set_primitive_procs(mll::Env& env)
 {
     using namespace mll;
 
@@ -165,13 +167,13 @@ void set_primitive_procs(std::shared_ptr<mll::Env> env)
     //    return car(args);
     //}));
 
-    MLISP_DEFUN("atom", make_proc([cmd] (List args, std::shared_ptr<mll::Env> env) {
+    MLISP_DEFUN("atom", make_proc([cmd] (List args, Env& env) {
         assert_argc(args, 1, cmd);
         auto list = to_list(eval(car(args), env));
         return to_node(!list || list->empty());
     }));
 
-    MLISP_DEFUN("eq", make_proc([cmd] (List args, std::shared_ptr<mll::Env> env) {
+    MLISP_DEFUN("eq", make_proc([cmd] (List args, Env& env) {
         assert_argc(args, 2, cmd);
 
         auto lhs = eval(car(args), env);
@@ -179,17 +181,17 @@ void set_primitive_procs(std::shared_ptr<mll::Env> env)
         return to_node(lhs.data() == rhs.data());
     }));
 
-    MLISP_DEFUN("car", make_proc([cmd] (List args, std::shared_ptr<mll::Env> env) {
+    MLISP_DEFUN("car", make_proc([cmd] (List args, Env& env) {
         assert_argc(args, 1, cmd);
         return car(to_list_or_throw(eval(car(args), env), cmd));
     }));
 
-    MLISP_DEFUN("cdr", make_proc([cmd] (List args, std::shared_ptr<mll::Env> env) {
+    MLISP_DEFUN("cdr", make_proc([cmd] (List args, Env& env) {
         assert_argc(args, 1, cmd);
         return cdr(to_list_or_throw(eval(car(args), env), cmd));
     }));
 
-    MLISP_DEFUN("cons", make_proc([cmd] (List args, std::shared_ptr<mll::Env> env) {
+    MLISP_DEFUN("cons", make_proc([cmd] (List args, Env& env) {
         assert_argc(args, 2, cmd);
         auto head = eval(car(args), env);
         auto tail = to_list_or_throw(eval(cadr(args), env), cmd);
@@ -197,7 +199,7 @@ void set_primitive_procs(std::shared_ptr<mll::Env> env)
         return cons(head, tail);
     }));
 
-    MLISP_DEFUN("cond", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+    MLISP_DEFUN("cond", make_proc([cmd] (List args, Env& env) {
         Node result;
         while (!args.empty()) {
             auto clause = to_list_or_throw(car(args), cmd);
@@ -213,16 +215,15 @@ void set_primitive_procs(std::shared_ptr<mll::Env> env)
         return result;
     }));
 
-    MLISP_DEFUN("lambda", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+    MLISP_DEFUN("lambda", make_proc([cmd] (List args, Env& env) {
         assert_argc_min(args, 2, cmd);
 
         auto formal_args = to_formal_args(car(args), cmd);
         auto lambda_body = cadr(args);
-        auto creator_env = env;
+        auto creator_env = env.shared_from_this();
 
-        return make_proc([formal_args, lambda_body, creator_env] (List args, std::shared_ptr<Env> env) {
+        return make_proc([formal_args, lambda_body, creator_env] (List args, Env& env) {
             auto lambda_env = creator_env->derive_new();
-
             auto syms = formal_args;
             while (!syms.empty()) {
                 if (args.empty()) {
@@ -242,34 +243,34 @@ void set_primitive_procs(std::shared_ptr<mll::Env> env)
                 EvalError("Proc: too many args");
             }
 
-            return eval(lambda_body, lambda_env);
+            return eval(lambda_body, *lambda_env);
         });
     }));
 
-    MLISP_DEFUN("label", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+    MLISP_DEFUN("label", make_proc([cmd] (List args, Env& env) {
         assert_argc(args, 2, cmd);
 
         auto symbol = to_symbol_or_throw(car(args), cmd);
         auto value = eval(cadr(args), env);
-        env->set(symbol.name(), value);
+        env.set(symbol.name(), value);
 
         return value;
     }));
 
-    MLISP_DEFUN("defun", make_proc([] (List args, std::shared_ptr<Env> env) {
+    MLISP_DEFUN("defun", make_proc([] (List args, Env& env) {
         auto name = car(args);
         auto body = cons(make_symbol("lambda"), cdr(args));
         return eval(cons(make_symbol("label"), cons(name, cons(body, {}))), env);
     }));
 }
 
-void set_complementary_procs(std::shared_ptr<mll::Env> env)
+void set_complementary_procs(mll::Env& env)
 {
     using namespace mll;
 
-    MLISP_DEFUN("list", make_proc([] (List args, std::shared_ptr<Env> env) {
+    MLISP_DEFUN("list", make_proc([] (List args, Env& env) {
         std::vector<Node> objs;
-        for_each(args, [&objs, env] (auto const& arg) {
+        for_each(args, [&objs, &env] (auto const& arg) {
             objs.push_back(eval(arg, env));
         });
         while (!args.empty()) {
@@ -284,37 +285,37 @@ void set_complementary_procs(std::shared_ptr<mll::Env> env)
         return list;
     }));
 
-    MLISP_DEFUN("define", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+    MLISP_DEFUN("define", make_proc([cmd] (List args, Env& env) {
         assert_argc(args, 2, cmd);
 
         auto symbol = to_symbol_or_throw(car(args), cmd);
         auto value = eval(cadr(args), env);
-        env->set(symbol.name(), value);
+        env.set(symbol.name(), value);
         return value;
     }));
 
-    MLISP_DEFUN("set", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+    MLISP_DEFUN("set", make_proc([cmd] (List args, Env& env) {
         assert_argc(args, 2, cmd);
 
         auto symbol = to_symbol_or_throw(car(args), cmd);
         auto value = eval(cadr(args), env);
-        if (!env->update(symbol.name(), value)) {
+        if (!env.update(symbol.name(), value)) {
             throw EvalError("unbound variable: " + symbol.name());
         }
         return value;
     }));
 
-    MLISP_DEFUN("begin", make_proc([/*cmd*/] (List args, std::shared_ptr<Env> env) {
-        env = env->derive_new();
+    MLISP_DEFUN("begin", make_proc([/*cmd*/] (List args, Env& env) {
+        auto new_env = env.derive_new();
         Node value;
         while (!args.empty()) {
-            value = eval(car(args), env);
+            value = eval(car(args), *new_env);
             args = cdr(args);
         }
         return value;
     }));
 
-    MLISP_DEFUN("if", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+    MLISP_DEFUN("if", make_proc([cmd] (List args, Env& env) {
         assert_argc_range(args, 2, 3, cmd);
 
         auto cond = car(args);
@@ -327,10 +328,10 @@ void set_complementary_procs(std::shared_ptr<mll::Env> env)
         return eval(else_arm, env);
     }));
 
-    MLISP_DEFUN("print", make_proc([/*cmd*/] (List args, std::shared_ptr<Env> env) {
+    MLISP_DEFUN("print", make_proc([/*cmd*/] (List args, Env& env) {
         Node result;
         auto first = true;
-        for_each(args, [&first, env, &result] (auto const& arg) {
+        for_each(args, [&first, &env, &result] (auto const& arg) {
             if (first) {
                 first = false;
             }
@@ -344,32 +345,32 @@ void set_complementary_procs(std::shared_ptr<mll::Env> env)
         return result;
     }));
 
-    MLISP_DEFUN("load", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+    MLISP_DEFUN("load", make_proc([cmd] (List args, Env& env) {
         assert_argc(args, 1, cmd);
         auto filename = to_string_or_throw(car(args), cmd);
         return to_node(!eval_file(env, filename.text().c_str()));
     }));
 }
 
-void set_number_procs(std::shared_ptr<mll::Env> env)
+void set_number_procs(mll::Env& env)
 {
     using namespace mll;
 
-    MLISP_DEFUN("number?", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+    MLISP_DEFUN("number?", make_proc([cmd] (List args, Env& env) {
         assert_argc(args, 1, cmd);
         return to_node(is_number(eval(car(args), env)));
     }));
 
-    MLISP_DEFUN("number-equal?", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+    MLISP_DEFUN("number-equal?", make_proc([cmd] (List args, Env& env) {
         assert_argc(args, 2, cmd);
 
-        auto num1 = to_number_or_throw(eval(car(args), env), "number-equal?");
-        auto num2 = to_number_or_throw(eval(cadr(args), env), "number-equal?");
+        auto num1 = to_number_or_throw(eval(car(args), env), cmd);
+        auto num2 = to_number_or_throw(eval(cadr(args), env), cmd);
 
         return to_node(num1.value() == num2.value());
     }));
 
-    MLISP_DEFUN("number-less?", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+    MLISP_DEFUN("number-less?", make_proc([cmd] (List args, Env& env) {
         assert_argc(args, 2, cmd);
 
         auto num1 = to_number_or_throw(eval(car(args), env), cmd);
@@ -377,15 +378,15 @@ void set_number_procs(std::shared_ptr<mll::Env> env)
         return to_node(num1.value() < num2.value());
     }));
 
-    MLISP_DEFUN("+", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+    MLISP_DEFUN("+", make_proc([cmd] (List args, Env& env) {
         auto result = 0.0;
-        for_each(args, [&result, env, cmd](auto const& arg) {
+        for_each(args, [&result, &env, cmd](auto const& arg) {
             result += to_number_or_throw(eval(arg, env), cmd).value();
         });
         return make_number(result);
     }));
 
-    MLISP_DEFUN("-", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+    MLISP_DEFUN("-", make_proc([cmd] (List args, Env& env) {
         assert_argc_min(args, 1, cmd);
 
         auto result = to_number_or_throw(eval(car(args), env), cmd).value();
@@ -395,7 +396,7 @@ void set_number_procs(std::shared_ptr<mll::Env> env)
             result = -result;
         }
         else {
-            for_each(args, [&result, env, cmd](auto const& arg) {
+            for_each(args, [&result, &env, cmd](auto const& arg) {
                 result -= to_number_or_throw(eval(arg, env), cmd).value();
             });
         }
@@ -403,7 +404,7 @@ void set_number_procs(std::shared_ptr<mll::Env> env)
         return make_number(result);
     }));
 
-    MLISP_DEFUN("*", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+    MLISP_DEFUN("*", make_proc([cmd] (List args, Env& env) {
         auto result = 1.0;
         while (!args.empty()) {
             auto arg = eval(car(args), env);
@@ -414,25 +415,25 @@ void set_number_procs(std::shared_ptr<mll::Env> env)
         return make_number(result);
     }));
 
-    MLISP_DEFUN("/", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+    MLISP_DEFUN("/", make_proc([cmd] (List args, Env& env) {
         assert_argc_min(args, 2, cmd);
 
         auto result = to_number_or_throw(eval(car(args), env), cmd).value();
-        for_each(cdr(args), [&result, cmd, env](auto const& arg) {
+        for_each(cdr(args), [&result, &env, cmd](auto const& arg) {
             result /= to_number_or_throw(eval(arg, env), cmd).value();
         });
         return make_number(result);
     }));
 }
 
-void set_string_procs(std::shared_ptr<mll::Env> env)
+void set_string_procs(mll::Env& env)
 {
-    MLISP_DEFUN("string?", mll::make_proc([cmd] (mll::List args, std::shared_ptr<mll::Env> env) {
+    MLISP_DEFUN("string?", mll::make_proc([cmd] (mll::List args, mll::Env& env) {
         assert_argc(args, 1, cmd);
         return to_node(is_string(eval(car(args), env)));
     }));
 
-    MLISP_DEFUN("string-equal?", mll::make_proc([cmd] (mll::List args, std::shared_ptr<mll::Env> env) {
+    MLISP_DEFUN("string-equal?", mll::make_proc([cmd] (mll::List args, mll::Env& env) {
         assert_argc(args, 2, cmd);
 
         auto str1 = to_string_or_throw(eval(car(args), env), cmd);
@@ -442,9 +443,9 @@ void set_string_procs(std::shared_ptr<mll::Env> env)
     }));
 }
 
-void set_symbol_procs(std::shared_ptr<mll::Env> env)
+void set_symbol_procs(mll::Env& env)
 {
-    MLISP_DEFUN("symbol?", mll::make_proc([cmd] (mll::List args, std::shared_ptr<mll::Env> env) {
+    MLISP_DEFUN("symbol?", mll::make_proc([cmd] (mll::List args, mll::Env& env) {
         assert_argc(args, 1, cmd);
         return to_node(is_symbol(eval(car(args), env)));
     }));
