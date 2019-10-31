@@ -13,39 +13,41 @@
         } while (0)
 
 
-using namespace mll;
 using namespace std::string_literals;
 
 namespace std {
-    inline string to_string(Node const& node)
-    {
-        ostringstream ss;
-        BasicPrinter{ss}.print(node);
-        return ss.str();
-    }
+string to_string(mll::Node const& node)
+{
+    ostringstream ss;
+    mll::BasicPrinter{ss}.print(node);
+    return ss.str();
 }
+} // namespace std
 
-inline bool is_number(Node const& node)
+namespace mlisp {
+
+namespace {
+bool is_number(mll::Node const& node)
 {
     return !!to_number(node);
 }
 
-inline bool is_string(Node const& node)
+bool is_string(mll::Node const& node)
 {
     return !!to_string(node);
 }
 
-inline bool is_symbol(Node const& node)
+bool is_symbol(mll::Node const& node)
 {
     return !!to_symbol(node);
 }
 
-inline Node cadr(List const& list)
+mll::Node cadr(mll::List const& list)
 {
     return car(cdr(list));
 }
 
-inline bool to_bool(Node const& node)
+bool to_bool(mll::Node const& node)
 {
     auto list = to_list(node);
     if (list && list->empty()) {
@@ -54,13 +56,13 @@ inline bool to_bool(Node const& node)
     return true;
 }
 
-inline Node to_node(bool value)
+mll::Node to_node(bool value)
 {
-    return value ? make_symbol("t") : Node{};
+    return value ? mll::make_symbol("t") : mll::Node{};
 }
 
 template <typename Func>
-void for_each(List list, Func func)
+void for_each(mll::List list, Func func)
 {
     while (!list.empty()) {
         func(car(list));
@@ -68,7 +70,7 @@ void for_each(List list, Func func)
     }
 }
 
-static size_t length(List list)
+size_t length(mll::List list)
 {
     size_t len = 0;
     while (!list.empty()) {
@@ -78,95 +80,98 @@ static size_t length(List list)
     return len;
 }
 
-static void assert_argc(List args, size_t count, char const *cmd)
+void assert_argc(mll::List args, size_t count, char const *cmd)
 {
     if (length(args) != count) {
-        throw EvalError(cmd + " expects "s + std::to_string(count) + " argument(s).");
+        throw mll::EvalError(cmd + " expects "s + std::to_string(count) + " argument(s).");
     }
 }
 
-static void assert_argc_min(List const& args, size_t min, char const *cmd)
+void assert_argc_min(mll::List const& args, size_t min, char const *cmd)
 {
     auto len = length(args);
     if (len < min) {
-        throw EvalError(cmd + " expects "s + std::to_string(min) + " or more arguments.");
+        throw mll::EvalError(cmd + " expects "s + std::to_string(min) + " or more arguments.");
     }
 }
 
-static void assert_argc_range(List const& args, size_t min, size_t max, char const *cmd)
+void assert_argc_range(mll::List const& args, size_t min, size_t max, char const *cmd)
 {
     auto len = length(args);
 
     if (len >= min && len <= max) {
-        throw EvalError(cmd + " expects "s + std::to_string(min) + " ~ " +
-                        std::to_string(max) + " argument(s).");
+        throw mll::EvalError(cmd + " expects "s + std::to_string(min) + " ~ " +
+                             std::to_string(max) + " argument(s).");
     }
 }
 
-static List to_list_or_throw(Node const& node, char const* cmd)
+mll::List to_list_or_throw(mll::Node const& node, char const* cmd)
 {
-    auto list = to_list(node);
+    auto list = mll::to_list(node);
     if (!list) {
-        throw EvalError(cmd + (": " + std::to_string(node)) + " is not a list.");
+        throw mll::EvalError(cmd + (": " + std::to_string(node)) + " is not a list.");
     }
     return *list;
 }
 
-static Number to_number_or_throw(Node const& node, char const* cmd)
+mll::Number to_number_or_throw(mll::Node const& node, char const* cmd)
 {
-    auto num = to_number(node);
+    auto num = mll::to_number(node);
     if (!num) {
-        throw EvalError(cmd + (": " + std::to_string(node)) + " is not a number.");
+        throw mll::EvalError(cmd + (": " + std::to_string(node)) + " is not a number.");
     }
     return *num;
 }
 
-static String to_string_or_throw(Node const& node, char const* cmd)
+mll::String to_string_or_throw(mll::Node const& node, char const* cmd)
 {
-    auto str = to_string(node);
+    auto str = mll::to_string(node);
     if (!str) {
-        throw EvalError(cmd + (": " + std::to_string(node)) + " is not a string.");
+        throw mll::EvalError(cmd + (": " + std::to_string(node)) + " is not a string.");
     }
     return *str;
 }
 
-static Symbol to_symbol_or_throw(Node const& node, char const* cmd)
+mll::Symbol to_symbol_or_throw(mll::Node const& node, char const* cmd)
 {
-    auto sym = to_symbol(node);
+    auto sym = mll::to_symbol(node);
     if (!sym) {
-        throw EvalError(cmd + (": " + std::to_string(node)) + " is not a symbol.");
+        throw mll::EvalError(cmd + (": " + std::to_string(node)) + " is not a symbol.");
     }
     return *sym;
 }
 
-static List to_formal_args(Node const& node, char const* cmd)
+mll::List to_formal_args(mll::Node const& node, char const* cmd)
 {
     auto args = to_list_or_throw(node, cmd);
 
     // validate args (must be list of symbols)
     for (auto c = args; !c.empty(); c = cdr(c)) {
         if (!is_symbol(car(c))) {
-            throw EvalError(cmd + (": " + std::to_string(car(c))) + " is not a symbol");
+            throw mll::EvalError(cmd + (": " + std::to_string(car(c))) + " is not a symbol");
         }
     }
 
     return args;
 }
+} // namespace
 
-void set_primitive_procs(std::shared_ptr<Env> env)
+void set_primitive_procs(std::shared_ptr<mll::Env> env)
 {
+    using namespace mll;
+
     // "quote" is already built into the Parser/eval()
     //env->set("quote", make_proc([](List args, Env) {
     //    return car(args);
     //}));
 
-    MLISP_DEFUN("atom", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+    MLISP_DEFUN("atom", make_proc([cmd] (List args, std::shared_ptr<mll::Env> env) {
         assert_argc(args, 1, cmd);
         auto list = to_list(eval(car(args), env));
         return to_node(!list || list->empty());
     }));
 
-    MLISP_DEFUN("eq", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+    MLISP_DEFUN("eq", make_proc([cmd] (List args, std::shared_ptr<mll::Env> env) {
         assert_argc(args, 2, cmd);
 
         auto lhs = eval(car(args), env);
@@ -174,17 +179,17 @@ void set_primitive_procs(std::shared_ptr<Env> env)
         return to_node(lhs.data() == rhs.data());
     }));
 
-    MLISP_DEFUN("car", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+    MLISP_DEFUN("car", make_proc([cmd] (List args, std::shared_ptr<mll::Env> env) {
         assert_argc(args, 1, cmd);
         return car(to_list_or_throw(eval(car(args), env), cmd));
     }));
 
-    MLISP_DEFUN("cdr", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+    MLISP_DEFUN("cdr", make_proc([cmd] (List args, std::shared_ptr<mll::Env> env) {
         assert_argc(args, 1, cmd);
         return cdr(to_list_or_throw(eval(car(args), env), cmd));
     }));
 
-    MLISP_DEFUN("cons", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+    MLISP_DEFUN("cons", make_proc([cmd] (List args, std::shared_ptr<mll::Env> env) {
         assert_argc(args, 2, cmd);
         auto head = eval(car(args), env);
         auto tail = to_list_or_throw(eval(cadr(args), env), cmd);
@@ -258,8 +263,10 @@ void set_primitive_procs(std::shared_ptr<Env> env)
     }));
 }
 
-void set_complementary_procs(std::shared_ptr<Env> env)
+void set_complementary_procs(std::shared_ptr<mll::Env> env)
 {
+    using namespace mll;
+
     MLISP_DEFUN("list", make_proc([] (List args, std::shared_ptr<Env> env) {
         std::vector<Node> objs;
         for_each(args, [&objs, env] (auto const& arg) {
@@ -344,8 +351,10 @@ void set_complementary_procs(std::shared_ptr<Env> env)
     }));
 }
 
-void set_number_procs(std::shared_ptr<Env> env)
+void set_number_procs(std::shared_ptr<mll::Env> env)
 {
+    using namespace mll;
+
     MLISP_DEFUN("number?", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
         assert_argc(args, 1, cmd);
         return to_node(is_number(eval(car(args), env)));
@@ -416,14 +425,14 @@ void set_number_procs(std::shared_ptr<Env> env)
     }));
 }
 
-void set_string_procs(std::shared_ptr<Env> env)
+void set_string_procs(std::shared_ptr<mll::Env> env)
 {
-    MLISP_DEFUN("string?", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+    MLISP_DEFUN("string?", mll::make_proc([cmd] (mll::List args, std::shared_ptr<mll::Env> env) {
         assert_argc(args, 1, cmd);
         return to_node(is_string(eval(car(args), env)));
     }));
 
-    MLISP_DEFUN("string-equal?", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+    MLISP_DEFUN("string-equal?", mll::make_proc([cmd] (mll::List args, std::shared_ptr<mll::Env> env) {
         assert_argc(args, 2, cmd);
 
         auto str1 = to_string_or_throw(eval(car(args), env), cmd);
@@ -433,10 +442,12 @@ void set_string_procs(std::shared_ptr<Env> env)
     }));
 }
 
-void set_symbol_procs(std::shared_ptr<Env> env)
+void set_symbol_procs(std::shared_ptr<mll::Env> env)
 {
-    MLISP_DEFUN("symbol?", make_proc([cmd] (List args, std::shared_ptr<Env> env) {
+    MLISP_DEFUN("symbol?", mll::make_proc([cmd] (mll::List args, std::shared_ptr<mll::Env> env) {
         assert_argc(args, 1, cmd);
         return to_node(is_symbol(eval(car(args), env)));
     }));
 }
+
+} // namespace mlisp

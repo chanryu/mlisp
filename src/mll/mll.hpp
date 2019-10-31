@@ -12,265 +12,254 @@
 
 namespace mll {
 
-    class Node;
-    class List;
-    class Proc;
-    class Number;
-    class String;
-    class Symbol;
+class Node;
+class List;
+class Proc;
+class Number;
+class String;
+class Symbol;
 
-    class Env;
-    using Func = std::function<Node(List, std::shared_ptr<Env>)>;
+class Env;
+using Func = std::function<Node(List const&, std::shared_ptr<Env> const&)>;
 
-    class NodeVisitor {
-    public:
-        virtual void visit(List const&) = 0;
-        virtual void visit(Proc const&) = 0;
-        virtual void visit(Number const&) = 0;
-        virtual void visit(String const&) = 0;
-        virtual void visit(Symbol const&) = 0;
+class NodeVisitor {
+public:
+    virtual void visit(List const&) = 0;
+    virtual void visit(Proc const&) = 0;
+    virtual void visit(Number const&) = 0;
+    virtual void visit(String const&) = 0;
+    virtual void visit(Symbol const&) = 0;
+};
+
+class Node final {
+public:
+    Node() = default;
+
+    Node(Node const&);
+    Node(List const&);
+    Node(Proc const&);
+    Node(Number const&);
+    Node(String const&);
+    Node(Symbol const&);
+
+    Node& operator = (Node const&);
+    Node& operator = (List const&);
+    Node& operator = (Proc const&);
+    Node& operator = (Number const&);
+    Node& operator = (String const&);
+    Node& operator = (Symbol const&);
+
+    void accept(NodeVisitor&) const;
+
+    struct Data;
+    std::shared_ptr<Data> const& data() const;
+
+private:
+    bool operator == (Node const&) const = delete;
+    std::shared_ptr<Data> data_;
+};
+
+class List final {
+public:
+    List() = default;
+
+    List(Node head, List tail);
+    List(List const&);
+
+    bool empty() const;
+
+    Node head() const;
+    List tail() const;
+
+public:
+    struct Data;
+    friend class Node;
+    friend std::optional<List> to_list(Node const&);
+
+private:
+    List(std::shared_ptr<Data> const&);
+    std::shared_ptr<Data> data_;
+};
+
+class Proc final {
+public:
+    explicit Proc(Func);
+    Proc(Proc const&);
+
+    Node call(List, std::shared_ptr<Env>) const;
+
+public:
+    struct Data;
+    friend class Node;
+    friend std::optional<Proc> to_proc(Node const&);
+
+private:
+    Proc(std::shared_ptr<Data>);
+    std::shared_ptr<Data> data_;
+};
+
+class Number final {
+public:
+    explicit Number(double);
+    Number(Number const&);
+
+    double value() const;
+
+public:
+    struct Data;
+    friend class Node;
+    friend std::optional<Number> to_number(Node const&);
+
+private:
+    Number(std::shared_ptr<Data>);
+    std::shared_ptr<Data> data_;
+};
+
+class String final {
+public:
+    explicit String(std::string);
+    String(String const&);
+
+    std::string const& text() const;
+
+public:
+    struct Data;
+    friend class Node;
+    friend std::optional<String> to_string(Node const&);
+
+private:
+    String(std::shared_ptr<Data>);
+    std::shared_ptr<Data> data_;
+};
+
+class Symbol final {
+public:
+    explicit Symbol(std::string);
+    Symbol(Symbol const&);
+
+    std::string const& name() const;
+
+public:
+    struct Data;
+    friend class Node;
+    friend std::optional<Symbol> to_symbol(Node const&);
+
+private:
+    Symbol(std::shared_ptr<Data>);
+    std::shared_ptr<Data> data_;
+};
+
+// casting functions
+std::optional<List>   to_list(Node const&);
+std::optional<Proc>   to_proc(Node const&);
+std::optional<Number> to_number(Node const&);
+std::optional<String> to_string(Node const&);
+std::optional<Symbol> to_symbol(Node const&);
+
+class Parser {
+public:
+    std::optional<Node> parse(std::istream&);
+    bool clean() const;
+
+protected:
+    virtual Node make_node(std::string token);
+
+private:
+    bool get_token(std::istream& istream);
+    std::string token_;
+    bool token_escaped_;
+
+    struct Context {
+        enum class Type { quote, paren, list };
+        Type type;
+        Node head;
+        bool head_empty;
     };
+    std::stack<Context> stack_;
+};
 
-    class Node final {
-    public:
-        Node() = default;
+struct ParseError: std::runtime_error {
+    using runtime_error::runtime_error;
+};
 
-        Node(Node const&);
-        Node(List const&);
-        Node(Proc const&);
-        Node(Number const&);
-        Node(String const&);
-        Node(Symbol const&);
+class Env: public std::enable_shared_from_this<Env> {
+public:
+    static std::shared_ptr<Env> create();
+    std::shared_ptr<Env> derive_new();
 
-        Node& operator = (Node const&);
-        Node& operator = (List const&);
-        Node& operator = (Proc const&);
-        Node& operator = (Number const&);
-        Node& operator = (String const&);
-        Node& operator = (Symbol const&);
+    void set(std::string const&, Node const&);
+    bool update(std::string const&, Node const&);
+    std::optional<Node> lookup(std::string const&) const;
+    std::optional<Node> shallow_lookup(std::string const&) const;
 
-        void accept(NodeVisitor&);
+private:
+    Env() = default;
+    std::shared_ptr<Env> base_;
+    std::map<std::string, Node> vars_;
+};
 
-        struct Data;
-        std::shared_ptr<Data> const& data() const;
+struct EvalError: std::runtime_error {
+    using runtime_error::runtime_error;
+};
 
-    private:
-        bool operator == (Node const&) const = delete;
-        std::shared_ptr<Data> data_;
-    };
+Node eval(Node expr, std::shared_ptr<Env> env); // throws EvalError
 
-    class List final {
-    public:
-        List() = default;
+class BasicPrinter: NodeVisitor {
+public:
+    explicit BasicPrinter(std::ostream& ostream);
 
-        List(Node head, List tail);
-        List(List const&);
+    void print(Node node);
 
-        bool empty() const;
+    void visit(List const& list) override;
+    void visit(Proc const& proc) override;
+    void visit(Number const& num) override;
+    void visit(String const& str) override;
+    void visit(Symbol const& sym) override;
 
-        Node head() const;
-        List tail() const;
+protected:
+    bool is_head() const;
+    std::ostream& ostream_;
 
-    public:
-        struct Data;
-        friend class Node;
-        friend std::optional<List> to_list(Node const&);
+private:
+    void print(Node node, bool is_head);
+    std::stack<bool, std::vector<bool>> is_head_stack_;
+};
 
-    private:
-        List(std::shared_ptr<Data>);
-        std::shared_ptr<Data> data_;
-    };
+// Convience wrappers
 
-    class Proc final {
-    public:
-        explicit Proc(Func);
-        Proc(Proc const&);
-
-        Node call(List, std::shared_ptr<Env>) const;
-
-    public:
-        struct Data;
-        friend class Node;
-        friend std::optional<Proc> to_proc(Node const&);
-
-    private:
-        Proc(std::shared_ptr<Data>);
-        std::shared_ptr<Data> data_;
-    };
-
-    class Number final {
-    public:
-        explicit Number(double);
-        Number(Number const&);
-
-        double value() const;
-
-    public:
-        struct Data;
-        friend class Node;
-        friend std::optional<Number> to_number(Node const&);
-
-    private:
-        Number(std::shared_ptr<Data>);
-        std::shared_ptr<Data> data_;
-    };
-
-    class String final {
-    public:
-        explicit String(std::string);
-        String(String const&);
-
-        std::string const& text() const;
-
-    public:
-        struct Data;
-        friend class Node;
-        friend std::optional<String> to_string(Node const&);
-
-    private:
-        String(std::shared_ptr<Data>);
-        std::shared_ptr<Data> data_;
-    };
-
-    class Symbol final {
-    public:
-        explicit Symbol(std::string);
-        Symbol(Symbol const&);
-
-        std::string const& name() const;
-
-    public:
-        struct Data;
-        friend class Node;
-        friend std::optional<Symbol> to_symbol(Node const&);
-
-    private:
-        Symbol(std::shared_ptr<Data>);
-        std::shared_ptr<Data> data_;
-    };
-
-    // casting functions
-    std::optional<List>   to_list(Node const&);
-    std::optional<Proc>   to_proc(Node const&);
-    std::optional<Number> to_number(Node const&);
-    std::optional<String> to_string(Node const&);
-    std::optional<Symbol> to_symbol(Node const&);
+inline Proc make_proc(Func func)
+{
+    return Proc{ func };
 }
 
-namespace mll {
-
-    class Parser {
-    public:
-        std::optional<Node> parse(std::istream&);
-        bool clean() const;
-
-    protected:
-        virtual Node make_node(std::string token);
-
-    private:
-        bool get_token(std::istream& istream);
-        std::string token_;
-        bool token_escaped_;
-
-        struct Context {
-            enum class Type { quote, paren, list };
-            Type type;
-            Node head;
-            bool head_empty;
-        };
-        std::stack<Context> stack_;
-    };
-
-    struct ParseError: std::runtime_error {
-        using runtime_error::runtime_error;
-    };
+inline Number make_number(double value)
+{
+    return Number{ value };
 }
 
-namespace mll {
-
-    class Env: public std::enable_shared_from_this<Env> {
-    public:
-        static std::shared_ptr<Env> create();
-        std::shared_ptr<Env> derive_new();
-
-        void set(std::string const&, Node const&);
-        bool update(std::string const&, Node const&);
-        std::optional<Node> lookup(std::string const&) const;
-        std::optional<Node> shallow_lookup(std::string const&) const;
-
-    private:
-        Env() = default;
-        std::shared_ptr<Env> base_;
-        std::map<std::string, Node> vars_;
-    };
-
-    struct EvalError: std::runtime_error {
-        using runtime_error::runtime_error;
-    };
-
-    Node eval(Node expr, std::shared_ptr<Env> env); // throws EvalError
+inline String make_string(std::string text)
+{
+    return String{ std::move(text) };
 }
 
-namespace mll {
-    class BasicPrinter: NodeVisitor {
-    public:
-        explicit BasicPrinter(std::ostream& ostream);
-
-        void print(Node node);
-
-        void visit(List const& list) override;
-        void visit(Proc const& proc) override;
-        void visit(Number const& num) override;
-        void visit(String const& str) override;
-        void visit(Symbol const& sym) override;
-
-    protected:
-        bool is_head() const;
-        std::ostream& ostream_;
-
-    private:
-        void print(Node node, bool is_head);
-        std::stack<bool, std::vector<bool>> is_head_stack_;
-    };
+inline Symbol make_symbol(std::string name)
+{
+    return Symbol{ std::move(name) };
 }
 
-namespace mll {
-
-    // Convience wrappers
-
-    inline Proc make_proc(Func func)
-    {
-        return Proc{ func };
-    }
-
-    inline Number make_number(double value)
-    {
-        return Number{ value };
-    }
-
-    inline String make_string(std::string text)
-    {
-        return String{ std::move(text) };
-    }
-
-    inline Symbol make_symbol(std::string name)
-    {
-        return Symbol{ std::move(name) };
-    }
-
-    inline List cons(Node const& head, List const& tail)
-    {
-        return List{ head, tail };
-    }
-
-    inline Node car(List const& list)
-    {
-        return list.head();
-    }
-
-    inline List cdr(List const& list)
-    {
-        return list.tail();
-    }
+inline List cons(Node const& head, List const& tail)
+{
+    return List{ head, tail };
 }
 
+inline Node car(List const& list)
+{
+    return list.head();
+}
+
+inline List cdr(List const& list)
+{
+    return list.tail();
+}
+
+} // namespace mll

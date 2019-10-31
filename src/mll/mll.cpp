@@ -4,105 +4,108 @@
 #include <cassert>
 #include <sstream>
 
+namespace mll {
+
 namespace {
-    inline bool is_paren(char c)
-    {
-        return c == '(' || c == ')';
-    }
+bool is_paren(char c)
+{
+    return c == '(' || c == ')';
+}
 
-    inline bool is_space(char c)
-    {
-        return c == ' ' || c == '\t' || c == '\r' || c == '\n';
-    }
+bool is_space(char c)
+{
+    return c == ' ' || c == '\t' || c == '\r' || c == '\n';
+}
 
-    inline bool is_quote(char c)
-    {
-        return c == '\'';
-    }
+bool is_quote(char c)
+{
+    return c == '\'';
+}
 
-    void skip_whitespaces_and_comments(std::istream& istream)
-    {
-        auto in_comment = false;
+void skip_whitespaces_and_comments(std::istream& istream)
+{
+    auto in_comment = false;
 
-        while (true) {
-            auto c = istream.peek();
-            if (c == EOF) {
-                break;
-            }
+    while (true) {
+        auto c = istream.peek();
+        if (c == EOF) {
+            break;
+        }
 
-            if (in_comment) {
-                istream.get();
-                if (c == '\n') {
-                    in_comment = false;
-                }
-            }
-            else if (c == ';') {
-                istream.get();
-                in_comment = true;
-            }
-            else if (is_space(c)) {
-                istream.get();
-            }
-            else {
-                break;
+        if (in_comment) {
+            istream.get();
+            if (c == '\n') {
+                in_comment = false;
             }
         }
-    }
-
-    bool is_number_token(std::string const& token)
-    {
-        assert(!token.empty());
-
-        char const* s = token.c_str();
-        if (*s == '-') s++;
-        if (*s == '.') s++;
-        if (*s < '0' || *s > '9') return false;
-
-        size_t len;
-        std::stod(token.c_str(), &len);
-        return token.length() == len;
-    }
-
-    bool is_string_token(std::string const& token)
-    {
-        assert(!token.empty());
-        return token[0] == '"';
-    }
-
-    std::string quote_text(std::string const& text)
-    {
-        std::string quoted_text;
-        quoted_text.reserve(static_cast<size_t>(text.size() * 1.5) + 2);
-        quoted_text.push_back('\"');
-        for (auto c: text) {
-            if (c == '\"') {
-                quoted_text.push_back('\\');
-            }
-            quoted_text.push_back(c);
+        else if (c == ';') {
+            istream.get();
+            in_comment = true;
         }
-        quoted_text.push_back('\"');
-        return quoted_text;
+        else if (is_space(c)) {
+            istream.get();
+        }
+        else {
+            break;
+        }
     }
+}
 
-    static mll::List const nil;
+bool is_number_token(std::string const& token)
+{
+    assert(!token.empty());
 
-    char const* const MLL_QUOTE = "quote";
+    char const* s = token.c_str();
+    if (*s == '-') s++;
+    if (*s == '.') s++;
+    if (*s < '0' || *s > '9') return false;
+
+    size_t len;
+    std::stod(token.c_str(), &len);
+    return token.length() == len;
+}
+
+bool is_string_token(std::string const& token)
+{
+    assert(!token.empty());
+    return token[0] == '"';
+}
+
+std::string quote_text(std::string const& text)
+{
+    std::string quoted_text;
+    quoted_text.reserve(static_cast<size_t>(text.size() * 1.5) + 2);
+    quoted_text.push_back('\"');
+    for (auto c: text) {
+        if (c == '\"') {
+            quoted_text.push_back('\\');
+        }
+        quoted_text.push_back(c);
+    }
+    quoted_text.push_back('\"');
+    return quoted_text;
+}
+
+static List const nil;
+
+char const* const MLL_QUOTE = "quote";
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Node::Data
 
-struct mll::Node::Data: std::enable_shared_from_this<Node::Data> {
-    virtual ~Data() {}
+struct Node::Data: std::enable_shared_from_this<Node::Data>
+{
+    virtual ~Data() = default;
     virtual void accept(NodeVisitor&) = 0;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 // List::Data
 
-struct mll::List::Data: mll::Node::Data {
-
-    Data(Node h, List t) : head{h}, tail{t} { }
+struct List::Data: Node::Data
+{
+    Data(Node const& h, List const& t) : head{h}, tail{t} { }
 
     void accept(NodeVisitor& visitor) override
     {
@@ -118,8 +121,8 @@ struct mll::List::Data: mll::Node::Data {
 ////////////////////////////////////////////////////////////////////////////////
 // Proc::Data
 
-struct mll::Proc::Data: mll::Node::Data {
-
+struct Proc::Data: Node::Data
+{
     explicit Data(Func f) : func{std::move(f)} { }
 
     void accept(NodeVisitor& visitor) override
@@ -135,8 +138,8 @@ struct mll::Proc::Data: mll::Node::Data {
 ////////////////////////////////////////////////////////////////////////////////
 // Number::Data
 
-struct mll::Number::Data: mll::Node::Data {
-
+struct Number::Data: Node::Data
+{
     explicit Data(double v) : value{v} { }
 
     void accept(NodeVisitor& visitor) override
@@ -152,8 +155,8 @@ struct mll::Number::Data: mll::Node::Data {
 ////////////////////////////////////////////////////////////////////////////////
 // String::Data
 
-struct mll::String::Data: mll::Node::Data {
-
+struct String::Data: Node::Data
+{
     explicit Data(std::string t) : text{std::move(t)} { }
 
     void accept(NodeVisitor& visitor) override
@@ -169,8 +172,8 @@ struct mll::String::Data: mll::Node::Data {
 ////////////////////////////////////////////////////////////////////////////////
 // Symbol::Data
 
-struct mll::Symbol::Data: mll::Node::Data {
-
+struct Symbol::Data: Node::Data
+{
     explicit Data(std::string n) : name{std::move(n)} { }
 
     void accept(NodeVisitor& visitor) override
@@ -186,80 +189,80 @@ struct mll::Symbol::Data: mll::Node::Data {
 ////////////////////////////////////////////////////////////////////////////////
 // Object
 
-mll::Node::Node(Node const& other)
+Node::Node(Node const& other)
     : data_{other.data_}
 {
 }
 
-mll::Node::Node(List const& list)
+Node::Node(List const& list)
     : data_{list.data_}
 {
 }
 
-mll::Node::Node(Proc const& proc)
+Node::Node(Proc const& proc)
     : data_{proc.data_}
 {
 }
 
-mll::Node::Node(Number const& number)
+Node::Node(Number const& number)
     : data_{number.data_}
 {
 }
 
-mll::Node::Node(String const& string)
+Node::Node(String const& string)
     : data_{string.data_}
 {
 }
 
-mll::Node::Node(Symbol const& symbol)
+Node::Node(Symbol const& symbol)
     : data_{symbol.data_}
 {
 }
 
-mll::Node&
-mll::Node::operator = (Node const& rhs)
+Node&
+Node::operator = (Node const& rhs)
 {
     data_ = rhs.data_;
     return *this;
 }
 
-mll::Node&
-mll::Node::operator = (List const& rhs)
+Node&
+Node::operator = (List const& rhs)
 {
     data_ = rhs.data_;
     return *this;
 }
 
-mll::Node&
-mll::Node::operator = (Proc const& rhs)
+Node&
+Node::operator = (Proc const& rhs)
 {
     data_ = rhs.data_;
     return *this;
 }
 
-mll::Node&
-mll::Node::operator = (Number const& rhs)
+Node&
+Node::operator = (Number const& rhs)
 {
     data_ = rhs.data_;
     return *this;
 }
 
-mll::Node&
-mll::Node::operator = (String const& rhs)
+Node&
+Node::operator = (String const& rhs)
 {
     data_ = rhs.data_;
     return *this;
 }
 
-mll::Node&
-mll::Node::operator = (Symbol const& rhs)
+Node&
+Node::operator = (Symbol const& rhs)
 {
     data_ = rhs.data_;
     return *this;
 }
 
 void
-mll::Node::accept(NodeVisitor& visitor)
+Node::accept(NodeVisitor& visitor) const
 {
     if (data_) {
         data_->accept(visitor);
@@ -268,8 +271,8 @@ mll::Node::accept(NodeVisitor& visitor)
     }
 }
 
-std::shared_ptr<mll::Node::Data> const&
-mll::Node::data() const
+std::shared_ptr<Node::Data> const&
+Node::data() const
 {
     return data_;
 }
@@ -277,35 +280,35 @@ mll::Node::data() const
 ////////////////////////////////////////////////////////////////////////////////
 // List
 
-mll::List::List(Node head, List tail)
+List::List(Node head, List tail)
     : data_{ std::make_shared<Data>(head, tail) }
 {
 }
 
-mll::List::List(List const& other)
+List::List(List const& other)
     : data_{other.data_}
 {
 }
 
-mll::List::List(std::shared_ptr<Data> data)
+List::List(std::shared_ptr<Data> const& data)
     : data_{data}
 {
 }
 
 bool
-mll::List::empty() const
+List::empty() const
 {
     return !data_;
 }
 
-mll::Node
-mll::List::head() const
+Node
+List::head() const
 {
     return data_ ? data_->head : nil;
 }
 
-mll::List
-mll::List::tail() const
+List
+List::tail() const
 {
     return data_ ? data_->tail : nil;
 }
@@ -314,23 +317,23 @@ mll::List::tail() const
 ////////////////////////////////////////////////////////////////////////////////
 // Proc
 
-mll::Proc::Proc(Func func)
+Proc::Proc(Func func)
     : data_{ std::make_shared<Data>(func) }
 {
 }
 
-mll::Proc::Proc(Proc const& other)
+Proc::Proc(Proc const& other)
     : data_{other.data_}
 {
 }
 
-mll::Proc::Proc(std::shared_ptr<Data> data)
+Proc::Proc(std::shared_ptr<Data> data)
     : data_{data}
 {
 }
 
-mll::Node
-mll::Proc::call(List args, std::shared_ptr<Env> env) const
+Node
+Proc::call(List args, std::shared_ptr<Env> env) const
 {
     if (data_->func) {
         return data_->func(args, env);
@@ -341,23 +344,23 @@ mll::Proc::call(List args, std::shared_ptr<Env> env) const
 ////////////////////////////////////////////////////////////////////////////////
 // Number
 
-mll::Number::Number(double value)
+Number::Number(double value)
     : data_{ std::make_shared<Data>(value) }
 {
 }
 
-mll::Number::Number(Number const& other)
+Number::Number(Number const& other)
     : data_{other.data_}
 {
 }
 
-mll::Number::Number(std::shared_ptr<Data> data)
+Number::Number(std::shared_ptr<Data> data)
     : data_{data}
 {
 }
 
 double
-mll::Number::value() const
+Number::value() const
 {
     return data_->value;
 }
@@ -365,23 +368,23 @@ mll::Number::value() const
 ////////////////////////////////////////////////////////////////////////////////
 // String
 
-mll::String::String(std::string text)
+String::String(std::string text)
     : data_{ std::make_shared<Data>(std::move(text)) }
 {
 }
 
-mll::String::String(String const& other)
+String::String(String const& other)
     : data_{other.data_}
 {
 }
 
-mll::String::String(std::shared_ptr<Data> data)
+String::String(std::shared_ptr<Data> data)
     : data_{data}
 {
 }
 
 std::string const&
-mll::String::text() const
+String::text() const
 {
     return data_->text;
 }
@@ -389,7 +392,7 @@ mll::String::text() const
 ////////////////////////////////////////////////////////////////////////////////
 // Symbol
 
-mll::Symbol::Symbol(std::string name)
+Symbol::Symbol(std::string name)
 {
     thread_local std::map<std::string, std::shared_ptr<Data>> symbols;
 
@@ -402,18 +405,18 @@ mll::Symbol::Symbol(std::string name)
     }
 }
 
-mll::Symbol::Symbol(Symbol const& other)
+Symbol::Symbol(Symbol const& other)
     : data_{other.data_}
 {
 }
 
-mll::Symbol::Symbol(std::shared_ptr<Data> data)
+Symbol::Symbol(std::shared_ptr<Data> data)
     : data_{data}
 {
 }
 
 std::string const&
-mll::Symbol::name() const
+Symbol::name() const
 {
     return data_->name;
 }
@@ -421,8 +424,8 @@ mll::Symbol::name() const
 ////////////////////////////////////////////////////////////////////////////////
 // Casting functions
 
-std::optional<mll::List>
-mll::to_list(Node const& node)
+std::optional<List>
+to_list(Node const& node)
 {
     if (!node.data()) {
         return nil;
@@ -436,8 +439,8 @@ mll::to_list(Node const& node)
     return {};
 }
 
-std::optional<mll::Proc>
-mll::to_proc(Node const& node)
+std::optional<Proc>
+to_proc(Node const& node)
 {
     auto data = std::dynamic_pointer_cast<Proc::Data>(node.data());
     if (data) {
@@ -447,8 +450,8 @@ mll::to_proc(Node const& node)
     return {};
 }
 
-std::optional<mll::Number>
-mll::to_number(Node const& node)
+std::optional<Number>
+to_number(Node const& node)
 {
     auto data = std::dynamic_pointer_cast<Number::Data>(node.data());
     if (data) {
@@ -458,8 +461,8 @@ mll::to_number(Node const& node)
     return {};
 }
 
-std::optional<mll::String>
-mll::to_string(Node const& node)
+std::optional<String>
+to_string(Node const& node)
 {
     auto data = std::dynamic_pointer_cast<String::Data>(node.data());
     if (data) {
@@ -469,8 +472,8 @@ mll::to_string(Node const& node)
     return {};
 }
 
-std::optional<mll::Symbol>
-mll::to_symbol(Node const& node)
+std::optional<Symbol>
+to_symbol(Node const& node)
 {
     auto data = std::dynamic_pointer_cast<Symbol::Data>(node.data());
     if (data) {
@@ -483,8 +486,8 @@ mll::to_symbol(Node const& node)
 ////////////////////////////////////////////////////////////////////////////////
 // Parser
 
-std::optional<mll::Node>
-mll::Parser::parse(std::istream& istream)
+std::optional<Node>
+Parser::parse(std::istream& istream)
 {
     while (true) {
 
@@ -563,13 +566,13 @@ mll::Parser::parse(std::istream& istream)
 }
 
 bool
-mll::Parser::clean() const
+Parser::clean() const
 {
     return stack_.empty();
 }
 
-mll::Node
-mll::Parser::make_node(std::string token)
+Node
+Parser::make_node(std::string token)
 {
     if (is_number_token(token)) {
         return make_number(std::stod(token));
@@ -629,7 +632,7 @@ mll::Parser::make_node(std::string token)
 }
 
 bool
-mll::Parser::get_token(std::istream& istream)
+Parser::get_token(std::istream& istream)
 {
     auto read_string_token = [this, &istream]() {
         assert(!token_.empty());
@@ -699,15 +702,15 @@ mll::Parser::get_token(std::istream& istream)
 ////////////////////////////////////////////////////////////////////////////////
 // Env
 
-std::shared_ptr<mll::Env>
-mll::Env::create()
+std::shared_ptr<Env>
+Env::create()
 {
     struct Env_ : Env {};
     return std::make_shared<Env_>();
 }
 
-std::shared_ptr<mll::Env>
-mll::Env::derive_new()
+std::shared_ptr<Env>
+Env::derive_new()
 {
     auto derived = create();
     derived->base_ = shared_from_this();
@@ -715,13 +718,13 @@ mll::Env::derive_new()
 }
 
 void
-mll::Env::set(std::string const& name, Node const& value)
+Env::set(std::string const& name, Node const& value)
 {
     vars_[name] = value;
 }
 
 bool
-mll::Env::update(std::string const& name, Node const& value)
+Env::update(std::string const& name, Node const& value)
 {
     for (auto env = this; env; env = env->base_.get()) {
         auto it = env->vars_.find(name);
@@ -733,8 +736,8 @@ mll::Env::update(std::string const& name, Node const& value)
     return false;
 }
 
-std::optional<mll::Node>
-mll::Env::lookup(std::string const& name) const
+std::optional<Node>
+Env::lookup(std::string const& name) const
 {
     for (auto env = this; env; env = env->base_.get()) {
         auto it = env->vars_.find(name);
@@ -745,8 +748,8 @@ mll::Env::lookup(std::string const& name) const
     return {};
 }
 
-std::optional<mll::Node>
-mll::Env::shallow_lookup(std::string const& name) const
+std::optional<Node>
+Env::shallow_lookup(std::string const& name) const
 {
     auto it = vars_.find(name);
     if (it != vars_.end()) {
@@ -758,7 +761,7 @@ mll::Env::shallow_lookup(std::string const& name) const
 ////////////////////////////////////////////////////////////////////////////////
 // eval
 
-namespace mll {
+namespace {
 
     class Evaluator: NodeVisitor {
     public:
@@ -827,8 +830,8 @@ namespace mll {
     };
 }
 
-mll::Node
-mll::eval(Node expr, std::shared_ptr<Env> env)
+Node
+eval(Node expr, std::shared_ptr<Env> env)
 {
     return Evaluator(env).evaluate(expr);
 }
@@ -836,19 +839,19 @@ mll::eval(Node expr, std::shared_ptr<Env> env)
 ////////////////////////////////////////////////////////////////////////////////
 // Printer
 
-mll::BasicPrinter::BasicPrinter(std::ostream& ostream)
+BasicPrinter::BasicPrinter(std::ostream& ostream)
     : ostream_(ostream)
 {
 }
 
 void
-mll::BasicPrinter::print(Node node)
+BasicPrinter::print(Node node)
 {
     print(node, true);
 }
 
 void
-mll::BasicPrinter::print(Node node, bool is_head)
+BasicPrinter::print(Node node, bool is_head)
 {
     is_head_stack_.push(is_head);
     node.accept(*this);
@@ -856,7 +859,7 @@ mll::BasicPrinter::print(Node node, bool is_head)
 }
 
 void
-mll::BasicPrinter::visit(List const& list)
+BasicPrinter::visit(List const& list)
 {
     if (list.empty()) {
         ostream_ << "()";
@@ -891,31 +894,33 @@ mll::BasicPrinter::visit(List const& list)
 }
 
 void
-mll::BasicPrinter::visit(Number const& num)
+BasicPrinter::visit(Number const& num)
 {
     ostream_ << num.value();
 }
 
 void
-mll::BasicPrinter::visit(String const& str)
+BasicPrinter::visit(String const& str)
 {
     ostream_ << quote_text(str.text());
 }
 
 void
-mll::BasicPrinter::visit(Symbol const& sym)
+BasicPrinter::visit(Symbol const& sym)
 {
     ostream_ << sym.name();
 }
 
 void
-mll::BasicPrinter::visit(Proc const& proc)
+BasicPrinter::visit(Proc const& proc)
 {
     ostream_ << "<#proc>";
 }
 
 bool
-mll::BasicPrinter::is_head() const
+BasicPrinter::is_head() const
 {
     return is_head_stack_.top();
 }
+
+} // namespace mll

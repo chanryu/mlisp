@@ -5,8 +5,9 @@
 
 #include "print.hpp"
 
-bool
-eval_stream(std::shared_ptr<mll::Env> env, std::istream& is, std::ostream& os)
+namespace mlisp {
+
+bool eval_stream(std::shared_ptr<mll::Env> env, std::istream& is, std::ostream& os)
 {
     try {
         auto parser = mll::Parser{};
@@ -31,8 +32,7 @@ eval_stream(std::shared_ptr<mll::Env> env, std::istream& is, std::ostream& os)
     return is.eof();
 }
 
-int
-eval_file(std::shared_ptr<mll::Env> env, const char* filename)
+int eval_file(std::shared_ptr<mll::Env> env, const char* filename)
 {
     auto ifs = std::ifstream{ filename };
     if (!ifs.is_open()) {
@@ -45,3 +45,5 @@ eval_file(std::shared_ptr<mll::Env> env, const char* filename)
 
     return eval_stream(env, ifs, oss);
 }
+
+} // namespace mlisp
