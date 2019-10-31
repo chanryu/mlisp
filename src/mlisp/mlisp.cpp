@@ -1,7 +1,12 @@
 #include <cassert>
 #include <sstream>
 
+#if __has_include(<unistd.h>)
 #include <unistd.h> // isatty
+#define MLISP_EVAL_PIPED_STDIN 1
+#else
+#define MLISP_EVAL_PIPED_STDIN 0
+#endif
 
 #ifdef MLISP_READLINE
 #include <readline/readline.h>
@@ -109,13 +114,14 @@ int main(int argc, char *argv[])
         }
     }
 
-    auto cin_piped = []() {
+#if MLISP_EVAL_PIPED_STDIN
+    bool is_stdin_piped = [] {
         return !isatty(fileno(stdin));
     }();
-
-    if (cin_piped) {
+    if (is_stdin_piped) {
         return eval_stream(env, std::cin, std::cout) ? 0 : -1;
     }
+#endif
 
     if (argc > 1) {
         return 0;
