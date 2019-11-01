@@ -247,20 +247,10 @@ void set_primitive_procs(mll::Env& env)
         });
     }));
 
-    MLISP_DEFUN("label", make_proc([cmd] (List args, Env& env) {
-        assert_argc(args, 2, cmd);
-
-        auto symbol = to_symbol_or_throw(car(args), cmd);
-        auto value = eval(cadr(args), env);
-        env.set(symbol.name(), value);
-
-        return value;
-    }));
-
     MLISP_DEFUN("defun", make_proc([] (List args, Env& env) {
         auto name = car(args);
         auto body = cons(make_symbol("lambda"), cdr(args));
-        return eval(cons(make_symbol("label"), cons(name, cons(body, {}))), env);
+        return eval(cons(make_symbol("define"), cons(name, cons(body, {}))), env);
     }));
 }
 
