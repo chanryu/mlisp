@@ -1,5 +1,3 @@
-#include <cassert>
-
 #if __has_include(<unistd.h>)
 #include <unistd.h> // isatty
 #define MLISP_EVAL_PIPED_STDIN 1

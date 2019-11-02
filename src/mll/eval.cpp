@@ -5,6 +5,7 @@
 #include <mll/printer.hpp>
 #include <mll/symdef.hpp>
 
+#include <cassert>
 #include <sstream>
 
 namespace mll {

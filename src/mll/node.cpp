@@ -3,7 +3,6 @@
 #include <mll/symdef.hpp>
 
 #include <array>
-#include <cassert>
 #include <map>
 
 namespace mll {
