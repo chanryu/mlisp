@@ -137,7 +137,7 @@ Parser::parse(std::istream& istream)
 
             if (stack_.top().type == Context::Type::quote) {
                 stack_.pop();
-                node = cons(make_symbol(MLL_QUOTE), cons(node, nil));
+                node = cons(Symbol{MLL_QUOTE}, cons(node, nil));
                 continue;
             }
 
@@ -165,7 +165,7 @@ Node
 Parser::make_node(std::string token)
 {
     if (is_number_token(token)) {
-        return make_number(std::stod(token));
+        return Number{std::stod(token)};
     }
 
     if (is_string_token(token)) {
@@ -215,10 +215,10 @@ Parser::make_node(std::string token)
             }
         }
 
-        return make_string(std::move(text));
+        return String{std::move(text)};
     }
 
-    return make_symbol(std::move(token));
+    return Symbol{std::move(token)};
 }
 
 bool

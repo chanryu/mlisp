@@ -48,7 +48,7 @@ BasicPrinter::visit(List const& list)
     }
 
     auto quoted = false;
-    auto symbol = to_symbol(car(list));
+    auto symbol = node_cast<Symbol>(car(list));
 
     if (symbol && symbol->name() == MLL_QUOTE) {
         ostream_ << "'";

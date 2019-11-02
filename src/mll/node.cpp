@@ -232,6 +232,20 @@ List::tail() const
     return data_ ? data_->tail : nil;
 }
 
+std::optional<List>
+List::from_node(Node const& node)
+{
+    if (!node.data()) {
+        return nil;
+    }
+
+    auto data = std::dynamic_pointer_cast<Data>(node.data());
+    if (data) {
+        return { List{ data } };
+    }
+
+    return std::nullopt;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Proc
@@ -260,6 +274,17 @@ Proc::call(List args, Env& env) const
     return nil;
 }
 
+std::optional<Proc>
+Proc::from_node(Node const& node)
+{
+    auto data = std::dynamic_pointer_cast<Data>(node.data());
+    if (data) {
+        return { Proc{ data } };
+    }
+
+    return std::nullopt;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Number
 
@@ -284,6 +309,17 @@ Number::value() const
     return data_->value;
 }
 
+std::optional<Number>
+Number::from_node(Node const& node)
+{
+    auto data = std::dynamic_pointer_cast<Data>(node.data());
+    if (data) {
+        return { Number{ data } };
+    }
+
+    return std::nullopt;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // String
 
@@ -306,6 +342,17 @@ std::string const&
 String::text() const
 {
     return data_->text;
+}
+
+std::optional<String>
+String::from_node(Node const& node)
+{
+    auto data = std::dynamic_pointer_cast<Data>(node.data());
+    if (data) {
+        return { String{ data } };
+    }
+
+    return std::nullopt;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -340,66 +387,15 @@ Symbol::name() const
     return data_->name;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// Casting functions
-
-std::optional<List>
-to_list(Node const& node)
-{
-    if (!node.data()) {
-        return nil;
-    }
-
-    auto data = std::dynamic_pointer_cast<List::Data>(node.data());
-    if (data) {
-        return { List{ data } };
-    }
-
-    return {};
-}
-
-std::optional<Proc>
-to_proc(Node const& node)
-{
-    auto data = std::dynamic_pointer_cast<Proc::Data>(node.data());
-    if (data) {
-        return { Proc{ data } };
-    }
-
-    return {};
-}
-
-std::optional<Number>
-to_number(Node const& node)
-{
-    auto data = std::dynamic_pointer_cast<Number::Data>(node.data());
-    if (data) {
-        return { Number{ data } };
-    }
-
-    return {};
-}
-
-std::optional<String>
-to_string(Node const& node)
-{
-    auto data = std::dynamic_pointer_cast<String::Data>(node.data());
-    if (data) {
-        return { String{ data } };
-    }
-
-    return {};
-}
-
 std::optional<Symbol>
-to_symbol(Node const& node)
+Symbol::from_node(Node const& node)
 {
-    auto data = std::dynamic_pointer_cast<Symbol::Data>(node.data());
+    auto data = std::dynamic_pointer_cast<Data>(node.data());
     if (data) {
         return { Symbol{ data } };
     }
 
-    return {};
+    return std::nullopt;
 }
 
 } // namespace mll

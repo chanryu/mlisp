@@ -30,7 +30,7 @@ private:
         }
 
         auto node = eval(car(list), env_);
-        auto proc = to_proc(node);
+        auto proc = node_cast<Proc>(node);
         if (!proc) {
             std::ostringstream oss;
             BasicPrinter{oss}.print(node);
@@ -53,9 +53,9 @@ private:
     void visit(Symbol const& sym) override
     {
         if (sym.name() == MLL_QUOTE) {
-            static auto quote_proc = make_proc([](List const& args, Env&) {
+            static auto quote_proc = Proc{[](List const& args, Env&) {
                 return car(args);
-            });
+            }};
             result_ = quote_proc;
         }
         else {

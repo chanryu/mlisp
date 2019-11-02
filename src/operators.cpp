@@ -31,19 +31,25 @@ string to_string(mll::Node const& node)
 namespace mlisp {
 
 namespace {
+
+inline mll::Proc make_proc(mll::Func func)
+{
+    return mll::Proc{ std::move(func) };
+}
+
 bool is_number(mll::Node const& node)
 {
-    return !!to_number(node);
+    return mll::node_cast<mll::Number>(node).has_value();
 }
 
 bool is_string(mll::Node const& node)
 {
-    return !!to_string(node);
+    return mll::node_cast<mll::String>(node).has_value();
 }
 
 bool is_symbol(mll::Node const& node)
 {
-    return !!to_symbol(node);
+    return mll::node_cast<mll::Symbol>(node).has_value();
 }
 
 mll::Node cadr(mll::List const& list)
@@ -53,7 +59,7 @@ mll::Node cadr(mll::List const& list)
 
 bool to_bool(mll::Node const& node)
 {
-    auto list = to_list(node);
+    auto list = mll::node_cast<mll::List>(node);
     if (list && list->empty()) {
         return false;
     }
@@ -62,7 +68,7 @@ bool to_bool(mll::Node const& node)
 
 mll::Node to_node(bool value)
 {
-    return value ? mll::make_symbol("t") : mll::Node{};
+    return value ? mll::Symbol{"t"} : mll::Node{};
 }
 
 template <typename Func>
@@ -111,7 +117,7 @@ void assert_argc_range(mll::List const& args, size_t min, size_t max, char const
 
 mll::List to_list_or_throw(mll::Node const& node, char const* cmd)
 {
-    auto list = mll::to_list(node);
+    auto list = mll::node_cast<mll::List>(node);
     if (!list) {
         throw mll::EvalError(cmd + (": " + std::to_string(node)) + " is not a list.");
     }
@@ -120,7 +126,7 @@ mll::List to_list_or_throw(mll::Node const& node, char const* cmd)
 
 mll::Number to_number_or_throw(mll::Node const& node, char const* cmd)
 {
-    auto num = mll::to_number(node);
+    auto num = mll::node_cast<mll::Number>(node);
     if (!num) {
         throw mll::EvalError(cmd + (": " + std::to_string(node)) + " is not a number.");
     }
@@ -129,7 +135,7 @@ mll::Number to_number_or_throw(mll::Node const& node, char const* cmd)
 
 mll::String to_string_or_throw(mll::Node const& node, char const* cmd)
 {
-    auto str = mll::to_string(node);
+    auto str = mll::node_cast<mll::String>(node);
     if (!str) {
         throw mll::EvalError(cmd + (": " + std::to_string(node)) + " is not a string.");
     }
@@ -138,7 +144,7 @@ mll::String to_string_or_throw(mll::Node const& node, char const* cmd)
 
 mll::Symbol to_symbol_or_throw(mll::Node const& node, char const* cmd)
 {
-    auto sym = mll::to_symbol(node);
+    auto sym = mll::node_cast<mll::Symbol>(node);
     if (!sym) {
         throw mll::EvalError(cmd + (": " + std::to_string(node)) + " is not a symbol.");
     }
@@ -171,13 +177,12 @@ void set_primitive_procs(mll::Env& env)
 
     MLISP_DEFUN("atom", make_proc([cmd] (List args, Env& env) {
         assert_argc(args, 1, cmd);
-        auto list = to_list(eval(car(args), env));
+        auto list = node_cast<List>(eval(car(args), env));
         return to_node(!list || list->empty());
     }));
 
     MLISP_DEFUN("eq", make_proc([cmd] (List args, Env& env) {
         assert_argc(args, 2, cmd);
-
         auto lhs = eval(car(args), env);
         auto rhs = eval(cadr(args), env);
         return to_node(lhs.data() == rhs.data());
@@ -232,10 +237,9 @@ void set_primitive_procs(mll::Env& env)
                     EvalError("Proc: too few args");
                 }
 
-                assert(is_symbol(car(syms)));
-
-                auto sym = to_symbol(car(syms));
+                auto sym = node_cast<Symbol>(car(syms));
                 auto val = eval(car(args), env);
+                assert(sym.has_value());
                 lambda_env->set(sym->name(), val);
                 syms = cdr(syms);
                 args = cdr(args);
@@ -251,8 +255,8 @@ void set_primitive_procs(mll::Env& env)
 
     MLISP_DEFUN("defun", make_proc([] (List args, Env& env) {
         auto name = car(args);
-        auto body = cons(make_symbol("lambda"), cdr(args));
-        return eval(cons(make_symbol("define"), cons(name, cons(body, {}))), env);
+        auto body = cons(Symbol{"lambda"}, cdr(args));
+        return eval(cons(Symbol{"define"}, cons(name, cons(body, {}))), env);
     }));
 }
 
@@ -375,7 +379,7 @@ void set_number_procs(mll::Env& env)
         for_each(args, [&result, &env, cmd](auto const& arg) {
             result += to_number_or_throw(eval(arg, env), cmd).value();
         });
-        return make_number(result);
+        return Number{result};
     }));
 
     MLISP_DEFUN("-", make_proc([cmd] (List args, Env& env) {
@@ -393,7 +397,7 @@ void set_number_procs(mll::Env& env)
             });
         }
 
-        return make_number(result);
+        return Number{result};
     }));
 
     MLISP_DEFUN("*", make_proc([cmd] (List args, Env& env) {
@@ -404,7 +408,7 @@ void set_number_procs(mll::Env& env)
             args = cdr(args);
         }
 
-        return make_number(result);
+        return Number{result};
     }));
 
     MLISP_DEFUN("/", make_proc([cmd] (List args, Env& env) {
@@ -414,18 +418,18 @@ void set_number_procs(mll::Env& env)
         for_each(cdr(args), [&result, &env, cmd](auto const& arg) {
             result /= to_number_or_throw(eval(arg, env), cmd).value();
         });
-        return make_number(result);
+        return Number{result};
     }));
 }
 
 void set_string_procs(mll::Env& env)
 {
-    MLISP_DEFUN("string?", mll::make_proc([cmd] (mll::List args, mll::Env& env) {
+    MLISP_DEFUN("string?", make_proc([cmd] (mll::List args, mll::Env& env) {
         assert_argc(args, 1, cmd);
         return to_node(is_string(eval(car(args), env)));
     }));
 
-    MLISP_DEFUN("string-equal?", mll::make_proc([cmd] (mll::List args, mll::Env& env) {
+    MLISP_DEFUN("string-equal?", make_proc([cmd] (mll::List args, mll::Env& env) {
         assert_argc(args, 2, cmd);
 
         auto str1 = to_string_or_throw(eval(car(args), env), cmd);
@@ -437,7 +441,7 @@ void set_string_procs(mll::Env& env)
 
 void set_symbol_procs(mll::Env& env)
 {
-    MLISP_DEFUN("symbol?", mll::make_proc([cmd] (mll::List args, mll::Env& env) {
+    MLISP_DEFUN("symbol?", make_proc([cmd] (mll::List args, mll::Env& env) {
         assert_argc(args, 1, cmd);
         return to_node(is_symbol(eval(car(args), env)));
     }));

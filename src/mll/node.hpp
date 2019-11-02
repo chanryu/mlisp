@@ -66,14 +66,14 @@ public:
     Node head() const;
     List tail() const;
 
-public:
-    struct Data;
-    friend class Node;
-    friend std::optional<List> to_list(Node const&);
+    static std::optional<List> from_node(Node const&);
 
 private:
+    struct Data;
     List(std::shared_ptr<Data> const&);
     std::shared_ptr<Data> data_;
+
+    friend class Node;
 };
 
 class Proc final {
@@ -83,14 +83,14 @@ public:
 
     Node call(List, Env&) const;
 
-public:
-    struct Data;
-    friend class Node;
-    friend std::optional<Proc> to_proc(Node const&);
+    static std::optional<Proc> from_node(Node const&);
 
 private:
+    struct Data;
     Proc(std::shared_ptr<Data>);
     std::shared_ptr<Data> data_;
+
+    friend class Node;
 };
 
 class Number final {
@@ -100,14 +100,14 @@ public:
 
     double value() const;
 
-public:
-    struct Data;
-    friend class Node;
-    friend std::optional<Number> to_number(Node const&);
+    static std::optional<Number> from_node(Node const&);
 
 private:
+    struct Data;
     Number(std::shared_ptr<Data>);
     std::shared_ptr<Data> data_;
+
+    friend class Node;
 };
 
 class String final {
@@ -117,14 +117,14 @@ public:
 
     std::string const& text() const;
 
-public:
-    struct Data;
-    friend class Node;
-    friend std::optional<String> to_string(Node const&);
+    static std::optional<String> from_node(Node const&);
 
 private:
+    struct Data;
     String(std::shared_ptr<Data>);
     std::shared_ptr<Data> data_;
+
+    friend class Node;
 };
 
 class Symbol final {
@@ -134,46 +134,24 @@ public:
 
     std::string const& name() const;
 
-public:
-    struct Data;
-    friend class Node;
-    friend std::optional<Symbol> to_symbol(Node const&);
+    static std::optional<Symbol> from_node(Node const&);
 
 private:
+    struct Data;
     Symbol(std::shared_ptr<Data>);
     std::shared_ptr<Data> data_;
+
+    friend class Node;
 };
 
-// casting functions
-std::optional<List>   to_list(Node const&);
-std::optional<Proc>   to_proc(Node const&);
-std::optional<Number> to_number(Node const&);
-std::optional<String> to_string(Node const&);
-std::optional<Symbol> to_symbol(Node const&);
-
-// the nil
+// The nil
 extern List const nil;
 
-// Convience wrappers
+// Helper functions
 
-inline Proc make_proc(Func func)
-{
-    return Proc{ func };
-}
-
-inline Number make_number(double value)
-{
-    return Number{ value };
-}
-
-inline String make_string(std::string text)
-{
-    return String{ std::move(text) };
-}
-
-inline Symbol make_symbol(std::string name)
-{
-    return Symbol{ std::move(name) };
+template <typename T>
+inline std::optional<T> node_cast(Node const& node) {
+    return T::from_node(node);
 }
 
 inline List cons(Node const& head, List const& tail)

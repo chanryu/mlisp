@@ -47,7 +47,7 @@ Env::lookup(std::string const& name) const
             return it->second;
         }
     }
-    return {};
+    return std::nullopt;
 }
 
 std::optional<Node>
@@ -57,7 +57,7 @@ Env::shallow_lookup(std::string const& name) const
     if (it != vars_.end()) {
         return it->second;
     }
-    return {};
+    return std::nullopt;
 }
 
 }
