@@ -7,7 +7,7 @@
 #define MLISP_EVAL_PIPED_STDIN 0
 #endif
 
-#include <mll/mll.hpp>
+#include <mll/env.hpp>
 
 #include "eval.hpp"
 #include "operators.hpp"

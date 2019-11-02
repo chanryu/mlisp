@@ -1,6 +1,8 @@
 #include "eval.hpp"
 
-#include <mll/mll.hpp>
+#include <mll/eval.hpp>
+#include <mll/node.hpp>
+#include <mll/parser.hpp>
 
 #include <fstream>
 #include <sstream>
@@ -16,10 +18,10 @@ bool eval_stream(mll::Env& env, std::istream& is, std::ostream& os)
 
         while (true) {
             auto expr = parser.parse(is);
-            if (!expr) {
+            if (!expr.has_value()) {
                 break;
             }
-            os << eval(*expr, env) << std::endl;
+            os << mll::eval(*expr, env) << std::endl;
         }
     }
     catch (mll::ParseError& e) {

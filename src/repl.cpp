@@ -1,6 +1,8 @@
 #include "repl.hpp"
 
-#include <mll/mll.hpp>
+#include <mll/eval.hpp>
+#include <mll/node.hpp>
+#include <mll/parser.hpp>
 
 #ifdef MLISP_READLINE
 #include <readline/readline.h>
@@ -69,10 +71,10 @@ int repl(mll::Env& env)
         while (!is.eof()) {
             try {
                 auto expr = parser.parse(is);
-                if (!expr) {
+                if (!expr.has_value()) {
                     break;
                 }
-                std::cout << eval(*expr, env) << '\n';
+                std::cout << mll::eval(*expr, env) << '\n';
             }
             catch (mll::ParseError& e) {
                 std::cout << e.what() << '\n';

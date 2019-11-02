@@ -1,14 +1,9 @@
 #pragma once
 
 #include <functional>
-#include <iostream>
-#include <map>
 #include <memory>
 #include <optional>
-#include <stack>
-#include <stdexcept>
 #include <string>
-#include <vector>
 
 namespace mll {
 
@@ -156,73 +151,8 @@ std::optional<Number> to_number(Node const&);
 std::optional<String> to_string(Node const&);
 std::optional<Symbol> to_symbol(Node const&);
 
-class Parser {
-public:
-    std::optional<Node> parse(std::istream&);
-    bool clean() const;
-
-protected:
-    virtual Node make_node(std::string token);
-
-private:
-    bool get_token(std::istream& istream);
-    std::string token_;
-    bool token_escaped_;
-
-    struct Context {
-        enum class Type { quote, paren, list };
-        Type type;
-        Node head;
-        bool head_empty;
-    };
-    std::stack<Context> stack_;
-};
-
-struct ParseError: std::runtime_error {
-    using runtime_error::runtime_error;
-};
-
-class Env: public std::enable_shared_from_this<Env> {
-public:
-    static std::shared_ptr<Env> create();
-    std::shared_ptr<Env> derive_new();
-
-    void set(std::string const&, Node const&);
-    bool update(std::string const&, Node const&);
-    std::optional<Node> lookup(std::string const&) const;
-    std::optional<Node> shallow_lookup(std::string const&) const;
-
-private:
-    Env() = default;
-    std::shared_ptr<Env> base_;
-    std::map<std::string, Node> vars_;
-};
-
-struct EvalError: std::runtime_error {
-    using runtime_error::runtime_error;
-};
-
-Node eval(Node expr, Env& env); // throws EvalError
-
-class BasicPrinter: NodeVisitor {
-public:
-    explicit BasicPrinter(std::ostream& ostream);
-
-    void print(Node const&);
-
-    void visit(List const&) override;
-    void visit(Proc const&) override;
-    void visit(Number const&) override;
-    void visit(String const&) override;
-    void visit(Symbol const&) override;
-
-private:
-    bool is_head() const;
-    void print(Node const&, bool is_head);
-
-    std::ostream& ostream_;
-    std::stack<bool, std::vector<bool>> is_head_stack_;
-};
+// the nil
+extern List const nil;
 
 // Convience wrappers
 

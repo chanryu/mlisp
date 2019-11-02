@@ -1,6 +1,6 @@
 SRC := src
 BUILD := build
-MLISP := $(BUILD)/mlisp/mlisp
+MLISP := $(BUILD)/mlisp
 
 SRCS := $(shell find $(SRC) -type f -name '*.cpp')
 OBJS := $(patsubst $(SRC)/%, $(BUILD)/%.o, $(SRCS))

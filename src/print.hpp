@@ -1,6 +1,6 @@
 #pragma once
 
-#include <mll/mll.hpp>
+#include <mll/printer.hpp>
 
 inline std::ostream& operator << (std::ostream& os, mll::Node const& node)
 {

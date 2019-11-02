@@ -1,6 +1,8 @@
 #include "operators.hpp"
 
-#include <mll/mll.hpp>
+#include <mll/node.hpp>
+#include <mll/env.hpp>
+#include <mll/eval.hpp>
 
 #include <cassert>
 #include <sstream>
