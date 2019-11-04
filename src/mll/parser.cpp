@@ -5,6 +5,7 @@
 
 #include <array>
 #include <cassert>
+#include <optional>
 #include <sstream>
 
 namespace mll {
@@ -20,9 +21,54 @@ bool is_space(char c)
     return c == ' ' || c == '\t' || c == '\r' || c == '\n';
 }
 
-bool is_quote(char c)
+std::string read_text(std::istream& istream)
 {
-    return c == '\'';
+    std::string str;
+    bool escaped = false;
+    while (true) {
+        char c;
+        if (!istream.get(c)) {
+            throw ParseError("malformed string: " + str);
+        }
+        if (escaped) {
+            static const std::array<char, 128> esctbl = {{
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, '\"', 0x00, 0x00, 0x00, 0x00, '\'',
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, '\?',
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, '\\', 0x00, 0x00, 0x00,
+                0x00, '\a', '\b', 0x00, 0x00, 0x00, '\f', 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, '\n', 0x00,
+                0x00, 0x00, '\r', 0x00, '\t', 0x00, '\v', 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            }};
+            if (c >= 0 && static_cast<size_t>(c) < esctbl.size() && static_cast<bool>(esctbl[c])) {
+                str.push_back(esctbl[c]);
+            }
+            else {
+                str.push_back('\\');
+                str.push_back(c);
+            }
+            escaped = false;
+        }
+        else if (c == '\\') {
+            escaped = true;
+        }
+        else if (c == '"') {
+            break;
+        }
+        else {
+            str.push_back(c);
+        }
+    }
+    return str;
 }
 
 void skip_whitespaces_and_comments(std::istream& istream)
@@ -54,24 +100,64 @@ void skip_whitespaces_and_comments(std::istream& istream)
     }
 }
 
-bool is_number_token(std::string const& token)
-{
-    assert(!token.empty());
+struct Token {
+    std::string text;
+    bool is_string;
+};
 
-    char const* s = token.c_str();
+bool get_token(std::istream& istream, Token& token)
+{
+    token.text.clear();
+    token.is_string = false;
+
+    skip_whitespaces_and_comments(istream);
+
+    char c;
+    while (istream.get(c)) {
+        if (is_space(c)) {
+            assert(!token.text.empty());
+            break;
+        }
+
+        if (is_paren(c)) {
+            if (token.text.empty()) {
+                token.text.push_back(c);
+            }
+            else {
+                istream.unget();
+            }
+            return true;
+        }
+
+        if (c == '\'') {
+            token.text.push_back(c);
+            return true;
+        }
+
+        if (c == '"' && token.text.empty()) {
+            token.text = read_text(istream);
+            token.is_string = true;
+            break;
+        }
+
+        token.text.push_back(c);
+    }
+
+    return !token.text.empty() || token.is_string;
+}
+
+bool parse_number(std::string const& text, double* value)
+{
+    assert(!text.empty());
+
+    char const* s = text.c_str();
     if (*s == '-') s++;
     if (*s == '.') s++;
     if (*s < '0' || *s > '9') return false;
 
     size_t len;
-    std::stod(token.c_str(), &len);
-    return token.length() == len;
-}
-
-bool is_string_token(std::string const& token)
-{
-    assert(!token.empty());
-    return token[0] == '"';
+    *value = std::stod(text.c_str(), &len);
+    return text.length() == len;
 }
 
 }
@@ -79,33 +165,27 @@ bool is_string_token(std::string const& token)
 std::optional<Node>
 Parser::parse(std::istream& istream)
 {
-    while (true) {
-
-        if (!get_token(istream))
-            break;
-
-        assert(!token_.empty());
-
-        if (token_ == "'") {
-            token_.clear();
-            stack_.push({ Context::Type::quote, {}, true });
-            continue;
-        }
-
-        if (token_ == "(") {
-            token_.clear();
-            stack_.push({ Context::Type::paren, {}, true });
-            continue;
-        }
+    Token token;
+    while (get_token(istream, token)) {
+        assert(!token.text.empty());
 
         Node node;
 
-        if (token_ == ")") {
+        if (token.is_string) {
+            node = String{std::move(token.text)};
+        }
+        else if (token.text == "'") {
+            stack_.push({ Context::Type::quote, {}, true });
+            continue;
+        }
+        else if (token.text == "(") {
+            stack_.push({ Context::Type::paren, {}, true });
+            continue;
+        }
+        else if (token.text == ")") {
             List list;
             while (true) {
-                if (stack_.empty() ||
-                    stack_.top().type == Context::Type::quote) {
-                    token_.clear();
+                if (stack_.empty() || stack_.top().type == Context::Type::quote) {
                     throw ParseError{"redundant ')'"};
                 }
 
@@ -125,10 +205,13 @@ Parser::parse(std::istream& istream)
             node = list;
         }
         else {
-            node = make_node(std::move(token_));
+            if (double value; parse_number(token.text, &value)) {
+                node = Number{value};
+            }
+            else {
+                node = Symbol{std::move(token.text)};
+            }
         }
-
-        token_.clear();
 
         while (true) {
             if (stack_.empty()) {
@@ -159,134 +242,6 @@ bool
 Parser::clean() const
 {
     return stack_.empty();
-}
-
-Node
-Parser::make_node(std::string token)
-{
-    if (is_number_token(token)) {
-        return Number{std::stod(token)};
-    }
-
-    if (is_string_token(token)) {
-        assert(token.length() >= 2);
-        assert(token.front() == '"' && token.back() == '"');
-
-        static const std::array<char, 128> esctbl = {{
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, '\"', 0x00, 0x00, 0x00, 0x00, '\'',
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, '\?',
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, '\\', 0x00, 0x00, 0x00,
-            0x00, '\a', '\b', 0x00, 0x00, 0x00, '\f', 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, '\n', 0x00,
-            0x00, 0x00, '\r', 0x00, '\t', 0x00, '\v', 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        }};
-
-        std::string text;
-
-        auto escaped = false;
-        for (size_t i = 1; i < token.size() - 1; ++i) {
-            auto c = token[i];
-            if (escaped) {
-                escaped = false;
-
-                if (c >= 0 && static_cast<size_t>(c) < esctbl.size() && static_cast<bool>(esctbl[c])) {
-                    text.push_back(esctbl[c]);
-                }
-                else {
-                    text.push_back('\\');
-                    text.push_back(c);
-                }
-            }
-            else if (c == '\\') {
-                escaped = true;
-            }
-            else {
-                text.push_back(c);
-            }
-        }
-
-        return String{std::move(text)};
-    }
-
-    return Symbol{std::move(token)};
-}
-
-bool
-Parser::get_token(std::istream& istream)
-{
-    auto read_string_token = [this, &istream]() {
-        assert(!token_.empty());
-        assert(token_[0] == '"');
-        char c;
-        while (istream.get(c)) {
-            token_.push_back(c);
-            if (token_escaped_) {
-                token_escaped_ = false;
-            }
-            else if (c == '\\') {
-                token_escaped_ = true;
-            }
-            else if (c == '"') {
-                return true;
-            }
-        }
-        return false;
-    };
-
-    if (!token_.empty()) {
-        // we have unfinished string token
-        return read_string_token();
-    }
-
-    skip_whitespaces_and_comments(istream);
-
-    char c;
-    while (istream.get(c)) {
-        if (is_space(c)) {
-            assert(!token_.empty());
-            return true;
-        }
-
-        if (is_quote(c)) {
-            token_.push_back(c);
-            return true;
-        }
-
-        if (is_paren(c)) {
-            if (token_.empty()) {
-                token_.push_back(c);
-            }
-            else {
-                istream.unget();
-            }
-            return true;
-        }
-
-        if (c == '"') {
-            if (token_.empty()) {
-                token_.push_back(c);
-                token_escaped_ = false;
-                return read_string_token();
-            }
-
-            istream.unget();
-            return true;
-        }
-
-        token_.push_back(c);
-    }
-
-    return !token_.empty();
 }
 
 } // namespace mll

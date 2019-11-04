@@ -17,14 +17,7 @@ public:
     std::optional<Node> parse(std::istream&);
     bool clean() const;
 
-protected:
-    Node make_node(std::string token);
-
 private:
-    bool get_token(std::istream& istream);
-    std::string token_;
-    bool token_escaped_;
-
     struct Context {
         enum class Type { quote, paren, list };
         Type type;
