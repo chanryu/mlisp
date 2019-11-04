@@ -201,7 +201,6 @@ void set_primitive_procs(mll::Env& env)
         assert_argc(args, 2, cmd);
         auto head = eval(car(args), env);
         auto tail = to_list_or_throw(eval(cadr(args), env), cmd);
-
         return cons(head, tail);
     }));
 
@@ -289,7 +288,7 @@ void set_complementary_procs(mll::Env& env)
         return value;
     }));
 
-    MLISP_DEFUN("set", make_proc([cmd] (List args, Env& env) {
+    MLISP_DEFUN("set!", make_proc([cmd] (List args, Env& env) {
         assert_argc(args, 2, cmd);
 
         auto symbol = to_symbol_or_throw(car(args), cmd);
