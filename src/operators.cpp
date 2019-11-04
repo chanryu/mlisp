@@ -108,8 +108,7 @@ void assert_argc_min(mll::List const& args, size_t min, char const *cmd)
 void assert_argc_range(mll::List const& args, size_t min, size_t max, char const *cmd)
 {
     auto len = length(args);
-
-    if (len >= min && len <= max) {
+    if (len > min || len < max) {
         throw mll::EvalError(cmd + " expects "s + std::to_string(min) + " ~ " +
                              std::to_string(max) + " argument(s).");
     }
