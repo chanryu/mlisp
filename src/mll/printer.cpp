@@ -1,6 +1,9 @@
 #include "printer.hpp"
 #include "symdef.hpp"
 
+#include <cmath>
+#include <iomanip>
+
 namespace mll {
 
 namespace {
@@ -77,7 +80,16 @@ BasicPrinter::visit(List const& list)
 void
 BasicPrinter::visit(Number const& num)
 {
-    ostream_ << num.value();
+    const bool is_integral = [&num] {
+        decltype(num.value()) int_part;
+        std::modf(num.value(), &int_part);
+        return num.value() == int_part;
+    }();
+    if (is_integral) {
+        ostream_ << std::setprecision(0);
+    }
+
+    ostream_ << std::fixed << num.value();
 }
 
 void
