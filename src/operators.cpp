@@ -72,7 +72,7 @@ mll::Node to_node(bool value)
 }
 
 template <typename Func>
-void for_each(mll::List list, Func func)
+void for_each(mll::List list, Func const& func)
 {
     while (!list.empty()) {
         func(car(list));
@@ -90,7 +90,7 @@ size_t length(mll::List list)
     return len;
 }
 
-void assert_argc(mll::List args, size_t count, char const *cmd)
+void assert_argc(mll::List const& args, size_t count, char const *cmd)
 {
     if (length(args) != count) {
         throw mll::EvalError(cmd + " expects "s + std::to_string(count) + " argument(s).");

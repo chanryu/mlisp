@@ -185,7 +185,8 @@ Node::accept(NodeVisitor& visitor) const
 {
     if (data_) {
         data_->accept(visitor);
-    } else {
+    }
+    else {
         visitor.visit(nil);
     }
 }
@@ -366,7 +367,8 @@ Symbol::Symbol(std::string name)
     if (i == symbols.end()) {
         data_ = std::make_shared<Data>(std::move(name));
         symbols.insert(std::make_pair(data_->name, data_));
-    } else {
+    }
+    else {
         data_ = i->second;
     }
 }
