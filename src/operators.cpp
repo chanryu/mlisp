@@ -1,14 +1,15 @@
 #include "operators.hpp"
 
-#include <mll/node.hpp>
 #include <mll/env.hpp>
 #include <mll/eval.hpp>
+#include <mll/node.hpp>
+#include <mll/print.hpp>
 
 #include <cassert>
 #include <sstream>
+#include <vector>
 
-#include "eval.hpp"
-#include "print.hpp"
+#include "load.hpp"
 
 #define MLISP_DEFUN(cmd__, proc__)\
         do {\
@@ -23,7 +24,7 @@ namespace std {
 string to_string(mll::Node const& node)
 {
     ostringstream ss;
-    mll::BasicPrinter{ss}.print(node);
+    print(ss, node);
     return ss.str();
 }
 } // namespace std
@@ -39,17 +40,17 @@ inline mll::Proc make_proc(mll::Func func)
 
 bool is_number(mll::Node const& node)
 {
-    return mll::node_cast<mll::Number>(node).has_value();
+    return mll::dynamic_node_cast<mll::Number>(node).has_value();
 }
 
 bool is_string(mll::Node const& node)
 {
-    return mll::node_cast<mll::String>(node).has_value();
+    return mll::dynamic_node_cast<mll::String>(node).has_value();
 }
 
 bool is_symbol(mll::Node const& node)
 {
-    return mll::node_cast<mll::Symbol>(node).has_value();
+    return mll::dynamic_node_cast<mll::Symbol>(node).has_value();
 }
 
 mll::Node cadr(mll::List const& list)
@@ -59,7 +60,7 @@ mll::Node cadr(mll::List const& list)
 
 bool to_bool(mll::Node const& node)
 {
-    auto list = mll::node_cast<mll::List>(node);
+    auto list = mll::dynamic_node_cast<mll::List>(node);
     if (list && list->empty()) {
         return false;
     }
@@ -76,6 +77,15 @@ void for_each(mll::List list, Func const& func)
 {
     while (!list.empty()) {
         func(car(list));
+        list = cdr(list);
+    }
+}
+
+template <typename Func>
+void for_each_with_index(mll::List list, Func const& func)
+{
+    for (size_t i = 0; !list.empty(); ++i) {
+        func(i, car(list));
         list = cdr(list);
     }
 }
@@ -116,7 +126,7 @@ void assert_argc_range(mll::List const& args, size_t min, size_t max, char const
 
 mll::List to_list_or_throw(mll::Node const& node, char const* cmd)
 {
-    auto list = mll::node_cast<mll::List>(node);
+    auto list = mll::dynamic_node_cast<mll::List>(node);
     if (!list) {
         throw mll::EvalError(cmd + (": " + std::to_string(node)) + " is not a list.");
     }
@@ -125,7 +135,7 @@ mll::List to_list_or_throw(mll::Node const& node, char const* cmd)
 
 mll::Number to_number_or_throw(mll::Node const& node, char const* cmd)
 {
-    auto num = mll::node_cast<mll::Number>(node);
+    auto num = mll::dynamic_node_cast<mll::Number>(node);
     if (!num) {
         throw mll::EvalError(cmd + (": " + std::to_string(node)) + " is not a number.");
     }
@@ -134,7 +144,7 @@ mll::Number to_number_or_throw(mll::Node const& node, char const* cmd)
 
 mll::String to_string_or_throw(mll::Node const& node, char const* cmd)
 {
-    auto str = mll::node_cast<mll::String>(node);
+    auto str = mll::dynamic_node_cast<mll::String>(node);
     if (!str) {
         throw mll::EvalError(cmd + (": " + std::to_string(node)) + " is not a string.");
     }
@@ -143,7 +153,7 @@ mll::String to_string_or_throw(mll::Node const& node, char const* cmd)
 
 mll::Symbol to_symbol_or_throw(mll::Node const& node, char const* cmd)
 {
-    auto sym = mll::node_cast<mll::Symbol>(node);
+    auto sym = mll::dynamic_node_cast<mll::Symbol>(node);
     if (!sym) {
         throw mll::EvalError(cmd + (": " + std::to_string(node)) + " is not a symbol.");
     }
@@ -176,7 +186,7 @@ void set_primitive_procs(mll::Env& env)
 
     MLISP_DEFUN("atom", make_proc([cmd] (List args, Env& env) {
         assert_argc(args, 1, cmd);
-        auto list = node_cast<List>(eval(car(args), env));
+        auto list = dynamic_node_cast<List>(eval(car(args), env));
         return to_node(!list || list->empty());
     }));
 
@@ -235,7 +245,7 @@ void set_primitive_procs(mll::Env& env)
                     EvalError("Proc: too few args");
                 }
 
-                auto sym = node_cast<Symbol>(car(syms));
+                auto sym = dynamic_node_cast<Symbol>(car(syms));
                 auto val = eval(car(args), env);
                 assert(sym.has_value());
                 lambda_env->set(sym->name(), val);
@@ -322,27 +332,21 @@ void set_complementary_procs(mll::Env& env)
         return eval(else_arm, env);
     }));
 
-    MLISP_DEFUN("print", make_proc([/*cmd*/] (List args, Env& env) {
-        Node result;
-        auto first = true;
-        for_each(args, [&first, &env, &result] (auto const& arg) {
-            if (first) {
-                first = false;
-            }
-            else {
+    MLISP_DEFUN("print", make_proc([/*cmd*/] (List const& args, Env& env) {
+        for_each_with_index(args, [&env] (auto const i, auto const& expr) {
+            if (i != 0) {
                 std::cout << ' ';
             }
-            result = eval(arg, env);
-            std::cout << result;
+            print(std::cout, eval(expr, env), StringStyle::raw);
         });
         std::cout << '\n';
-        return result;
+        return nil;
     }));
 
     MLISP_DEFUN("load", make_proc([cmd] (List args, Env& env) {
         assert_argc(args, 1, cmd);
         auto filename = to_string_or_throw(car(args), cmd);
-        return to_node(!eval_file(env, filename.text().c_str()));
+        return to_node(!load_file(env, filename.text()));
     }));
 }
 

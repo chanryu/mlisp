@@ -6,8 +6,11 @@
 #endif
 
 #include <mll/env.hpp>
+#include <mll/eval.hpp>
+#include <mll/parser.hpp>
+#include <mll/print.hpp>
 
-#include "eval.hpp"
+#include "load.hpp"
 #include "operators.hpp"
 #include "repl.hpp"
 
@@ -23,7 +26,7 @@ int main(int argc, char *argv[])
     mlisp::set_symbol_procs(*env);
 
     for (int i = 1; i < argc; ++i) {
-        if (!mlisp::eval_file(*env, argv[i])) {
+        if (!mlisp::load_file(*env, argv[i])) {
             return -1;
         }
     }
@@ -33,7 +36,26 @@ int main(int argc, char *argv[])
         return !isatty(fileno(stdin));
     }();
     if (is_stdin_piped) {
-        return mlisp::eval_stream(*env, std::cin, std::cout) ? 0 : -1;
+        try {
+            mll::Parser parser;
+            while (true) {
+                auto expr = parser.parse(std::cin);
+                if (!expr.has_value()) {
+                    break;
+                }
+                mll::print(std::cout, mll::eval(*expr, *env));
+                std::cout << '\n';
+            }
+            return 0;
+        }
+        catch (mll::ParseError& e) {
+            std::cout << e.what() << '\n';
+            return -1;
+        }
+        catch (mll::EvalError& e) {
+            std::cout << e.what() << '\n';
+            return -1;
+        }
     }
 #endif
 

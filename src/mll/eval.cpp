@@ -2,10 +2,11 @@
 
 #include <mll/env.hpp>
 #include <mll/node.hpp>
-#include <mll/printer.hpp>
+#include <mll/print.hpp>
 #include <mll/symdef.hpp>
 
 #include <cassert>
+#include <memory>
 #include <sstream>
 
 namespace mll {
@@ -30,10 +31,10 @@ private:
         }
 
         auto node = eval(car(list), env_);
-        auto proc = node_cast<Proc>(node);
+        auto proc = dynamic_node_cast<Proc>(node);
         if (!proc) {
             std::ostringstream oss;
-            BasicPrinter{oss}.print(node);
+            print(oss, node);
             throw EvalError(oss.str() + " is not a proc.");
         }
 
@@ -78,7 +79,7 @@ private:
 };
 }
 
-Node eval(Node expr, Env& env)
+Node eval(Node const& expr, Env& env)
 {
     return Evaluator{env}.evaluate(expr);
 }

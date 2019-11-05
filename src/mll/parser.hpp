@@ -2,7 +2,7 @@
 
 #include <mll/node.hpp>
 
-#include <iostream>
+#include <istream>
 #include <optional>
 #include <stack>
 #include <stdexcept>
@@ -10,7 +10,10 @@
 
 namespace mll {
 
-class Node;
+class ParseError: public std::runtime_error {
+public:
+    using runtime_error::runtime_error;
+};
 
 class Parser {
 public:
@@ -25,10 +28,6 @@ private:
         bool head_empty;
     };
     std::stack<Context> stack_;
-};
-
-struct ParseError: std::runtime_error {
-    using runtime_error::runtime_error;
 };
 
 } // namespace mll

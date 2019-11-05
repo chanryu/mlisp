@@ -3,14 +3,15 @@
 #include <mll/eval.hpp>
 #include <mll/node.hpp>
 #include <mll/parser.hpp>
+#include <mll/print.hpp>
 
 #ifdef MLISP_READLINE
 #include <readline/readline.h>
 #include <readline/history.h>
 #endif
+#include <iostream>
 #include <sstream>
-
-#include "print.hpp"
+#include <stdexcept>
 
 namespace mlisp {
 
@@ -66,15 +67,15 @@ int repl(mll::Env& env)
             break;
         }
 
-        std::istringstream is(line);
-
+        std::istringstream is{line};
         while (!is.eof()) {
             try {
                 auto expr = parser.parse(is);
                 if (!expr.has_value()) {
                     break;
                 }
-                std::cout << mll::eval(*expr, env) << '\n';
+                mll::print(std::cout, mll::eval(*expr, env));
+                std::cout << '\n';
             }
             catch (mll::ParseError& e) {
                 std::cout << e.what() << '\n';

@@ -150,7 +150,7 @@ extern List const nil;
 // Helper functions
 
 template <typename T>
-inline std::optional<T> node_cast(Node const& node) {
+inline std::optional<T> dynamic_node_cast(Node const& node) {
     return T::from_node(node);
 }
 
