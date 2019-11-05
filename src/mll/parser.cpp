@@ -8,8 +8,6 @@
 #include <optional>
 #include <sstream>
 
-namespace mll {
-
 namespace {
 
 constexpr std::array<char, 128> esctbl = {{
@@ -36,7 +34,7 @@ bool is_paren(char c)
     return c == '(' || c == ')';
 }
 
-bool is_space(char c)
+bool is_whitespace(char c)
 {
     return c == ' ' || c == '\t' || c == '\r' || c == '\n';
 }
@@ -48,7 +46,7 @@ std::string read_text(std::istream& istream)
     while (true) {
         char c;
         if (!istream.get(c)) {
-            throw ParseError("malformed string: " + str);
+            throw mll::ParseError("malformed string: " + str);
         }
         if (escaped) {
             if (c >= 0 && static_cast<size_t>(c) < esctbl.size() && static_cast<bool>(esctbl[c])) {
@@ -93,7 +91,7 @@ void skip_whitespaces_and_comments(std::istream& istream)
             istream.get();
             in_comment = true;
         }
-        else if (is_space(c)) {
+        else if (is_whitespace(c)) {
             istream.get();
         }
         else {
@@ -116,7 +114,7 @@ bool get_token(std::istream& istream, Token& token)
 
     char c;
     while (istream.get(c)) {
-        if (is_space(c)) {
+        if (is_whitespace(c)) {
             assert(!token.text.empty());
             break;
         }
@@ -161,9 +159,9 @@ bool parse_number(std::string const& text, double* value)
     *value = std::stod(text.c_str(), &len);
     return text.length() == len;
 }
+} // namespace
 
-}
-
+namespace mll {
 std::optional<Node>
 Parser::parse(std::istream& istream)
 {
@@ -188,7 +186,7 @@ Parser::parse(std::istream& istream)
             List list;
             while (true) {
                 if (stack_.empty() || stack_.top().type == Context::Type::quote) {
-                    throw ParseError{"redundant ')'"};
+                    throw mll::ParseError{"redundant ')'"};
                 }
 
                 auto c = stack_.top();
