@@ -200,13 +200,13 @@ Node::data() const
 ////////////////////////////////////////////////////////////////////////////////
 // List
 
-List::List(Node head, List tail)
-    : data_{ std::make_shared<Data>(head, tail) }
+List::List(List const& other)
+    : data_{other.data_}
 {
 }
 
-List::List(List const& other)
-    : data_{other.data_}
+List::List(Node const& head, List const& tail)
+    : data_{ std::make_shared<Data>(head, tail) }
 {
 }
 

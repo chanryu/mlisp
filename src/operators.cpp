@@ -398,7 +398,6 @@ void set_number_procs(mll::Env& env)
                 result -= to_number_or_throw(eval(arg, env), cmd).value();
             });
         }
-
         return Number{result};
     }));
 
@@ -409,7 +408,6 @@ void set_number_procs(mll::Env& env)
             result *= to_number_or_throw(arg, cmd).value();
             args = cdr(args);
         }
-
         return Number{result};
     }));
 
@@ -426,24 +424,23 @@ void set_number_procs(mll::Env& env)
 
 void set_string_procs(mll::Env& env)
 {
-    MLISP_DEFUN("string?", make_proc([cmd] (mll::List args, mll::Env& env) {
+    MLISP_DEFUN("string?", make_proc([cmd] (mll::List const& args, mll::Env& env) {
         assert_argc(args, 1, cmd);
         return to_node(is_string(eval(car(args), env)));
     }));
 
-    MLISP_DEFUN("string-equal?", make_proc([cmd] (mll::List args, mll::Env& env) {
+    MLISP_DEFUN("string-equal?", make_proc([cmd] (mll::List const& args, mll::Env& env) {
         assert_argc(args, 2, cmd);
 
-        auto str1 = to_string_or_throw(eval(car(args), env), cmd);
-        auto str2 = to_string_or_throw(eval(cadr(args), env), cmd);
-
+        auto const str1 = to_string_or_throw(eval(car(args), env), cmd);
+        auto const str2 = to_string_or_throw(eval(cadr(args), env), cmd);
         return to_node(str1.text() == str2.text());
     }));
 }
 
 void set_symbol_procs(mll::Env& env)
 {
-    MLISP_DEFUN("symbol?", make_proc([cmd] (mll::List args, mll::Env& env) {
+    MLISP_DEFUN("symbol?", make_proc([cmd] (mll::List const& args, mll::Env& env) {
         assert_argc(args, 1, cmd);
         return to_node(is_symbol(eval(car(args), env)));
     }));

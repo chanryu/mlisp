@@ -58,8 +58,8 @@ class List final {
 public:
     List() = default;
 
-    List(Node head, List tail);
     List(List const&);
+    List(Node const& head, List const& tail);
 
     bool empty() const;
 
