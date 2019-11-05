@@ -86,7 +86,7 @@ int repl(mll::Env& env)
         }
     }
 
-    std::cout << "Bye.\n";
+    std::cout << "Moriturus te saluto.\n";
 
     return parser.clean() ? 0 : -1;
 }
