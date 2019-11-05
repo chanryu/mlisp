@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
                 mll::print(std::cout, mll::eval(*expr, *env));
                 std::cout << '\n';
             }
-            return 0;
+            return parser.clean() ? 0 : -1;
         }
         catch (mll::ParseError& e) {
             std::cout << e.what() << '\n';
