@@ -19,7 +19,8 @@ Because every programmer should write (unless already have written) their own Li
 ### TODOs
 
 - `mll`
-  - extensible primitive type
+  - make primitive data types extensible
+  - non-list cons cell
 - `mlisp`
   - [`defmacro`](http://www.gigamonkeys.com/book/macros-defining-your-own.html)
   - [backquote](http://www.lispworks.com/documentation/HyperSpec/Body/02_df.htm)
@@ -27,6 +28,7 @@ Because every programmer should write (unless already have written) their own Li
 - etc.
   - create `.clang-format`
   - `pre-commit` git hook for auto `clang-format`ing
+  - cmake?
 
 ### Links
 

@@ -6,8 +6,8 @@
 #include <mll/print.hpp>
 
 #ifdef MLISP_READLINE
-#include <readline/readline.h>
 #include <readline/history.h>
+#include <readline/readline.h>
 #endif
 #include <iostream>
 #include <sstream>

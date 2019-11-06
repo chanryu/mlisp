@@ -12,9 +12,10 @@
 namespace mll {
 
 namespace {
-class Evaluator: NodeVisitor {
+class Evaluator : NodeVisitor {
 public:
-    explicit Evaluator(Env& env) : env_(env) { }
+    explicit Evaluator(Env& env) : env_(env)
+    {}
 
     Node evaluate(Node const& expr)
     {
@@ -77,7 +78,7 @@ private:
     Env& env_;
     Node result_;
 };
-}
+} // namespace
 
 Node eval(Node const& expr, Env& env)
 {

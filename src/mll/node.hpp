@@ -37,12 +37,12 @@ public:
     Node(String const&);
     Node(Symbol const&);
 
-    Node& operator = (Node const&);
-    Node& operator = (List const&);
-    Node& operator = (Proc const&);
-    Node& operator = (Number const&);
-    Node& operator = (String const&);
-    Node& operator = (Symbol const&);
+    Node& operator=(Node const&);
+    Node& operator=(List const&);
+    Node& operator=(Proc const&);
+    Node& operator=(Number const&);
+    Node& operator=(String const&);
+    Node& operator=(Symbol const&);
 
     void accept(NodeVisitor&) const;
 
@@ -50,7 +50,7 @@ public:
     std::shared_ptr<Data> const& data() const;
 
 private:
-    bool operator == (Node const&) const = delete;
+    bool operator==(Node const&) const = delete;
     std::shared_ptr<Data> data_;
 };
 
@@ -150,13 +150,14 @@ extern List const nil;
 // Helper functions
 
 template <typename T>
-inline std::optional<T> dynamic_node_cast(Node const& node) {
+inline std::optional<T> dynamic_node_cast(Node const& node)
+{
     return T::from_node(node);
 }
 
 inline List cons(Node const& head, List const& tail)
 {
-    return List{ head, tail };
+    return List{head, tail};
 }
 
 inline Node car(List const& list)

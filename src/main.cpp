@@ -14,7 +14,7 @@
 #include "operators.hpp"
 #include "repl.hpp"
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
     auto env = mll::Env::create();
 

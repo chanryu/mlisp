@@ -17,7 +17,7 @@ std::string quote_text(std::string const& text)
     std::string quoted_text;
     quoted_text.reserve(static_cast<size_t>(text.size() * 1.5) + 2);
     quoted_text.push_back('\"');
-    for (auto c: text) {
+    for (auto c : text) {
         switch (c) {
         case '\"':
             quoted_text.append("\\\"");
@@ -43,10 +43,10 @@ std::string quote_text(std::string const& text)
     return quoted_text;
 }
 
-class Printer: NodeVisitor {
+class Printer : NodeVisitor {
 public:
-    explicit Printer(StringStyle string_style)
-        : string_style_{string_style} {}
+    explicit Printer(StringStyle string_style) : string_style_{string_style}
+    {}
 
     void print(std::ostream& ostream, Node const& node)
     {
@@ -54,7 +54,6 @@ public:
         print(node, /* is_head */ true);
         ostream_ = nullptr;
     }
-
 
 private:
     void visit(List const& list) override
@@ -146,7 +145,6 @@ private:
         is_head_stack_.push(is_head);
         node.accept(*this);
         is_head_stack_.pop();
-
     }
 
     const StringStyle string_style_;

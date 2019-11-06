@@ -9,7 +9,7 @@ namespace mll {
 
 class Node;
 
-class Env: public std::enable_shared_from_this<Env> {
+class Env : public std::enable_shared_from_this<Env> {
 public:
     static std::shared_ptr<Env> create();
     std::shared_ptr<Env> derive_new();
@@ -25,4 +25,4 @@ private:
     std::map<std::string, Node> vars_;
 };
 
-}
+} // namespace mll
