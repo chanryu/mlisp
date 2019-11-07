@@ -21,6 +21,7 @@ Because every programmer should write (unless already have written) their own Li
 - `mll`
   - make primitive data types extensible
   - non-list cons cell
+  - variable args in lambda
 - `mlisp`
   - [`defmacro`](http://www.gigamonkeys.com/book/macros-defining-your-own.html)
   - [backquote](http://www.lispworks.com/documentation/HyperSpec/Body/02_df.htm)

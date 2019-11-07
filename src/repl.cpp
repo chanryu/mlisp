@@ -74,7 +74,9 @@ int repl(mll::Env& env)
                 if (!expr.has_value()) {
                     break;
                 }
-                mll::print(std::cout, mll::eval(*expr, env));
+                auto value = mll::eval(*expr, env);
+                std::cout << "=====> ";
+                mll::print(std::cout, value);
                 std::cout << '\n';
             }
             catch (mll::ParseError& e) {

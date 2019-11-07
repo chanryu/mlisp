@@ -7,6 +7,7 @@
 
 #include <cassert>
 #include <sstream>
+#include <stack>
 #include <vector>
 
 #include "load.hpp"
@@ -159,14 +160,23 @@ Symbol to_symbol_or_throw(Node const& node, char const* cmd)
     return *sym;
 }
 
+bool is_variadic_args(Symbol const& sym)
+{
+    return sym.name().size() > 1 && sym.name()[0] == '*';
+}
+
 List to_formal_args(Node const& node, char const* cmd)
 {
     auto args = to_list_or_throw(node, cmd);
 
     // validate args (must be list of symbols)
     for (auto c = args; !c.empty(); c = cdr(c)) {
-        if (!is_symbol(car(c))) {
+        auto sym = dynamic_node_cast<Symbol>(car(c));
+        if (!sym.has_value()) {
             throw EvalError(cmd + (": " + std::to_string(car(c))) + " is not a symbol");
+        }
+        if (is_variadic_args(*sym) && !cdr(c).empty()) {
+            throw EvalError(cmd + (": " + sym->name()) + " must be the last argument");
         }
     }
 
@@ -238,13 +248,29 @@ void set_primitive_procs(Env& env)
             auto lambda_env = creator_env->derive_new();
             auto syms = formal_args;
             while (!syms.empty()) {
+                auto sym = dynamic_node_cast<Symbol>(car(syms));
+                assert(sym.has_value());
+
+                if (is_variadic_args(*sym)) {
+                    std::stack<Node> args_stack;
+                    while (!args.empty()) {
+                        args_stack.push(eval(car(args), env));
+                        args = cdr(args);
+                    }
+                    List vargs;
+                    while (!args_stack.empty()) {
+                        vargs = cons(args_stack.top(), vargs);
+                        args_stack.pop();
+                    }
+                    lambda_env->set(sym->name().substr(1), vargs);
+                    break;
+                }
+
                 if (args.empty()) {
                     EvalError("Proc: too few args");
                 }
 
-                auto sym = dynamic_node_cast<Symbol>(car(syms));
                 auto val = eval(car(args), env);
-                assert(sym.has_value());
                 lambda_env->set(sym->name(), val);
                 syms = cdr(syms);
                 args = cdr(args);
@@ -305,7 +331,8 @@ void set_complementary_procs(Env& env)
         return value;
     });
 
-    MLISP_DEFUN("begin", [/*cmd*/](List args, Env& env) {
+    /*
+    MLISP_DEFUN("begin", [/](List args, Env& env) {
         auto new_env = env.derive_new();
         Node value;
         while (!args.empty()) {
@@ -314,6 +341,7 @@ void set_complementary_procs(Env& env)
         }
         return value;
     });
+    */
 
     MLISP_DEFUN("if", [cmd](List args, Env& env) {
         assert_argc_range(args, 2, 3, cmd);
