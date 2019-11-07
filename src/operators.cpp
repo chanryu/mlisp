@@ -331,18 +331,6 @@ void set_complementary_procs(Env& env)
         return value;
     });
 
-    /*
-    MLISP_DEFUN("begin", [/](List args, Env& env) {
-        auto new_env = env.derive_new();
-        Node value;
-        while (!args.empty()) {
-            value = eval(car(args), *new_env);
-            args = cdr(args);
-        }
-        return value;
-    });
-    */
-
     MLISP_DEFUN("if", [cmd](List args, Env& env) {
         assert_argc_range(args, 2, 3, cmd);
 
