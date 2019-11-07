@@ -20,9 +20,10 @@ Because every programmer should write (unless already have written) their own Li
 
 - mll
   - make primitive data types extensible
-  - [backquote](http://www.lispworks.com/documentation/HyperSpec/Body/02_df.htm) (useful for macro)
+  - quasiquote (`` ` ``), unquote (`,`) - [link](http://www.lispworks.com/documentation/HyperSpec/Body/02_df.htm)
   - non-list cons cell?
 - mlisp
+  - show error messages when interpreting files
   - `exit` procedure
 - etc.
   - bootstraping script for `pre-commit` git hook for auto `clang-format`ing
