@@ -116,14 +116,6 @@ void assert_argc_min(List const& args, size_t min, char const* cmd)
     }
 }
 
-void assert_argc_range(List const& args, size_t min, size_t max, char const* cmd)
-{
-    auto len = length(args);
-    if (len < min || len > max) {
-        throw EvalError(cmd + " expects "s + std::to_string(min) + " ~ " + std::to_string(max) + " argument(s).");
-    }
-}
-
 List to_list_or_throw(Node const& node, char const* cmd)
 {
     auto list = dynamic_node_cast<List>(node);
@@ -237,6 +229,26 @@ void set_primitive_procs(Env& env)
         return result;
     });
 
+    MLISP_DEFUN("define", [cmd](List args, Env& env) {
+        assert_argc(args, 2, cmd);
+
+        auto symbol = to_symbol_or_throw(car(args), cmd);
+        auto value = eval(cadr(args), env);
+        env.set(symbol.name(), value);
+        return value;
+    });
+
+    MLISP_DEFUN("set!", [cmd](List args, Env& env) {
+        assert_argc(args, 2, cmd);
+
+        auto symbol = to_symbol_or_throw(car(args), cmd);
+        auto value = eval(cadr(args), env);
+        if (!env.update(symbol.name(), value)) {
+            throw EvalError("unbound variable: " + symbol.name());
+        }
+        return value;
+    });
+
     MLISP_DEFUN("lambda", [cmd](List args, Env& env) {
         assert_argc_min(args, 2, cmd);
 
@@ -329,44 +341,15 @@ void set_primitive_procs(Env& env)
             return eval(eval(macro_body, *macro_env), env);
         });
     });
-
-    MLISP_DEFUN("define", [cmd](List args, Env& env) {
-        assert_argc(args, 2, cmd);
-
-        auto symbol = to_symbol_or_throw(car(args), cmd);
-        auto value = eval(cadr(args), env);
-        env.set(symbol.name(), value);
-        return value;
-    });
-
-    MLISP_DEFUN("set!", [cmd](List args, Env& env) {
-        assert_argc(args, 2, cmd);
-
-        auto symbol = to_symbol_or_throw(car(args), cmd);
-        auto value = eval(cadr(args), env);
-        if (!env.update(symbol.name(), value)) {
-            throw EvalError("unbound variable: " + symbol.name());
-        }
-        return value;
-    });
 }
 
 void set_complementary_procs(Env& env)
 {
-    // MLISP_DEFUN("defun", [](List args, Env& env) {
-    //     auto name = car(args);
-    //     auto body = cons(Symbol{"lambda"}, cdr(args));
-    //     return eval(cons(Symbol{"define"}, cons(name, cons(body, {}))), env);
-    // });
-
-    // MLISP_DEFUN("defmacro", [](List args, Env& env) {
-    //     auto name = car(args);
-    //     auto body = cons(Symbol{"macro"}, cdr(args));
-    //     return eval(cons(Symbol{"define"}, cons(name, cons(body, {}))), env);
-    // });
-
-    MLISP_DEFUN("if", [cmd](List args, Env& env) {
-        assert_argc_range(args, 2, 3, cmd);
+    MLISP_DEFUN("if", [](List args, Env& env) {
+        auto args_len = length(args);
+        if (args_len < 2 && args_len > 3) {
+            throw EvalError("if expects 2 ~ 3 argument(s).");
+        }
 
         auto cond = car(args);
         auto body = cdr(args);
@@ -398,7 +381,6 @@ void set_complementary_procs(Env& env)
 
 void set_number_procs(Env& env)
 {
-
     MLISP_DEFUN("number?", [cmd](List args, Env& env) {
         assert_argc(args, 1, cmd);
         return to_node(is_number(eval(car(args), env)));

@@ -18,12 +18,12 @@ Because every programmer should write (unless already have written) their own Li
 
 ### TODOs
 
-- `mll`
+- mll
   - make primitive data types extensible
-  - non-list cons cell
-- `mlisp`
   - [backquote](http://www.lispworks.com/documentation/HyperSpec/Body/02_df.htm) (useful for macro)
-  - ...
+  - non-list cons cell?
+- mlisp
+  - `exit` procedure
 - etc.
   - bootstraping script for `pre-commit` git hook for auto `clang-format`ing
   - cmake?
