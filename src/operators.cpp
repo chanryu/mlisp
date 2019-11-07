@@ -293,24 +293,6 @@ void set_primitive_procs(Env& env)
 
 void set_complementary_procs(Env& env)
 {
-
-    MLISP_DEFUN("list", [](List args, Env& env) {
-        std::vector<Node> objs;
-        for_each(args, [&objs, &env](auto const& arg) {
-            objs.push_back(eval(arg, env));
-        });
-        while (!args.empty()) {
-            args = cdr(args);
-        }
-
-        List list;
-        while (!objs.empty()) {
-            list = cons(objs.back(), list);
-            objs.pop_back();
-        }
-        return list;
-    });
-
     MLISP_DEFUN("define", [cmd](List args, Env& env) {
         assert_argc(args, 2, cmd);
 
