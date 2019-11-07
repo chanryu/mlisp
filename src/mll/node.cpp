@@ -94,7 +94,7 @@ struct Symbol::Data : Node::Data {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-// Object
+// Node
 
 Node::Node(Node const& other) : data_{other.data_}
 {}
@@ -209,7 +209,7 @@ std::optional<List> List::from_node(Node const& node)
 ////////////////////////////////////////////////////////////////////////////////
 // Proc
 
-Proc::Proc(Func func) : data_{std::make_shared<Data>(func)}
+Proc::Proc(Func func) : data_{std::make_shared<Data>(std::move(func))}
 {}
 
 Proc::Proc(Proc const& other) : data_{other.data_}
@@ -218,7 +218,7 @@ Proc::Proc(Proc const& other) : data_{other.data_}
 Proc::Proc(std::shared_ptr<Data> data) : data_{data}
 {}
 
-Node Proc::call(List args, Env& env) const
+Node Proc::call(List const& args, Env& env) const
 {
     if (data_->func) {
         return data_->func(args, env);

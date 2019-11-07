@@ -30,10 +30,6 @@ test-op() {
   test "$1" "$2" "primitives"
 }
 
-test-subst() {
-  test "$1" "$2" "subst"
-}
-
 test-closure() {
   test "$1" "$2" "closure"
 }
@@ -105,7 +101,7 @@ test-op "(assoc. 'x '((x a) (y b)))" "a"
 test-op "(assoc. 'x '((x new) (x a) (y b)))" "new"
 
 # subst
-test-subst "(subst 'm 'b '(a b (a b c) d))" "(a m (a m c) d)"
+test-op "(subst 'm 'b '(a b (a b c) d))" "(a m (a m c) d)"
 
 # closure
 test-closure "(list (counter) (counter) (counter))" "(1 2 3)"

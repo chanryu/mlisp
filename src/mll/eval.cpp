@@ -32,14 +32,14 @@ private:
         }
 
         auto node = eval(car(list), env_);
-        auto proc = dynamic_node_cast<Proc>(node);
-        if (!proc) {
+        if (auto proc = dynamic_node_cast<Proc>(node)) {
+            result_ = proc->call(cdr(list), env_);
+        }
+        else {
             std::ostringstream oss;
             print(oss, node);
-            throw EvalError(oss.str() + " is not a proc.");
+            throw EvalError(oss.str() + " is not a proc/macro.");
         }
-
-        result_ = proc->call(cdr(list), env_);
     }
 
     void visit(Number const& num) override

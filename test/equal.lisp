@@ -1,4 +1,4 @@
-(defun equal? (a b)
+(define equal? (lambda (a b)
   (cond ((string? a) (cond ((string? b) (string-equal? a b))
 						   ('t nil)))
 		((number? a) (cond ((number? b) (number-equal? a b))

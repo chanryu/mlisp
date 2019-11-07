@@ -119,7 +119,7 @@ void assert_argc_min(List const& args, size_t min, char const* cmd)
 void assert_argc_range(List const& args, size_t min, size_t max, char const* cmd)
 {
     auto len = length(args);
-    if (len > min || len < max) {
+    if (len < min || len > max) {
         throw EvalError(cmd + " expects "s + std::to_string(min) + " ~ " + std::to_string(max) + " argument(s).");
     }
 }
@@ -267,7 +267,7 @@ void set_primitive_procs(Env& env)
                 }
 
                 if (args.empty()) {
-                    EvalError("Proc: too few args");
+                    throw EvalError("Proc: too few args");
                 }
 
                 auto val = eval(car(args), env);
@@ -277,22 +277,59 @@ void set_primitive_procs(Env& env)
             }
 
             if (!args.empty()) {
-                EvalError("Proc: too many args");
+                throw EvalError("Proc: too many args");
             }
 
             return eval(lambda_body, *lambda_env);
         });
     });
 
-    MLISP_DEFUN("defun", [](List args, Env& env) {
-        auto name = car(args);
-        auto body = cons(Symbol{"lambda"}, cdr(args));
-        return eval(cons(Symbol{"define"}, cons(name, cons(body, {}))), env);
-    });
-}
+    MLISP_DEFUN("macro", [cmd](List args, Env& env) {
+        assert_argc_min(args, 2, cmd);
 
-void set_complementary_procs(Env& env)
-{
+        auto formal_args = to_formal_args(car(args), cmd);
+        auto macro_body = cadr(args);
+
+        return make_proc([formal_args, macro_body](List args, Env& env) {
+            auto macro_env = env.derive_new();
+            auto syms = formal_args;
+            while (!syms.empty()) {
+                auto sym = dynamic_node_cast<Symbol>(car(syms));
+                assert(sym.has_value());
+
+                if (is_variadic_args(*sym)) {
+                    std::stack<Node> args_stack;
+                    while (!args.empty()) {
+                        args_stack.push(car(args));
+                        args = cdr(args);
+                    }
+                    List vargs;
+                    while (!args_stack.empty()) {
+                        vargs = cons(args_stack.top(), vargs);
+                        args_stack.pop();
+                    }
+                    macro_env->set(sym->name().substr(1), vargs);
+                    break;
+                }
+
+                if (args.empty()) {
+                    throw EvalError("Proc: too few args");
+                }
+
+                auto val = car(args);
+                macro_env->set(sym->name(), val);
+                syms = cdr(syms);
+                args = cdr(args);
+            }
+
+            if (!args.empty()) {
+                throw EvalError("Proc: too many args");
+            }
+
+            return eval(eval(macro_body, *macro_env), env);
+        });
+    });
+
     MLISP_DEFUN("define", [cmd](List args, Env& env) {
         assert_argc(args, 2, cmd);
 
@@ -312,6 +349,21 @@ void set_complementary_procs(Env& env)
         }
         return value;
     });
+}
+
+void set_complementary_procs(Env& env)
+{
+    // MLISP_DEFUN("defun", [](List args, Env& env) {
+    //     auto name = car(args);
+    //     auto body = cons(Symbol{"lambda"}, cdr(args));
+    //     return eval(cons(Symbol{"define"}, cons(name, cons(body, {}))), env);
+    // });
+
+    // MLISP_DEFUN("defmacro", [](List args, Env& env) {
+    //     auto name = car(args);
+    //     auto body = cons(Symbol{"macro"}, cdr(args));
+    //     return eval(cons(Symbol{"define"}, cons(name, cons(body, {}))), env);
+    // });
 
     MLISP_DEFUN("if", [cmd](List args, Env& env) {
         assert_argc_range(args, 2, 3, cmd);

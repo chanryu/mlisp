@@ -81,7 +81,7 @@ public:
     explicit Proc(Func);
     Proc(Proc const&);
 
-    Node call(List, Env&) const;
+    Node call(List const&, Env&) const;
 
     static std::optional<Proc> from_node(Node const&);
 

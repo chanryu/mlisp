@@ -1,4 +1,19 @@
+; list
+(define list (lambda (*args) args))
+
+; defmacro
+(define defmacro
+    (macro (name args body)
+        (list 'define name (list 'macro args body))))
 ; defun
+(define defun
+    (macro (name args body)
+        (list 'define name (list 'lambda args body))))
+
+; begin
+(define begin (lambda (*args)
+    (cond ((atom (cdr args)) (car args))
+            ('t (begin (car (cdr args)))))))
 
 ; caar
 (defun caar (x)
@@ -51,3 +66,10 @@
   (cond ((eq (caar y) x) (cadar y))
 		('t (assoc. x (cdr y)))))
 
+; subst
+(defun subst (x y z)
+  (cond ((atom z)
+		 (cond ((eq z y) x)
+			   ('t z)))
+		('t (cons (subst x y (car z))
+				  (subst x y (cdr z))))))
