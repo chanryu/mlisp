@@ -26,8 +26,7 @@ Because every programmer should write (unless already have written) their own Li
   - [backquote](http://www.lispworks.com/documentation/HyperSpec/Body/02_df.htm)
   - ...
 - etc.
-  - create `.clang-format`
-  - `pre-commit` git hook for auto `clang-format`ing
+  - bootstraping script for `pre-commit` git hook for auto `clang-format`ing
   - cmake?
 
 ### Links
