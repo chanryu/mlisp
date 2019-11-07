@@ -132,7 +132,7 @@ private:
     {
         assert(ostream_);
 
-        *ostream_ << "<#proc>";
+        *ostream_ << "<#proc: " << quote_text(proc.name()) << ">";
     }
 
 private:

@@ -15,7 +15,7 @@
 #define MLISP_DEFUN(cmd__, func__)                                                                                     \
     do {                                                                                                               \
         char const* cmd = cmd__;                                                                                       \
-        env.set(cmd, make_proc(func__));                                                                               \
+        env.set(cmd, Proc{func__, cmd});                                                                               \
     } while (0)
 
 using namespace mll;

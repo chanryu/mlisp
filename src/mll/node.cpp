@@ -38,7 +38,7 @@ struct List::Data : Node::Data {
 // Proc::Data
 
 struct Proc::Data : Node::Data {
-    explicit Data(Func f) : func{std::move(f)}
+    explicit Data(Func f, std::string n) : func{std::move(f)}, name{std::move(n)}
     {
     }
 
@@ -48,6 +48,7 @@ struct Proc::Data : Node::Data {
     }
 
     Func const func;
+    std::string const name;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -221,7 +222,11 @@ std::optional<List> List::from_node(Node const& node)
 ////////////////////////////////////////////////////////////////////////////////
 // Proc
 
-Proc::Proc(Func func) : data_{std::make_shared<Data>(std::move(func))}
+Proc::Proc(Func func) : data_{std::make_shared<Data>(std::move(func), "anonymous")}
+{
+}
+
+Proc::Proc(Func func, std::string name) : data_{std::make_shared<Data>(std::move(func), std::move(name))}
 {
 }
 
@@ -239,6 +244,11 @@ Node Proc::call(List const& args, Env& env) const
         return data_->func(args, env);
     }
     return nil;
+}
+
+const std::string& Proc::name() const
+{
+    return data_->name;
 }
 
 std::optional<Proc> Proc::from_node(Node const& node)

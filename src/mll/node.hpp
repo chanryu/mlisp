@@ -79,9 +79,11 @@ private:
 class Proc final {
 public:
     explicit Proc(Func);
+    Proc(Func, std::string name);
     Proc(Proc const&);
 
     Node call(List const&, Env&) const;
+    const std::string& name() const;
 
     static std::optional<Proc> from_node(Node const&);
 

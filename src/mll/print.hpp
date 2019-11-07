@@ -8,6 +8,6 @@ class Node;
 
 enum class StringStyle { quoted, raw };
 
-void print(std::ostream& ostream, Node const& node, StringStyle string_style = StringStyle::quoted);
+void print(std::ostream&, Node const&, StringStyle = StringStyle::quoted);
 
 } // namespace mll
