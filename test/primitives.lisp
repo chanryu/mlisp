@@ -44,27 +44,27 @@
   (cond (x (cond (y 't) ('t '())))
   		('t '())))
 
-; not.
-(defun not. (x)
+; not?
+(defun not? (x)
   (cond (x '())
 		('t 't)))
 
-; append.
-(defun append. (x y)
+; append
+(defun append (x y)
   (cond ((null. x) y)
-		('t (cons (car x) (append. (cdr x) y)))))
+		('t (cons (car x) (append (cdr x) y)))))
 
-; pair.
-(defun pair. (x y)
+; pair
+(defun pair (x y)
   (cond ((and. (null. x) (null. y)) '())
-		((and. (not. (atom x)) (not. (atom y)))
+		((and. (not? (atom x)) (not? (atom y)))
 		 (cons (cons (car x) (cons (car y) '()))
-			   (pair. (cdr x) (cdr y))))))
+			   (pair (cdr x) (cdr y))))))
 
-; assoc.
-(defun assoc. (x y)
+; assoc
+(defun assoc (x y)
   (cond ((eq (caar y) x) (cadar y))
-		('t (assoc. x (cdr y)))))
+		('t (assoc x (cdr y)))))
 
 ; subst
 (defun subst (x y z)

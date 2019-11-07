@@ -85,20 +85,20 @@ test-op "(null. '())" "t"
 # and.
 test-op "(and. (atom 'a) (eq 'a 'a))" "t"
 
-# not.
-test-op "(not. (eq 'a 'a))" "()"
-test-op "(not. (eq 'a 'b))" "t"
+# not?
+test-op "(not? (eq 'a 'a))" "()"
+test-op "(not? (eq 'a 'b))" "t"
 
-# append.
-test-op "(append. '(a b) '(c d))" "(a b c d)"
-test-op "(append. '() '(c d))" "(c d)"
+# append
+test-op "(append '(a b) '(c d))" "(a b c d)"
+test-op "(append '() '(c d))" "(c d)"
 
-# pair.
-test-op "(pair. '(x y z) '(a b c))" "((x a) (y b) (z c))"
+# pair
+test-op "(pair '(x y z) '(a b c))" "((x a) (y b) (z c))"
 
-# assoc.
-test-op "(assoc. 'x '((x a) (y b)))" "a"
-test-op "(assoc. 'x '((x new) (x a) (y b)))" "new"
+# assoc
+test-op "(assoc 'x '((x a) (y b)))" "a"
+test-op "(assoc 'x '((x new) (x a) (y b)))" "new"
 
 # subst
 test-op "(subst 'm 'b '(a b (a b c) d))" "(a m (a m c) d)"
