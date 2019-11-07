@@ -35,12 +35,12 @@
 (defun cdar (x)
   (cdr (car x)))
 
-; null.
-(defun null. (x)
+; null?
+(defun null? (x)
   (eq x '()))
 
-; and.
-(defun and. (x y)
+; and
+(defun and (x y)
   (cond (x (cond (y 't) ('t '())))
   		('t '())))
 
@@ -51,13 +51,13 @@
 
 ; append
 (defun append (x y)
-  (cond ((null. x) y)
+  (cond ((null? x) y)
 		('t (cons (car x) (append (cdr x) y)))))
 
 ; pair
 (defun pair (x y)
-  (cond ((and. (null. x) (null. y)) '())
-		((and. (not? (atom x)) (not? (atom y)))
+  (cond ((and (null? x) (null? y)) '())
+		((and (not? (atom x)) (not? (atom y)))
 		 (cons (cons (car x) (cons (car y) '()))
 			   (pair (cdr x) (cdr y))))))
 

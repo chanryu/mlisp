@@ -78,12 +78,12 @@ test-op "(caddr '((a b) (c d) e))" "e"
 # cdar
 test-op "(cdar '((a b) (c d) e))" "(b)"
 
-# null.
-test-op "(null. 'a)" "()"
-test-op "(null. '())" "t"
+# null?
+test-op "(null? 'a)" "()"
+test-op "(null? '())" "t"
 
-# and.
-test-op "(and. (atom 'a) (eq 'a 'a))" "t"
+# and
+test-op "(and (atom 'a) (eq 'a 'a))" "t"
 
 # not?
 test-op "(not? (eq 'a 'a))" "()"
