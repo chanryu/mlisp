@@ -13,12 +13,20 @@ bool load_file(mll::Env& env, const char* filename)
 {
     if (std::ifstream ifs{filename}; ifs.is_open()) {
         mll::Parser parser;
-        while (true) {
-            auto expr = parser.parse(ifs);
-            if (!expr.has_value()) {
-                break;
+        try {
+            while (true) {
+                auto expr = parser.parse(ifs);
+                if (!expr.has_value()) {
+                    break;
+                }
+                eval(*expr, env);
             }
-            eval(*expr, env);
+        }
+        catch (mll::ParseError& e) {
+            return false;
+        }
+        catch (mll::EvalError& e) {
+            return false;
         }
         return ifs.eof();
     }
