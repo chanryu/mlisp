@@ -3,7 +3,6 @@
 #include <mll/env.hpp>
 #include <mll/node.hpp>
 #include <mll/print.hpp>
-#include <mll/symdef.hpp>
 
 #include <cassert>
 #include <memory>
@@ -55,19 +54,11 @@ private:
 
     void visit(Symbol const& sym) override
     {
-        if (sym.name() == MLL_QUOTE) {
-            static auto quote_proc = Proc{[](List const& args, Env&) {
-                return car(args);
-            }};
-            result_ = quote_proc;
+        auto value = env_.lookup(sym.name());
+        if (!value.has_value()) {
+            throw EvalError("Unknown symbol: " + sym.name());
         }
-        else {
-            auto value = env_.lookup(sym.name());
-            if (!value.has_value()) {
-                throw EvalError("Unknown symbol: " + sym.name());
-            }
-            result_ = *value;
-        }
+        result_ = *value;
     }
 
     void visit(Proc const& proc) override

@@ -1,7 +1,5 @@
 #include <mll/node.hpp>
 
-#include <mll/symdef.hpp>
-
 #include <array>
 #include <map>
 

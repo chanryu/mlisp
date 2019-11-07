@@ -1,7 +1,6 @@
 #include <mll/print.hpp>
 
 #include <mll/node.hpp>
-#include <mll/symdef.hpp>
 
 #include <cassert>
 #include <cmath>
@@ -69,7 +68,7 @@ private:
         auto quoted = false;
         auto symbol = dynamic_node_cast<Symbol>(car(list));
 
-        if (symbol && symbol->name() == MLL_QUOTE) {
+        if (symbol && symbol->name() == "quote") {
             *ostream_ << "'";
             quoted = true;
         }

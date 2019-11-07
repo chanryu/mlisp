@@ -178,10 +178,9 @@ List to_formal_args(Node const& node, char const* cmd)
 
 void set_primitive_procs(Env& env)
 {
-    // "quote" is already built into the Parser/eval()
-    // env->set("quote", [](List args, Env) {
-    //    return car(args);
-    //});
+    MLISP_DEFUN("quote", [](List args, Env& env) {
+        return car(args);
+    });
 
     MLISP_DEFUN("atom", [cmd](List args, Env& env) {
         assert_argc(args, 1, cmd);

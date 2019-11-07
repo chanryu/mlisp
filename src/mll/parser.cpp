@@ -1,7 +1,6 @@
 #include <mll/parser.hpp>
 
 #include <mll/node.hpp>
-#include <mll/symdef.hpp>
 
 #include <array>
 #include <cassert>
@@ -213,7 +212,7 @@ std::optional<Node> Parser::parse(std::istream& istream)
 
             if (stack_.top().type == Context::Type::quote) {
                 stack_.pop();
-                node = cons(Symbol{MLL_QUOTE}, cons(node, nil));
+                node = cons(Symbol{"quote"}, cons(node, nil));
                 continue;
             }
 
