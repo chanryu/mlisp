@@ -15,7 +15,8 @@ namespace {
 class Evaluator : NodeVisitor {
 public:
     explicit Evaluator(Env& env) : env_(env)
-    {}
+    {
+    }
 
     Node evaluate(Node const& expr)
     {

@@ -46,7 +46,8 @@ std::string quote_text(std::string const& text)
 class Printer : NodeVisitor {
 public:
     explicit Printer(StringStyle string_style) : string_style_{string_style}
-    {}
+    {
+    }
 
     void print(std::ostream& ostream, Node const& node)
     {
