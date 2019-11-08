@@ -63,8 +63,8 @@ public:
 
     bool empty() const;
 
-    Node head() const;
-    List tail() const;
+    Node const& head() const;
+    List const& tail() const;
 
     static std::optional<List> from_node(Node const&);
 
