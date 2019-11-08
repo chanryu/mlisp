@@ -186,15 +186,22 @@ List to_formal_args(Node const& node, char const* cmd)
     return args;
 }
 
-bool is_unquote_list(Node const& node)
+Node quasiquote_list(List const& list, Env& env)
 {
-    if (auto list = dynamic_node_cast<List>(node)) {
-        if (auto sym = dynamic_node_cast<Symbol>(car(*list))) {
-            return sym->name() == "unquote";
+    return map(list, [&env](Node const& node) {
+        if (auto l = dynamic_node_cast<List>(node)) {
+            if (auto s = dynamic_node_cast<Symbol>(car(*l))) {
+                if (s->name() == "quote")
+                    return node;
+                if (s->name() == "unquote")
+                    return eval(*l, env);
+            }
+            return quasiquote_list(*l, env);
         }
-    }
-    return false;
+        return node;
+    });
 }
+
 } // namespace
 
 void set_primitive_procs(Env& env)
@@ -206,12 +213,7 @@ void set_primitive_procs(Env& env)
     MLISP_DEFUN("quasiquote", [](List const& args, Env& env) {
         auto node = car(args);
         if (auto list = dynamic_node_cast<List>(node)) {
-            node = map(*list, [&env](Node const& n) {
-                if (is_unquote_list(n)) {
-                    return eval(n, env);
-                }
-                return n;
-            });
+            node = quasiquote_list(*list, env);
         }
         return node;
     });
