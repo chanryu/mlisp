@@ -185,6 +185,16 @@ List to_formal_args(Node const& node, char const* cmd)
 
     return args;
 }
+
+bool is_unquote_list(Node const& node)
+{
+    if (auto list = dynamic_node_cast<List>(node)) {
+        if (auto sym = dynamic_node_cast<Symbol>(car(*list))) {
+            return sym->name() == "unquote";
+        }
+    }
+    return false;
+}
 } // namespace
 
 void set_primitive_procs(Env& env)
@@ -196,14 +206,20 @@ void set_primitive_procs(Env& env)
     MLISP_DEFUN("quasiquote", [](List const& args, Env& env) {
         auto node = car(args);
         if (auto list = dynamic_node_cast<List>(node)) {
-            // std::stack<Node>
-            return node;
+            node = map(*list, [&env](Node const& n) {
+                if (is_unquote_list(n)) {
+                    return eval(n, env);
+                }
+                return n;
+            });
         }
         return node;
     });
 
-    MLISP_DEFUN("unquote", [](List args, Env& env) {
-        return car(args);
+    MLISP_DEFUN("unquote", [](List const& args, Env& env) {
+        return car(map(args, [&env](Node const& node) {
+            return eval(node, env);
+        }));
     });
 
     MLISP_DEFUN("atom", [cmd](List args, Env& env) {
