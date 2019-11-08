@@ -22,13 +22,15 @@ bool load_file(mll::Env& env, const char* filename)
                 eval(*expr, env);
             }
         }
-        catch (mll::ParseError&) {
+        catch (mll::ParseError& e) {
+            std::cerr << e.what() << '\n';
             return false;
         }
-        catch (mll::EvalError&) {
+        catch (mll::EvalError& e) {
+            std::cerr << e.what() << '\n';
             return false;
         }
-        return ifs.eof();
+        return parser.clean();
     }
     return false;
 }

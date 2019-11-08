@@ -5,6 +5,6 @@
           ('t (append (reverse (cdr lst)) (list (car lst))))))
 
 (defmacro backwards (*args)
-    (cons 'begin (reverse args)))
+    `(begin ,@(reverse args)))
 
 (backwards (print 1) (print 2) (print 3))

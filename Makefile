@@ -27,6 +27,8 @@ $(BUILD)/%.o: $(SRC)/%
 
 include $(shell find $(BUILD) -type f -name '*.P' 2> /dev/null)
 
+run: $(MLISP)
+	$(MLISP)
 test: $(MLISP)
 	@cd test && ./mlisp-test.sh
 

@@ -13,7 +13,7 @@ namespace mll {
 namespace {
 class Evaluator : NodeVisitor {
 public:
-    explicit Evaluator(Env& env) : env_(env)
+    explicit Evaluator(Env& env) : env_{env}
     {
     }
 
@@ -38,7 +38,7 @@ private:
         else {
             std::ostringstream oss;
             print(oss, node);
-            throw EvalError(oss.str() + " is not a proc/macro.");
+            throw EvalError(oss.str() + " is not a proc.");
         }
     }
 

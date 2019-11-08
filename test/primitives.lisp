@@ -4,11 +4,12 @@
 ; defmacro
 (define defmacro
     (macro (name args body)
-        (list 'define name (list 'macro args body))))
+        `(define ,name (macro ,args ,body))))
+
 ; defun
 (define defun
     (macro (name args body)
-        (list 'define name (list 'lambda args body))))
+        `(define ,name (lambda ,args ,body))))
 
 ; begin
 (define begin (lambda (*args)
