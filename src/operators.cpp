@@ -4,6 +4,7 @@
 #include <mll/eval.hpp>
 #include <mll/node.hpp>
 #include <mll/print.hpp>
+#include <mll/quote.hpp>
 
 #include <cassert>
 #include <sstream>
@@ -185,24 +186,6 @@ List to_formal_args(Node const& node, char const* cmd)
     return args;
 }
 
-#if 0
-Node quasiquote_list(List const& list, Env& env)
-{
-    return map(list, [&env](Node const& node) {
-        if (auto l = dynamic_node_cast<List>(node)) {
-            if (auto s = dynamic_node_cast<Symbol>(car(*l))) {
-                if (s->name() == "quote")
-                    return node;
-                if (s->name() == "unquote")
-                    return eval(*l, env);
-            }
-            return quasiquote_list(*l, env);
-        }
-        return node;
-    });
-}
-#else
-
 Node unquote_list(List list, Env& env)
 {
     return car(map(list, [&env](Node const& node) {
@@ -216,15 +199,15 @@ Node quasiquote_list(List list, Env& env)
     auto add_to_stack = [&env, &stack](Node const& node) {
         if (auto lst = dynamic_node_cast<List>(node)) {
             if (auto s = dynamic_node_cast<Symbol>(car(*lst))) {
-                if (s->name() == "quote") {
+                if (s->name() == SYMBOL_QUOTE) {
                     stack.push(node);
                     return;
                 }
-                if (s->name() == "unquote") {
+                if (s->name() == SYMBOL_UNQUOTE) {
                     stack.push(eval(*lst, env));
                     return;
                 }
-                if (s->name() == "unquote-splicing") {
+                if (s->name() == SYMBOL_UNQUOTE_SPLICING) {
                     auto result = eval(*lst, env);
                     if (auto lst2 = dynamic_node_cast<List>(result)) {
                         while (!lst2->empty()) {
@@ -254,17 +237,16 @@ Node quasiquote_list(List list, Env& env)
     }
     return list;
 }
-#endif
 
 } // namespace
 
-void set_primitive_procs(Env& env)
+void set_quote_procs(Env& env)
 {
-    MLISP_DEFUN("quote", [](List const& args, Env& env) {
+    MLISP_DEFUN(SYMBOL_QUOTE, [](List const& args, Env& env) {
         return car(args);
     });
 
-    MLISP_DEFUN("quasiquote", [](List const& args, Env& env) {
+    MLISP_DEFUN(SYMBOL_QUASIQUOTE, [](List const& args, Env& env) {
         auto node = car(args);
         if (auto list = dynamic_node_cast<List>(node)) {
             node = quasiquote_list(*list, env);
@@ -272,14 +254,17 @@ void set_primitive_procs(Env& env)
         return node;
     });
 
-    MLISP_DEFUN("unquote", [](List const& args, Env& env) {
+    MLISP_DEFUN(SYMBOL_UNQUOTE, [](List const& args, Env& env) {
         return unquote_list(args, env);
     });
 
-    MLISP_DEFUN("unquote-splicing", [](List const& args, Env& env) {
+    MLISP_DEFUN(SYMBOL_UNQUOTE_SPLICING, [](List const& args, Env& env) {
         return unquote_list(args, env);
     });
+}
 
+void set_primitive_procs(Env& env)
+{
     MLISP_DEFUN("atom", [cmd](List args, Env& env) {
         assert_argc(args, 1, cmd);
         auto list = dynamic_node_cast<List>(eval(car(args), env));

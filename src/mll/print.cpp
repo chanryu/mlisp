@@ -1,6 +1,7 @@
 #include <mll/print.hpp>
 
 #include <mll/node.hpp>
+#include <mll/quote.hpp>
 
 #include <cassert>
 #include <cmath>
@@ -45,14 +46,7 @@ std::string quote_text(std::string const& text)
 const char* get_quote_token(Node const& node)
 {
     if (auto sym = dynamic_node_cast<Symbol>(node)) {
-        if (sym->name() == "quote")
-            return "'";
-        if (sym->name() == "quasiquote")
-            return "`";
-        if (sym->name() == "unquote")
-            return ",";
-        if (sym->name() == "unquote-splicing")
-            return ",@";
+        return quote_token_from_symbol_name(sym->name());
     }
     return nullptr;
 }

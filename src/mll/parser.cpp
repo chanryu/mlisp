@@ -1,6 +1,7 @@
 #include <mll/parser.hpp>
 
 #include <mll/node.hpp>
+#include <mll/quote.hpp>
 
 #include <array>
 #include <cassert>
@@ -22,28 +23,6 @@ constexpr std::array<char, 128> esctbl = {{
 bool is_whitespace(char c)
 {
     return c == ' ' || c == '\t' || c == '\r' || c == '\n';
-}
-
-bool is_quote_token(std::string const& token)
-{
-    return token == "'" || token == "`" || token == "," || token == ",@";
-}
-
-const char* get_quote_symbol_name(std::string const& token)
-{
-    if (token == "'") {
-        return "quote";
-    }
-    if (token == "`") {
-        return "quasiquote";
-    }
-    if (token == ",") {
-        return "unquote";
-    }
-    if (token == ",@") {
-        return "unquote-splicing";
-    }
-    return nullptr;
 }
 
 std::string read_text(std::istream& istream)
@@ -198,7 +177,7 @@ std::optional<Node> Parser::parse(std::istream& istream)
         else if (token.text == ")") {
             List list;
             while (true) {
-                if (stack_.empty() || get_quote_symbol_name(stack_.top().token) != nullptr) {
+                if (stack_.empty() || quote_symbol_name_from_token(stack_.top().token) != nullptr) {
                     throw mll::ParseError{"redundant ')'"};
                 }
 
@@ -231,7 +210,7 @@ std::optional<Node> Parser::parse(std::istream& istream)
                 return node;
             }
 
-            if (auto quote_name = get_quote_symbol_name(stack_.top().token)) {
+            if (auto quote_name = quote_symbol_name_from_token(stack_.top().token)) {
                 stack_.pop();
                 node = cons(Symbol{quote_name}, cons(node, nil));
                 continue;
