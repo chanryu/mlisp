@@ -1,6 +1,7 @@
 #include <mll/print.hpp>
 
 #include <mll/node.hpp>
+#include <mll/quote.hpp>
 
 #include <cassert>
 #include <cmath>
@@ -42,6 +43,14 @@ std::string quote_text(std::string const& text)
     return quoted_text;
 }
 
+const char* get_quote_token(Node const& node)
+{
+    if (auto sym = dynamic_node_cast<Symbol>(node)) {
+        return quote_token_from_symbol_name(sym->name());
+    }
+    return nullptr;
+}
+
 class Printer : NodeVisitor {
 public:
     explicit Printer(StringStyle string_style) : string_style_{string_style}
@@ -65,21 +74,20 @@ private:
             return;
         }
 
-        auto quoted = false;
-        auto symbol = dynamic_node_cast<Symbol>(car(list));
+        const auto quote_token = get_quote_token(car(list));
+        const auto quoted = quote_token != nullptr;
 
-        if (symbol && symbol->name() == "quote") {
-            *ostream_ << "'";
-            quoted = true;
+        if (quoted) {
+            *ostream_ << quote_token;
         }
-
-        if (!quoted && is_head()) {
-            *ostream_ << '(';
-        }
-        if (!quoted) {
+        else {
+            if (is_head()) {
+                *ostream_ << '(';
+            }
             auto head = car(list);
             print(head, /* is_head */ true);
         }
+
         auto tail = cdr(list);
         if (!tail.empty()) {
             if (!quoted) {
@@ -87,6 +95,7 @@ private:
             }
             print(tail, /* is_head */ false);
         }
+
         if (!quoted && is_head()) {
             *ostream_ << ')';
         }

@@ -1,6 +1,7 @@
 #include <mll/parser.hpp>
 
 #include <mll/node.hpp>
+#include <mll/quote.hpp>
 
 #include <array>
 #include <cassert>
@@ -18,11 +19,6 @@ constexpr std::array<char, 128> esctbl = {{
     0x00, 0x00, '\a', '\b', 0x00, 0x00, 0x00, '\f', 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, '\n', 0x00, 0x00, 0x00,
     '\r', 0x00, '\t', 0x00, '\v', 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 }};
-
-bool is_paren(char c)
-{
-    return c == '(' || c == ')';
-}
 
 bool is_whitespace(char c)
 {
@@ -109,7 +105,7 @@ bool get_token(std::istream& istream, Token& token)
             break;
         }
 
-        if (is_paren(c)) {
+        if (c == '(' || c == ')') {
             if (token.text.empty()) {
                 token.text.push_back(c);
             }
@@ -119,8 +115,16 @@ bool get_token(std::istream& istream, Token& token)
             return true;
         }
 
-        if (c == '\'') {
+        if (c == '\'' || c == '`' || c == ',') {
             token.text.push_back(c);
+            if (c == ',' && istream.get(c)) {
+                if (c == '@') {
+                    token.text.push_back(c);
+                }
+                else {
+                    istream.unget();
+                }
+            }
             return true;
         }
 
@@ -166,31 +170,27 @@ std::optional<Node> Parser::parse(std::istream& istream)
         if (token.is_string) {
             node = String{std::move(token.text)};
         }
-        else if (token.text == "'") {
-            stack_.push({Context::Type::quote, {}, true});
-            continue;
-        }
-        else if (token.text == "(") {
-            stack_.push({Context::Type::paren, {}, true});
+        else if (token.text == "(" || is_quote_token(token.text)) {
+            stack_.push({token.text, {}, true});
             continue;
         }
         else if (token.text == ")") {
             List list;
             while (true) {
-                if (stack_.empty() || stack_.top().type == Context::Type::quote) {
+                if (stack_.empty() || quote_symbol_name_from_token(stack_.top().token) != nullptr) {
                     throw mll::ParseError{"redundant ')'"};
                 }
 
                 auto c = stack_.top();
                 stack_.pop();
                 if (c.head_empty) {
-                    assert(c.type == Context::Type::paren);
+                    assert(c.token == "(");
                     assert(list.empty());
                 }
                 else {
                     list = cons(c.head, list);
                 }
-                if (c.type == Context::Type::paren) {
+                if (c.token == "(") {
                     break;
                 }
             }
@@ -210,9 +210,9 @@ std::optional<Node> Parser::parse(std::istream& istream)
                 return node;
             }
 
-            if (stack_.top().type == Context::Type::quote) {
+            if (auto quote_name = quote_symbol_name_from_token(stack_.top().token)) {
                 stack_.pop();
-                node = cons(Symbol{"quote"}, cons(node, nil));
+                node = cons(Symbol{quote_name}, cons(node, nil));
                 continue;
             }
 
@@ -221,7 +221,7 @@ std::optional<Node> Parser::parse(std::istream& istream)
                 stack_.top().head_empty = false;
             }
             else {
-                stack_.push({Context::Type::list, node, false});
+                stack_.push({/*token*/ "", node, false});
             }
             break;
         }

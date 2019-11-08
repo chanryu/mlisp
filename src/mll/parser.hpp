@@ -16,13 +16,12 @@ public:
 
 class Parser {
 public:
-    std::optional<Node> parse(std::istream&);
+    std::optional<Node> parse(std::istream&); // throws ParseError
     bool clean() const;
 
 private:
     struct Context {
-        enum class Type { quote, paren, list };
-        Type type;
+        std::string token;
         Node head;
         bool head_empty;
     };
