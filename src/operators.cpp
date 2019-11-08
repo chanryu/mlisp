@@ -406,30 +406,17 @@ void set_primitive_procs(Env& env)
                 throw EvalError("Proc: too many args");
             }
 
-            return eval(eval(macro_body, *macro_env), env);
+            auto expanded_expr = eval(macro_body, *macro_env);
+            std::cout << "expanded: ";
+            print(std::cout, expanded_expr);
+            std::cout << '\n';
+            return eval(expanded_expr, env);
         });
     });
 }
 
 void set_complementary_procs(Env& env)
 {
-    /*
-    MLISP_DEFUN("if", [](List args, Env& env) {
-        auto args_len = length(args);
-        if (args_len < 2 && args_len > 3) {
-            throw EvalError("if expects 2 ~ 3 argument(s).");
-        }
-
-        auto cond = car(args);
-        auto body = cdr(args);
-        auto then_arm = car(body);
-        auto else_arm = cadr(body);
-        if (to_bool(eval(cond, env))) {
-            return eval(then_arm, env);
-        }
-        return eval(else_arm, env);
-    });*/
-
     MLISP_DEFUN("print", [/*cmd*/](List const& args, Env& env) {
         for_each_with_index(args, [&env](auto const i, auto const& expr) {
             if (i != 0) {
