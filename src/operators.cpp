@@ -407,9 +407,6 @@ void set_primitive_procs(Env& env)
             }
 
             auto expanded_expr = eval(macro_body, *macro_env);
-            std::cout << "expanded: ";
-            print(std::cout, expanded_expr);
-            std::cout << '\n';
             return eval(expanded_expr, env);
         });
     });
