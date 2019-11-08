@@ -20,9 +20,9 @@ Because every programmer should write (unless already have written) their own Li
 
 - mll
   - make primitive data types extensible
-  - quasiquote (`` ` ``), unquote (`,`) - [link](http://www.lispworks.com/documentation/HyperSpec/Body/02_df.htm)
   - non-list cons cell?
 - mlisp
+  - make `load_file()` to use current script path
   - show error messages when interpreting files
   - `exit` procedure
 - etc.
