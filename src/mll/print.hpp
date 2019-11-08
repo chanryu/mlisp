@@ -6,8 +6,10 @@ namespace mll {
 
 class Node;
 
-enum class StringStyle { quoted, raw };
+struct PrintOptions {
+    bool quote_string = true;
+};
 
-void print(std::ostream&, Node const&, StringStyle = StringStyle::quoted);
+void print(std::ostream&, Node const&, PrintOptions const& = {});
 
 } // namespace mll

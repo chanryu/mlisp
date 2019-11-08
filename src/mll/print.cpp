@@ -53,7 +53,7 @@ const char* get_quote_token(Node const& node)
 
 class Printer : NodeVisitor {
 public:
-    explicit Printer(StringStyle string_style) : string_style_{string_style}
+    explicit Printer(PrintOptions const& options) : options_{options}
     {
     }
 
@@ -121,7 +121,7 @@ private:
     {
         assert(ostream_);
 
-        if (string_style_ == StringStyle::quoted) {
+        if (options_.quote_string) {
             *ostream_ << quote_text(str.text());
         }
         else {
@@ -156,14 +156,14 @@ private:
         is_head_stack_.pop();
     }
 
-    const StringStyle string_style_;
+    PrintOptions const options_;
     std::ostream* ostream_ = nullptr;
     std::stack<bool, std::vector<bool>> is_head_stack_;
 };
 } // namespace
 
-void print(std::ostream& ostream, Node const& node, StringStyle string_style)
+void print(std::ostream& ostream, Node const& node, PrintOptions const& options)
 {
-    Printer{string_style}.print(ostream, node);
+    Printer{options}.print(ostream, node);
 }
 } // namespace mll

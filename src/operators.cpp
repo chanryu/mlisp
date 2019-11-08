@@ -422,7 +422,8 @@ void set_complementary_procs(Env& env)
             if (i != 0) {
                 std::cout << ' ';
             }
-            print(std::cout, eval(expr, env), StringStyle::raw);
+            auto const options = PrintOptions{/*quote_string*/ false};
+            print(std::cout, eval(expr, env), options);
         });
         std::cout << '\n';
         return nil;
