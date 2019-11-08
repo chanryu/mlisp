@@ -13,4 +13,7 @@ bool is_quote_token(std::string const& token);
 const char* quote_token_from_symbol_name(std::string const& node);
 const char* quote_symbol_name_from_token(std::string const& token);
 
+class Env;
+void load_quote_procs(Env& env);
+
 } // namespace mll

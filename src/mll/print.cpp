@@ -54,8 +54,7 @@ const char* get_quote_token(Node const& node)
 class Printer : NodeVisitor {
 public:
     explicit Printer(PrintOptions const& options) : options_{options}
-    {
-    }
+    {}
 
     void print(std::ostream& ostream, Node const& node)
     {

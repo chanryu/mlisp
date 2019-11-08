@@ -3,6 +3,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <stack>
 #include <string>
 
 namespace mll {
@@ -175,6 +176,21 @@ inline List cdr(List const& list)
 inline Node cadr(List const& list)
 {
     return car(cdr(list));
+}
+
+template <typename Func>
+List map(List list, Func func)
+{
+    std::stack<Node> stack;
+    while (!list.empty()) {
+        stack.push(func(car(list)));
+        list = cdr(list);
+    }
+    while (!stack.empty()) {
+        list = cons(stack.top(), list);
+        stack.pop();
+    }
+    return list;
 }
 
 } // namespace mll

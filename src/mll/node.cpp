@@ -20,8 +20,7 @@ struct Node::Data : std::enable_shared_from_this<Node::Data> {
 
 struct List::Data : Node::Data {
     Data(Node const& h, List const& t) : head{h}, tail{t}
-    {
-    }
+    {}
 
     void accept(NodeVisitor& visitor) override
     {
@@ -37,8 +36,7 @@ struct List::Data : Node::Data {
 
 struct Proc::Data : Node::Data {
     explicit Data(std::string n, Func f) : name{std::move(n)}, func{std::move(f)}
-    {
-    }
+    {}
 
     void accept(NodeVisitor& visitor) override
     {
@@ -54,8 +52,7 @@ struct Proc::Data : Node::Data {
 
 struct Number::Data : Node::Data {
     explicit Data(double v) : value{v}
-    {
-    }
+    {}
 
     void accept(NodeVisitor& visitor) override
     {
@@ -70,8 +67,7 @@ struct Number::Data : Node::Data {
 
 struct String::Data : Node::Data {
     explicit Data(std::string t) : text{std::move(t)}
-    {
-    }
+    {}
 
     void accept(NodeVisitor& visitor) override
     {
@@ -86,8 +82,7 @@ struct String::Data : Node::Data {
 
 struct Symbol::Data : Node::Data {
     explicit Data(std::string n) : name{std::move(n)}
-    {
-    }
+    {}
 
     void accept(NodeVisitor& visitor) override
     {
@@ -101,28 +96,22 @@ struct Symbol::Data : Node::Data {
 // Node
 
 Node::Node(Node const& other) : data_{other.data_}
-{
-}
+{}
 
 Node::Node(List const& list) : data_{list.data_}
-{
-}
+{}
 
 Node::Node(Proc const& proc) : data_{proc.data_}
-{
-}
+{}
 
 Node::Node(Number const& number) : data_{number.data_}
-{
-}
+{}
 
 Node::Node(String const& string) : data_{string.data_}
-{
-}
+{}
 
 Node::Node(Symbol const& symbol) : data_{symbol.data_}
-{
-}
+{}
 
 Node& Node::operator=(Node const& rhs)
 {
@@ -179,16 +168,13 @@ std::shared_ptr<Node::Data> const& Node::data() const
 // List
 
 List::List(List const& other) : data_{other.data_}
-{
-}
+{}
 
 List::List(Node const& head, List const& tail) : data_{std::make_shared<Data>(head, tail)}
-{
-}
+{}
 
 List::List(std::shared_ptr<Data> const& data) : data_{data}
-{
-}
+{}
 
 bool List::empty() const
 {
@@ -221,20 +207,16 @@ std::optional<List> List::from_node(Node const& node)
 // Proc
 
 Proc::Proc(Func func) : data_{std::make_shared<Data>("anonymous", std::move(func))}
-{
-}
+{}
 
 Proc::Proc(std::string name, Func func) : data_{std::make_shared<Data>(std::move(name), std::move(func))}
-{
-}
+{}
 
 Proc::Proc(Proc const& other) : data_{other.data_}
-{
-}
+{}
 
 Proc::Proc(std::shared_ptr<Data> data) : data_{data}
-{
-}
+{}
 
 const std::string& Proc::name() const
 {
@@ -261,16 +243,13 @@ std::optional<Proc> Proc::from_node(Node const& node)
 // Number
 
 Number::Number(double value) : data_{std::make_shared<Data>(value)}
-{
-}
+{}
 
 Number::Number(Number const& other) : data_{other.data_}
-{
-}
+{}
 
 Number::Number(std::shared_ptr<Data> data) : data_{data}
-{
-}
+{}
 
 double Number::value() const
 {
@@ -289,16 +268,13 @@ std::optional<Number> Number::from_node(Node const& node)
 // String
 
 String::String(std::string text) : data_{std::make_shared<Data>(std::move(text))}
-{
-}
+{}
 
 String::String(String const& other) : data_{other.data_}
-{
-}
+{}
 
 String::String(std::shared_ptr<Data> data) : data_{data}
-{
-}
+{}
 
 std::string const& String::text() const
 {
@@ -331,12 +307,10 @@ Symbol::Symbol(std::string name)
 }
 
 Symbol::Symbol(Symbol const& other) : data_{other.data_}
-{
-}
+{}
 
 Symbol::Symbol(std::shared_ptr<Data> data) : data_{data}
-{
-}
+{}
 
 std::string const& Symbol::name() const
 {

@@ -1,14 +1,16 @@
 #include <mll/env.hpp>
 
 #include <mll/node.hpp>
+#include <mll/quote.hpp>
 
 namespace mll {
 
 std::shared_ptr<Env> Env::create()
 {
-    struct Env_ : Env {
-    };
-    return std::make_shared<Env_>();
+    struct Env_ : Env {};
+    auto env = std::make_shared<Env_>();
+    load_quote_procs(*env);
+    return env;
 }
 
 std::shared_ptr<Env> Env::derive_new()

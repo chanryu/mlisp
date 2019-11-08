@@ -6,7 +6,6 @@ class Env;
 
 namespace mlisp {
 
-void set_quote_procs(mll::Env& env);
 void set_primitive_procs(mll::Env& env);
 void set_complementary_procs(mll::Env& env);
 

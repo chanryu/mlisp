@@ -55,21 +55,6 @@ bool is_symbol(Node const& node)
     return dynamic_node_cast<Symbol>(node).has_value();
 }
 
-template <typename Func>
-List map(List list, Func func)
-{
-    std::stack<Node> stack;
-    while (!list.empty()) {
-        stack.push(func(car(list)));
-        list = cdr(list);
-    }
-    while (!stack.empty()) {
-        list = cons(stack.top(), list);
-        stack.pop();
-    }
-    return list;
-}
-
 bool to_bool(Node const& node)
 {
     auto list = dynamic_node_cast<List>(node);
@@ -186,82 +171,7 @@ List to_formal_args(Node const& node, char const* cmd)
     return args;
 }
 
-Node unquote_list(List list, Env& env)
-{
-    return car(map(list, [&env](Node const& node) {
-        return eval(node, env);
-    }));
-}
-
-Node quasiquote_list(List list, Env& env)
-{
-    std::stack<Node> stack;
-    auto add_to_stack = [&env, &stack](Node const& node) {
-        if (auto lst = dynamic_node_cast<List>(node)) {
-            if (auto s = dynamic_node_cast<Symbol>(car(*lst))) {
-                if (s->name() == SYMBOL_QUOTE) {
-                    stack.push(node);
-                    return;
-                }
-                if (s->name() == SYMBOL_UNQUOTE) {
-                    stack.push(eval(*lst, env));
-                    return;
-                }
-                if (s->name() == SYMBOL_UNQUOTE_SPLICING) {
-                    auto result = eval(*lst, env);
-                    if (auto lst2 = dynamic_node_cast<List>(result)) {
-                        while (!lst2->empty()) {
-                            stack.push(car(*lst2));
-                            *lst2 = cdr(*lst2);
-                        }
-                    }
-                    else {
-                        stack.push(result);
-                    }
-                    return;
-                }
-            }
-            stack.push(quasiquote_list(*lst, env));
-            return;
-        }
-        stack.push(node);
-    };
-
-    while (!list.empty()) {
-        add_to_stack(car(list));
-        list = cdr(list);
-    }
-    while (!stack.empty()) {
-        list = cons(stack.top(), list);
-        stack.pop();
-    }
-    return list;
-}
-
 } // namespace
-
-void set_quote_procs(Env& env)
-{
-    MLISP_DEFUN(SYMBOL_QUOTE, [](List const& args, Env& env) {
-        return car(args);
-    });
-
-    MLISP_DEFUN(SYMBOL_QUASIQUOTE, [](List const& args, Env& env) {
-        auto node = car(args);
-        if (auto list = dynamic_node_cast<List>(node)) {
-            node = quasiquote_list(*list, env);
-        }
-        return node;
-    });
-
-    MLISP_DEFUN(SYMBOL_UNQUOTE, [](List const& args, Env& env) {
-        return unquote_list(args, env);
-    });
-
-    MLISP_DEFUN(SYMBOL_UNQUOTE_SPLICING, [](List const& args, Env& env) {
-        return unquote_list(args, env);
-    });
-}
 
 void set_primitive_procs(Env& env)
 {

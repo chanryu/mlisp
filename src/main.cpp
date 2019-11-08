@@ -18,7 +18,6 @@ int main(int argc, char* argv[])
 {
     auto env = mll::Env::create();
 
-    mlisp::set_quote_procs(*env);
     mlisp::set_primitive_procs(*env);
     mlisp::set_complementary_procs(*env);
 

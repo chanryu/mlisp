@@ -17,6 +17,7 @@ BraceWrapping:
   AfterNamespace: false
   BeforeCatch: true
   BeforeElse: true
+  SplitEmptyRecord: false
   SplitEmptyFunction: true
 ColumnLimit: 120
 IndentCaseLabels: false
