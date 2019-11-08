@@ -21,8 +21,7 @@ public:
 
 private:
     struct Context {
-        enum class Type { quote, paren, list };
-        Type type;
+        char token;
         Node head;
         bool head_empty;
     };

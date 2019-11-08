@@ -42,6 +42,19 @@ std::string quote_text(std::string const& text)
     return quoted_text;
 }
 
+char get_quote_char(Node const& node)
+{
+    if (auto sym = dynamic_node_cast<Symbol>(node)) {
+        if (sym->name() == "quote")
+            return '\'';
+        if (sym->name() == "quasiquote")
+            return '`';
+        if (sym->name() == "unquote")
+            return ',';
+    }
+    return '\0';
+}
+
 class Printer : NodeVisitor {
 public:
     explicit Printer(StringStyle string_style) : string_style_{string_style}
@@ -65,21 +78,20 @@ private:
             return;
         }
 
-        auto quoted = false;
-        auto symbol = dynamic_node_cast<Symbol>(car(list));
+        auto quote_char = get_quote_char(car(list));
+        auto quoted = quote_char != '\0';
 
-        if (symbol && symbol->name() == "quote") {
-            *ostream_ << "'";
-            quoted = true;
+        if (quoted) {
+            *ostream_ << quote_char;
         }
-
-        if (!quoted && is_head()) {
-            *ostream_ << '(';
-        }
-        if (!quoted) {
+        else {
+            if (is_head()) {
+                *ostream_ << '(';
+            }
             auto head = car(list);
             print(head, /* is_head */ true);
         }
+
         auto tail = cdr(list);
         if (!tail.empty()) {
             if (!quoted) {
@@ -87,6 +99,7 @@ private:
             }
             print(tail, /* is_head */ false);
         }
+
         if (!quoted && is_head()) {
             *ostream_ << ')';
         }
