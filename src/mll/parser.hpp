@@ -16,7 +16,7 @@ public:
 
 class Parser {
 public:
-    std::optional<Node> parse(std::istream&);
+    std::optional<Node> parse(std::istream&); // throws ParseError
     bool clean() const;
 
 private:

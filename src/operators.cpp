@@ -182,6 +182,14 @@ void set_primitive_procs(Env& env)
         return car(args);
     });
 
+    MLISP_DEFUN("quasiquote", [](List args, Env& env) {
+        return car(args);
+    });
+
+    MLISP_DEFUN("unquote", [](List args, Env& env) {
+        return car(args);
+    });
+
     MLISP_DEFUN("atom", [cmd](List args, Env& env) {
         assert_argc(args, 1, cmd);
         auto list = dynamic_node_cast<List>(eval(car(args), env));
