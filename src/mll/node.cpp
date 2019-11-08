@@ -181,12 +181,12 @@ bool List::empty() const
     return !data_;
 }
 
-Node const& List::head() const
+Node List::head() const
 {
     return data_ ? data_->head : nil;
 }
 
-List const& List::tail() const
+List List::tail() const
 {
     return data_ ? data_->tail : nil;
 }
