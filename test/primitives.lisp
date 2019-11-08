@@ -1,20 +1,19 @@
-; list
-(define list (lambda (*args) args))
-
 ; defmacro
 (define defmacro
     (macro (name args body)
         `(define ,name (macro ,args ,body))))
 
 ; defun
-(define defun
-    (macro (name args body)
-        `(define ,name (lambda ,args ,body))))
+(defmacro defun (name args body)
+    `(define ,name (lambda ,args ,body)))
 
 ; begin
-(define begin (lambda (*args)
+(defun begin (*args)
     (cond ((atom (cdr args)) (car args))
-            ('t (begin (car (cdr args)))))))
+            ('t (begin (car (cdr args))))))
+
+; list
+(defun list (*args) args)
 
 ; caar
 (defun caar (x)
