@@ -7,11 +7,6 @@
 (defmacro defun (name args body)
     `(define ,name (lambda ,args ,body)))
 
-; begin
-(defun begin (*args)
-    (cond ((atom (cdr args)) (car args))
-            ('t (begin (car (cdr args))))))
-
 ; list
 (defun list (*args) args)
 
@@ -73,3 +68,8 @@
 			   ('t z)))
 		('t (cons (subst x y (car z))
 				  (subst x y (cdr z))))))
+
+; begin
+(defun begin (*args)
+    (cond ((atom (cdr args)) (car args))
+            ('t (begin (car (cdr args))))))
