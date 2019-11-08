@@ -51,7 +51,6 @@ public:
     std::shared_ptr<Data> const& data() const;
 
 private:
-    bool operator==(Node const&) const = delete;
     std::shared_ptr<Data> data_;
 };
 
