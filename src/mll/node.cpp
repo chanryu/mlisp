@@ -36,7 +36,7 @@ struct List::Data : Node::Data {
 // Proc::Data
 
 struct Proc::Data : Node::Data {
-    explicit Data(Func f, std::string n) : func{std::move(f)}, name{std::move(n)}
+    explicit Data(std::string n, Func f) : name{std::move(n)}, func{std::move(f)}
     {
     }
 
@@ -45,8 +45,8 @@ struct Proc::Data : Node::Data {
         visitor.visit(Proc{std::static_pointer_cast<Data>(shared_from_this())});
     }
 
-    Func const func;
     std::string const name;
+    Func const func;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -220,11 +220,11 @@ std::optional<List> List::from_node(Node const& node)
 ////////////////////////////////////////////////////////////////////////////////
 // Proc
 
-Proc::Proc(Func func) : data_{std::make_shared<Data>(std::move(func), "anonymous")}
+Proc::Proc(Func func) : data_{std::make_shared<Data>("anonymous", std::move(func))}
 {
 }
 
-Proc::Proc(Func func, std::string name) : data_{std::make_shared<Data>(std::move(func), std::move(name))}
+Proc::Proc(std::string name, Func func) : data_{std::make_shared<Data>(std::move(name), std::move(func))}
 {
 }
 
@@ -236,17 +236,17 @@ Proc::Proc(std::shared_ptr<Data> data) : data_{data}
 {
 }
 
+const std::string& Proc::name() const
+{
+    return data_->name;
+}
+
 Node Proc::call(List const& args, Env& env) const
 {
     if (data_->func) {
         return data_->func(args, env);
     }
     return nil;
-}
-
-const std::string& Proc::name() const
-{
-    return data_->name;
 }
 
 std::optional<Proc> Proc::from_node(Node const& node)

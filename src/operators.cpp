@@ -15,8 +15,8 @@
 
 #define MLISP_DEFUN(cmd__, func__)                                                                                     \
     do {                                                                                                               \
-        char const* cmd = cmd__;                                                                                       \
-        env.set(cmd, Proc{func__, cmd});                                                                               \
+        auto const cmd = cmd__;                                                                                        \
+        env.set(cmd, make_proc(cmd, func__));                                                                          \
     } while (0)
 
 using namespace mll;
@@ -35,9 +35,9 @@ namespace mlisp {
 
 namespace {
 
-inline Proc make_proc(Func func)
+inline Proc make_proc(std::string name, Func func)
 {
-    return Proc{std::move(func)};
+    return Proc{std::move(name), std::move(func)};
 }
 
 bool is_number(Node const& node)
@@ -338,7 +338,7 @@ void set_primitive_procs(Env& env)
         auto lambda_body = cadr(args);
         auto creator_env = env.shared_from_this();
 
-        return make_proc([formal_args, lambda_body, creator_env](List args, Env& env) {
+        return make_proc(cmd, [formal_args, lambda_body, creator_env](List args, Env& env) {
             auto lambda_env = creator_env->derive_new();
             auto syms = formal_args;
             while (!syms.empty()) {
@@ -379,7 +379,7 @@ void set_primitive_procs(Env& env)
         auto formal_args = to_formal_args(car(args), cmd);
         auto macro_body = cadr(args);
 
-        return make_proc([formal_args, macro_body](List args, Env& env) {
+        return make_proc(cmd, [formal_args, macro_body](List args, Env& env) {
             auto macro_env = env.derive_new();
             auto syms = formal_args;
             while (!syms.empty()) {
