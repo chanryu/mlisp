@@ -24,38 +24,26 @@ bool is_whitespace(char c)
     return c == ' ' || c == '\t' || c == '\r' || c == '\n';
 }
 
-bool is_open_paren(char c)
+bool is_quote_token(std::string const& token)
 {
-    return c == '(';
+    return token == "'" || token == "`" || token == "," || token == ",@";
 }
 
-bool is_close_paren(char c)
+const char* get_quote_symbol_name(std::string const& token)
 {
-    return c == ')';
-}
-
-bool is_paren(char c)
-{
-    return is_open_paren(c) || is_close_paren(c);
-}
-
-bool is_quote(char c)
-{
-    return c == '\'' || c == '`' || c == ',';
-}
-
-const char* get_quote_symbol_name(char c)
-{
-    switch (c) {
-    case '\'':
+    if (token == "'") {
         return "quote";
-    case '`':
-        return "quasiquote";
-    case ',':
-        return "unquote";
-    default:
-        return nullptr;
     }
+    if (token == "`") {
+        return "quasiquote";
+    }
+    if (token == ",") {
+        return "unquote";
+    }
+    if (token == ",@") {
+        return "unquote-splicing";
+    }
+    return nullptr;
 }
 
 std::string read_text(std::istream& istream)
@@ -138,7 +126,7 @@ bool get_token(std::istream& istream, Token& token)
             break;
         }
 
-        if (is_paren(c)) {
+        if (c == '(' || c == ')') {
             if (token.text.empty()) {
                 token.text.push_back(c);
             }
@@ -148,8 +136,16 @@ bool get_token(std::istream& istream, Token& token)
             return true;
         }
 
-        if (is_quote(c)) {
+        if (c == '\'' || c == '`' || c == ',') {
             token.text.push_back(c);
+            if (c == ',' && istream.get(c)) {
+                if (c == '@') {
+                    token.text.push_back(c);
+                }
+                else {
+                    istream.unget();
+                }
+            }
             return true;
         }
 
@@ -195,12 +191,8 @@ std::optional<Node> Parser::parse(std::istream& istream)
         if (token.is_string) {
             node = String{std::move(token.text)};
         }
-        else if (token.text.size() == 1 && is_quote(token.text[0])) {
-            stack_.push({token.text[0], {}, true});
-            continue;
-        }
-        else if (token.text == "(") {
-            stack_.push({token.text[0], {}, true});
+        else if (token.text == "(" || is_quote_token(token.text)) {
+            stack_.push({token.text, {}, true});
             continue;
         }
         else if (token.text == ")") {
@@ -213,13 +205,13 @@ std::optional<Node> Parser::parse(std::istream& istream)
                 auto c = stack_.top();
                 stack_.pop();
                 if (c.head_empty) {
-                    assert(is_open_paren(c.token));
+                    assert(c.token == "(");
                     assert(list.empty());
                 }
                 else {
                     list = cons(c.head, list);
                 }
-                if (is_open_paren(c.token)) {
+                if (c.token == "(") {
                     break;
                 }
             }
@@ -239,7 +231,7 @@ std::optional<Node> Parser::parse(std::istream& istream)
                 return node;
             }
 
-            if (const auto quote_name = get_quote_symbol_name(stack_.top().token)) {
+            if (auto quote_name = get_quote_symbol_name(stack_.top().token)) {
                 stack_.pop();
                 node = cons(Symbol{quote_name}, cons(node, nil));
                 continue;
@@ -250,7 +242,7 @@ std::optional<Node> Parser::parse(std::istream& istream)
                 stack_.top().head_empty = false;
             }
             else {
-                stack_.push({/*token*/ '\0', node, false});
+                stack_.push({/*token*/ "", node, false});
             }
             break;
         }

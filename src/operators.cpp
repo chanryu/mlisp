@@ -62,12 +62,11 @@ List map(List list, Func func)
         stack.push(func(car(list)));
         list = cdr(list);
     }
-    List mapped_list;
     while (!stack.empty()) {
-        mapped_list = cons(stack.top(), mapped_list);
+        list = cons(stack.top(), list);
         stack.pop();
     }
-    return mapped_list;
+    return list;
 }
 
 bool to_bool(Node const& node)
@@ -186,6 +185,7 @@ List to_formal_args(Node const& node, char const* cmd)
     return args;
 }
 
+#if 0
 Node quasiquote_list(List const& list, Env& env)
 {
     return map(list, [&env](Node const& node) {
@@ -201,6 +201,60 @@ Node quasiquote_list(List const& list, Env& env)
         return node;
     });
 }
+#else
+
+Node unquote_list(List list, Env& env)
+{
+    return car(map(list, [&env](Node const& node) {
+        return eval(node, env);
+    }));
+}
+
+Node quasiquote_list(List list, Env& env)
+{
+    std::stack<Node> stack;
+    auto add_to_stack = [&env, &stack](Node const& node) {
+        if (auto lst = dynamic_node_cast<List>(node)) {
+            if (auto s = dynamic_node_cast<Symbol>(car(*lst))) {
+                if (s->name() == "quote") {
+                    stack.push(node);
+                    return;
+                }
+                if (s->name() == "unquote") {
+                    stack.push(eval(*lst, env));
+                    return;
+                }
+                if (s->name() == "unquote-splicing") {
+                    auto result = eval(*lst, env);
+                    if (auto lst2 = dynamic_node_cast<List>(result)) {
+                        while (!lst2->empty()) {
+                            stack.push(car(*lst2));
+                            *lst2 = cdr(*lst2);
+                        }
+                    }
+                    else {
+                        stack.push(result);
+                    }
+                    return;
+                }
+            }
+            stack.push(quasiquote_list(*lst, env));
+            return;
+        }
+        stack.push(node);
+    };
+
+    while (!list.empty()) {
+        add_to_stack(car(list));
+        list = cdr(list);
+    }
+    while (!stack.empty()) {
+        list = cons(stack.top(), list);
+        stack.pop();
+    }
+    return list;
+}
+#endif
 
 } // namespace
 
@@ -219,9 +273,11 @@ void set_primitive_procs(Env& env)
     });
 
     MLISP_DEFUN("unquote", [](List const& args, Env& env) {
-        return car(map(args, [&env](Node const& node) {
-            return eval(node, env);
-        }));
+        return unquote_list(args, env);
+    });
+
+    MLISP_DEFUN("unquote-splicing", [](List const& args, Env& env) {
+        return unquote_list(args, env);
     });
 
     MLISP_DEFUN("atom", [cmd](List args, Env& env) {

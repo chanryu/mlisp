@@ -21,7 +21,7 @@ public:
 
 private:
     struct Context {
-        char token;
+        std::string token;
         Node head;
         bool head_empty;
     };

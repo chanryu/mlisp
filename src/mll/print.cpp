@@ -42,17 +42,19 @@ std::string quote_text(std::string const& text)
     return quoted_text;
 }
 
-char get_quote_char(Node const& node)
+const char* get_quote_token(Node const& node)
 {
     if (auto sym = dynamic_node_cast<Symbol>(node)) {
         if (sym->name() == "quote")
-            return '\'';
+            return "'";
         if (sym->name() == "quasiquote")
-            return '`';
+            return "`";
         if (sym->name() == "unquote")
-            return ',';
+            return ",";
+        if (sym->name() == "unquote-splicing")
+            return ",@";
     }
-    return '\0';
+    return nullptr;
 }
 
 class Printer : NodeVisitor {
@@ -78,11 +80,11 @@ private:
             return;
         }
 
-        auto quote_char = get_quote_char(car(list));
-        auto quoted = quote_char != '\0';
+        const auto quote_token = get_quote_token(car(list));
+        const auto quoted = quote_token != nullptr;
 
         if (quoted) {
-            *ostream_ << quote_char;
+            *ostream_ << quote_token;
         }
         else {
             if (is_head()) {
