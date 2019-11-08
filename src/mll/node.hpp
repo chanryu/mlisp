@@ -172,4 +172,9 @@ inline List cdr(List const& list)
     return list.tail();
 }
 
+inline Node cadr(List const& list)
+{
+    return car(cdr(list));
+}
+
 } // namespace mll

@@ -54,9 +54,20 @@ bool is_symbol(Node const& node)
     return dynamic_node_cast<Symbol>(node).has_value();
 }
 
-Node cadr(List const& list)
+template <typename Func>
+List map(List list, Func func)
 {
-    return car(cdr(list));
+    std::stack<Node> stack;
+    while (!list.empty()) {
+        stack.push(func(car(list)));
+        list = cdr(list);
+    }
+    List mapped_list;
+    while (!stack.empty()) {
+        mapped_list = cons(stack.top(), mapped_list);
+        stack.pop();
+    }
+    return mapped_list;
 }
 
 bool to_bool(Node const& node)
@@ -178,12 +189,17 @@ List to_formal_args(Node const& node, char const* cmd)
 
 void set_primitive_procs(Env& env)
 {
-    MLISP_DEFUN("quote", [](List args, Env& env) {
+    MLISP_DEFUN("quote", [](List const& args, Env& env) {
         return car(args);
     });
 
-    MLISP_DEFUN("quasiquote", [](List args, Env& env) {
-        return car(args);
+    MLISP_DEFUN("quasiquote", [](List const& args, Env& env) {
+        auto node = car(args);
+        if (auto list = dynamic_node_cast<List>(node)) {
+            // std::stack<Node>
+            return node;
+        }
+        return node;
     });
 
     MLISP_DEFUN("unquote", [](List args, Env& env) {
@@ -271,17 +287,12 @@ void set_primitive_procs(Env& env)
                 assert(sym.has_value());
 
                 if (is_variadic_args(*sym)) {
-                    std::stack<Node> args_stack;
-                    while (!args.empty()) {
-                        args_stack.push(eval(car(args), env));
-                        args = cdr(args);
-                    }
-                    List vargs;
-                    while (!args_stack.empty()) {
-                        vargs = cons(args_stack.top(), vargs);
-                        args_stack.pop();
-                    }
-                    lambda_env->set(sym->name().substr(1), vargs);
+                    assert(sym->name[0] == '*');
+                    args = map(args, [&env](Node const& node) {
+                        return eval(node, env);
+                    });
+                    lambda_env->set(sym->name().substr(1), args);
+                    args = nil;
                     break;
                 }
 
@@ -317,17 +328,8 @@ void set_primitive_procs(Env& env)
                 assert(sym.has_value());
 
                 if (is_variadic_args(*sym)) {
-                    std::stack<Node> args_stack;
-                    while (!args.empty()) {
-                        args_stack.push(car(args));
-                        args = cdr(args);
-                    }
-                    List vargs;
-                    while (!args_stack.empty()) {
-                        vargs = cons(args_stack.top(), vargs);
-                        args_stack.pop();
-                    }
-                    macro_env->set(sym->name().substr(1), vargs);
+                    macro_env->set(sym->name().substr(1), args);
+                    args = nil;
                     break;
                 }
 
