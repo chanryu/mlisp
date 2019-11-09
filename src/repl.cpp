@@ -51,7 +51,7 @@ bool get_line(char const* prompt, std::string& line)
 
 int repl(mll::Env& env)
 {
-    auto parser = mlisp::Parser{};
+    mlisp::Parser parser;
 
     while (true) {
         char const* prompt;

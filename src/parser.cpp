@@ -35,7 +35,7 @@ Parser::Parser()
         else if (double value; parse_number(token, &value)) {
             data = std::make_shared<Number::Data>(value);
         }
-        return nullptr;
+        return data;
     });
 }
 
