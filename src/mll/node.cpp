@@ -15,9 +15,6 @@ struct Node::Data : std::enable_shared_from_this<Node::Data> {
     virtual void accept(NodeVisitor&) = 0;
 };
 
-////////////////////////////////////////////////////////////////////////////////
-// List::Data
-
 struct List::Data : Node::Data {
     Data(Node const& h, List const& t) : head{h}, tail{t}
     {}
@@ -30,9 +27,6 @@ struct List::Data : Node::Data {
     Node const head;
     List const tail;
 };
-
-////////////////////////////////////////////////////////////////////////////////
-// Proc::Data
 
 struct Proc::Data : Node::Data {
     explicit Data(std::string n, Func f) : name{std::move(n)}, func{std::move(f)}
@@ -47,9 +41,6 @@ struct Proc::Data : Node::Data {
     Func const func;
 };
 
-////////////////////////////////////////////////////////////////////////////////
-// Number::Data
-
 struct Number::Data : Node::Data {
     explicit Data(double v) : value{v}
     {}
@@ -62,9 +53,6 @@ struct Number::Data : Node::Data {
     double const value;
 };
 
-////////////////////////////////////////////////////////////////////////////////
-// String::Data
-
 struct String::Data : Node::Data {
     explicit Data(std::string t) : text{std::move(t)}
     {}
@@ -76,9 +64,6 @@ struct String::Data : Node::Data {
 
     std::string const text;
 };
-
-////////////////////////////////////////////////////////////////////////////////
-// Symbol::Data
 
 struct Symbol::Data : Node::Data {
     explicit Data(std::string n) : name{std::move(n)}
