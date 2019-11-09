@@ -1,5 +1,6 @@
 #include <mll/print.hpp>
 
+#include <mll/custom.hpp>
 #include <mll/node.hpp>
 #include <mll/quote.hpp>
 
@@ -107,11 +108,11 @@ private:
         *ostream_ << "<#proc: " << quote_text(proc.name()) << ">";
     }
 
-    void visit(Custom const& /*custom*/) override
+    void visit(Custom const& custom) override
     {
         assert(ostream_);
 
-        *ostream_ << "<#custom>";
+        custom.data()->print(*ostream_);
     }
 
     void visit(Number const& num) override

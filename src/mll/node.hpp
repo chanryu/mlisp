@@ -102,15 +102,6 @@ private:
     friend class Node;
 };
 
-class Custom {
-private:
-    struct Data;
-    Custom(std::shared_ptr<Data>);
-    std::shared_ptr<Data> data_;
-
-    friend class Node;
-};
-
 class Number final {
 public:
     explicit Number(double);

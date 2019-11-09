@@ -1,6 +1,7 @@
 #include <mll/node.hpp>
 
-#include <array>
+#include <mll/custom.hpp>
+
 #include <map>
 
 namespace mll {
@@ -34,13 +35,6 @@ struct Proc::Data : Node::Data {
 
     std::string const name;
     Func const func;
-};
-
-struct Custom::Data : Node::Data {
-    void accept(NodeVisitor& visitor) override
-    {
-        visitor.visit(Custom{std::static_pointer_cast<Data>(shared_from_this())});
-    }
 };
 
 struct Number::Data : Node::Data {

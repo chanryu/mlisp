@@ -1,8 +1,9 @@
 #include "repl.hpp"
 
+#include "parser.hpp"
+
 #include <mll/eval.hpp>
 #include <mll/node.hpp>
-#include <mll/parser.hpp>
 #include <mll/print.hpp>
 
 #ifdef MLISP_READLINE

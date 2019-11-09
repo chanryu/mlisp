@@ -7,11 +7,11 @@
 
 #include <mll/env.hpp>
 #include <mll/eval.hpp>
-#include <mll/parser.hpp>
 #include <mll/print.hpp>
 
 #include "load.hpp"
 #include "operators.hpp"
+#include "parser.hpp"
 #include "repl.hpp"
 
 int main(int argc, char* argv[])
@@ -21,7 +21,8 @@ int main(int argc, char* argv[])
     mlisp::set_primitive_procs(*env);
     mlisp::set_complementary_procs(*env);
 
-    mlisp::set_number_procs(*env);
+    mlisp::set_fixnum_procs(*env);
+    // mlisp::set_number_procs(*env);
     mlisp::set_string_procs(*env);
     mlisp::set_symbol_procs(*env);
 
@@ -37,7 +38,7 @@ int main(int argc, char* argv[])
     }();
     if (is_stdin_piped) {
         try {
-            mll::Parser parser;
+            mlisp::Parser parser;
             while (true) {
                 auto expr = parser.parse(std::cin);
                 if (!expr.has_value()) {

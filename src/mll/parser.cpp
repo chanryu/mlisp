@@ -1,5 +1,6 @@
 #include <mll/parser.hpp>
 
+#include <mll/custom.hpp>
 #include <mll/node.hpp>
 #include <mll/quote.hpp>
 
@@ -197,7 +198,14 @@ std::optional<Node> Parser::parse(std::istream& istream)
             node = list;
         }
         else {
-            if (double value; parse_number(token.text, &value)) {
+            std::shared_ptr<Custom::Data> custom_data;
+            if (custom_data_maker_) {
+                custom_data = custom_data_maker_(token.text, token.is_string);
+            }
+            if (custom_data) {
+                node = Custom{custom_data};
+            }
+            else if (double value; parse_number(token.text, &value)) {
                 node = Number{value};
             }
             else {
@@ -233,6 +241,11 @@ std::optional<Node> Parser::parse(std::istream& istream)
 bool Parser::clean() const
 {
     return stack_.empty();
+}
+
+void Parser::set_custom_data_maker(CustomDataMaker custom_data_maker)
+{
+    custom_data_maker_ = std::move(custom_data_maker);
 }
 
 } // namespace mll

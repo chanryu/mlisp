@@ -11,6 +11,7 @@
 #include <stack>
 #include <vector>
 
+#include "fixnum.hpp"
 #include "load.hpp"
 
 #define MLISP_DEFUN(cmd__, func__)                                                                                     \
@@ -38,6 +39,11 @@ namespace {
 inline Proc make_proc(std::string name, Func func)
 {
     return Proc{std::move(name), std::move(func)};
+}
+
+bool is_fixnum(Node const& node)
+{
+    return dynamic_node_cast<Fixnum>(node).has_value();
 }
 
 bool is_number(Node const& node)
@@ -119,6 +125,15 @@ List to_list_or_throw(Node const& node, char const* cmd)
         throw EvalError(cmd + (": " + std::to_string(node)) + " is not a list.");
     }
     return *list;
+}
+
+Fixnum to_fixnum_or_throw(Node const& node, char const* cmd)
+{
+    auto num = dynamic_node_cast<Fixnum>(node);
+    if (!num) {
+        throw EvalError(cmd + (": " + std::to_string(node)) + " is not a fixnum.");
+    }
+    return *num;
 }
 
 Number to_number_or_throw(Node const& node, char const* cmd)
@@ -410,6 +425,76 @@ void set_number_procs(Env& env)
             result /= to_number_or_throw(eval(arg, env), cmd).value();
         });
         return Number{result};
+    });
+}
+
+void set_fixnum_procs(Env& env)
+{
+    MLISP_DEFUN("fixnum?", [cmd](List args, Env& env) {
+        assert_argc(args, 1, cmd);
+        return to_node(is_fixnum(eval(car(args), env)));
+    });
+
+    MLISP_DEFUN("fixnum-equal?", [cmd](List args, Env& env) {
+        assert_argc(args, 2, cmd);
+
+        auto num1 = to_fixnum_or_throw(eval(car(args), env), cmd);
+        auto num2 = to_fixnum_or_throw(eval(cadr(args), env), cmd);
+
+        return to_node(num1.value() == num2.value());
+    });
+
+    MLISP_DEFUN("fixnum-less?", [cmd](List args, Env& env) {
+        assert_argc(args, 2, cmd);
+
+        auto num1 = to_fixnum_or_throw(eval(car(args), env), cmd);
+        auto num2 = to_fixnum_or_throw(eval(cadr(args), env), cmd);
+        return to_node(num1.value() < num2.value());
+    });
+
+    MLISP_DEFUN("+", [cmd](List args, Env& env) {
+        auto result = 0l;
+        for_each(args, [&result, &env, cmd](auto const& arg) {
+            result += to_fixnum_or_throw(eval(arg, env), cmd).value();
+        });
+        return Fixnum{result};
+    });
+
+    MLISP_DEFUN("-", [cmd](List args, Env& env) {
+        assert_argc_min(args, 1, cmd);
+
+        auto result = to_fixnum_or_throw(eval(car(args), env), cmd).value();
+        args = cdr(args);
+        if (args.empty()) {
+            // unary minus
+            result = -result;
+        }
+        else {
+            for_each(args, [&result, &env, cmd](auto const& arg) {
+                result -= to_fixnum_or_throw(eval(arg, env), cmd).value();
+            });
+        }
+        return Fixnum{result};
+    });
+
+    MLISP_DEFUN("*", [cmd](List args, Env& env) {
+        auto result = 1l;
+        while (!args.empty()) {
+            auto arg = eval(car(args), env);
+            result *= to_fixnum_or_throw(arg, cmd).value();
+            args = cdr(args);
+        }
+        return Fixnum{result};
+    });
+
+    MLISP_DEFUN("/", [cmd](List args, Env& env) {
+        assert_argc_min(args, 2, cmd);
+
+        auto result = to_fixnum_or_throw(eval(car(args), env), cmd).value();
+        for_each(cdr(args), [&result, &env, cmd](auto const& arg) {
+            result /= to_fixnum_or_throw(eval(arg, env), cmd).value();
+        });
+        return Fixnum{result};
     });
 }
 
