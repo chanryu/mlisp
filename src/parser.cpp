@@ -25,16 +25,18 @@ bool parse_number(std::string const& text, double* value)
 
 namespace mlisp {
 
-std::shared_ptr<mll::Custom::Data> Parser::make_custom_data(std::string const& token, bool is_quoted)
+Parser::Parser()
 {
-    if (is_quoted) {
-        return std::make_shared<String::Data>(token);
-    }
-    else if (double value; parse_number(token, &value)) {
-        return std::make_shared<Number::Data>(value);
-    }
-
-    return nullptr;
+    set_custom_data_func([](std::string const& token, bool is_quoted) {
+        std::shared_ptr<mll::Custom::Data> data;
+        if (is_quoted) {
+            data = std::make_shared<String::Data>(token);
+        }
+        else if (double value; parse_number(token, &value)) {
+            data = std::make_shared<Number::Data>(value);
+        }
+        return nullptr;
+    });
 }
 
 } // namespace mlisp

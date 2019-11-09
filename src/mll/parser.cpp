@@ -147,7 +147,11 @@ namespace mll {
 std::optional<Node> Parser::parse(std::istream& istream)
 {
     auto make_custom_or_symbol = [this](Token const& token) -> Node {
-        if (auto custom_data = make_custom_data(token.text, token.is_double_quoted)) {
+        std::shared_ptr<Custom::Data> custom_data;
+        if (custom_data_func_) {
+            custom_data = custom_data_func_(token.text, token.is_double_quoted);
+        }
+        if (custom_data) {
             return Custom{custom_data};
         }
         return Symbol{token.text};
@@ -222,9 +226,9 @@ bool Parser::clean() const
     return stack_.empty();
 }
 
-std::shared_ptr<Custom::Data> Parser::make_custom_data(std::string const& token, bool is_quoted)
+void Parser::set_custom_data_func(CustomDataFunc custom_data_func)
 {
-    return nullptr;
+    custom_data_func_ = std::move(custom_data_func);
 }
 
 } // namespace mll

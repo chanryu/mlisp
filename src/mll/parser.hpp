@@ -23,7 +23,9 @@ public:
     std::optional<Node> parse(std::istream&); // throws ParseError
     bool clean() const;
 
-    virtual std::shared_ptr<Custom::Data> make_custom_data(std::string const& token, bool is_quoted) = 0;
+    using CustomDataFunc =
+        std::function<std::shared_ptr<Custom::Data>(std::string const& /*token*/, bool /*is_quoted*/)>;
+    void set_custom_data_func(CustomDataFunc);
 
 private:
     struct Context {
@@ -32,6 +34,8 @@ private:
         bool head_empty;
     };
     std::stack<Context> stack_;
+
+    CustomDataFunc custom_data_func_;
 };
 
 } // namespace mll
