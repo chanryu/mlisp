@@ -55,16 +55,16 @@ struct Symbol::Data : Node::Data {
 Node::Node(Node const& other) : data_{other.data_}
 {}
 
-Node::Node(List const& list) : data_{list.data_}
+Node::Node(List const& list) : data_{list.data()}
 {}
 
-Node::Node(Proc const& proc) : data_{proc.data_}
+Node::Node(Proc const& proc) : data_{proc.data()}
 {}
 
-Node::Node(Symbol const& symbol) : data_{symbol.data_}
+Node::Node(Symbol const& symbol) : data_{symbol.data()}
 {}
 
-Node::Node(Custom const& custom) : data_{custom.data_}
+Node::Node(Custom const& custom) : data_{custom.data()}
 {}
 
 Node& Node::operator=(Node const& rhs)
@@ -75,25 +75,25 @@ Node& Node::operator=(Node const& rhs)
 
 Node& Node::operator=(List const& rhs)
 {
-    data_ = rhs.data_;
+    data_ = rhs.data();
     return *this;
 }
 
 Node& Node::operator=(Proc const& rhs)
 {
-    data_ = rhs.data_;
+    data_ = rhs.data();
     return *this;
 }
 
 Node& Node::operator=(Symbol const& rhs)
 {
-    data_ = rhs.data_;
+    data_ = rhs.data();
     return *this;
 }
 
 Node& Node::operator=(Custom const& rhs)
 {
-    data_ = rhs.data_;
+    data_ = rhs.data();
     return *this;
 }
 
@@ -139,6 +139,11 @@ List List::tail() const
     return data_ ? data_->tail : nil;
 }
 
+std::shared_ptr<List::Data> const& List::data() const
+{
+    return data_;
+}
+
 std::optional<List> List::from_node(Node const& node)
 {
     if (!node.data()) {
@@ -179,6 +184,11 @@ Node Proc::call(List const& args, Env& env) const
     return nil;
 }
 
+std::shared_ptr<Proc::Data> const& Proc::data() const
+{
+    return data_;
+}
+
 std::optional<Proc> Proc::from_node(Node const& node)
 {
     if (auto data = std::dynamic_pointer_cast<Data>(node.data())) {
@@ -213,6 +223,11 @@ Symbol::Symbol(std::shared_ptr<Data> data) : data_{data}
 std::string const& Symbol::name() const
 {
     return data_->name;
+}
+
+std::shared_ptr<Symbol::Data> const& Symbol::data() const
+{
+    return data_;
 }
 
 std::optional<Symbol> Symbol::from_node(Node const& node)

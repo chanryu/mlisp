@@ -10,6 +10,7 @@ struct PrintOptions;
 
 class Custom {
 public:
+    friend class Parser;
     struct Data : Node::Data {
         void accept(NodeVisitor&) override;
         virtual void print(std::ostream&, PrintOptions const&) = 0;
@@ -21,9 +22,6 @@ protected:
 
 private:
     std::shared_ptr<Data> data_;
-
-    friend class Node;
-    friend class Parser;
 };
 
 } // namespace mll

@@ -65,14 +65,14 @@ public:
     Node head() const;
     List tail() const;
 
+    struct Data;
+    std::shared_ptr<Data> const& data() const;
+
     static std::optional<List> from_node(Node const&);
 
 private:
-    struct Data;
     List(std::shared_ptr<Data> const&);
     std::shared_ptr<Data> data_;
-
-    friend class Node;
 };
 
 class Proc final {
@@ -84,14 +84,14 @@ public:
     const std::string& name() const;
     Node call(List const&, Env&) const;
 
+    struct Data;
+    std::shared_ptr<Data> const& data() const;
+
     static std::optional<Proc> from_node(Node const&);
 
 private:
-    struct Data;
     Proc(std::shared_ptr<Data>);
     std::shared_ptr<Data> data_;
-
-    friend class Node;
 };
 
 class Symbol final {
@@ -101,14 +101,14 @@ public:
 
     std::string const& name() const;
 
+    struct Data;
+    std::shared_ptr<Data> const& data() const;
+
     static std::optional<Symbol> from_node(Node const&);
 
 private:
-    struct Data;
     Symbol(std::shared_ptr<Data>);
     std::shared_ptr<Data> data_;
-
-    friend class Node;
 };
 
 // The nil
