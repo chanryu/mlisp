@@ -23,7 +23,7 @@ public:
     std::optional<Node> parse(std::istream&); // throws ParseError
     bool clean() const;
 
-    virtual std::shared_ptr<Custom::Data> make_custom_data(std::string const& token, bool is_quoted);
+    virtual std::shared_ptr<Custom::Data> make_custom_data(std::string const& token, bool is_quoted) = 0;
 
 private:
     struct Context {

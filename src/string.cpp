@@ -1,5 +1,7 @@
 #include "string.hpp"
 
+#include <mll/print.hpp>
+
 namespace {
 std::string quote_text(std::string const& text)
 {
@@ -41,9 +43,14 @@ namespace mlisp {
 String::Data::Data(std::string v) : value{std::move(v)}
 {}
 
-void String::Data::print(std::ostream& ostream)
+void String::Data::print(std::ostream& ostream, mll::PrintOptions const& options)
 {
-    ostream << value;
+    if (options.quote_string) {
+        ostream << quote_text(value);
+    }
+    else {
+        ostream << value;
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
