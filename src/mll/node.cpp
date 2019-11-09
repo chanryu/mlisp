@@ -61,10 +61,10 @@ Node::Node(List const& list) : data_{list.data_}
 Node::Node(Proc const& proc) : data_{proc.data_}
 {}
 
-Node::Node(Custom const& custom) : data_{custom.data_}
+Node::Node(Symbol const& symbol) : data_{symbol.data_}
 {}
 
-Node::Node(Symbol const& symbol) : data_{symbol.data_}
+Node::Node(Custom const& custom) : data_{custom.data_}
 {}
 
 Node& Node::operator=(Node const& rhs)
@@ -85,13 +85,13 @@ Node& Node::operator=(Proc const& rhs)
     return *this;
 }
 
-Node& Node::operator=(Custom const& rhs)
+Node& Node::operator=(Symbol const& rhs)
 {
     data_ = rhs.data_;
     return *this;
 }
 
-Node& Node::operator=(Symbol const& rhs)
+Node& Node::operator=(Custom const& rhs)
 {
     data_ = rhs.data_;
     return *this;

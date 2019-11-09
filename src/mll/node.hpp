@@ -11,8 +11,8 @@ namespace mll {
 class Node;
 class List;
 class Proc;
-class Custom;
 class Symbol;
+class Custom;
 
 class Env;
 using Func = std::function<Node(List const&, Env&)>;
@@ -21,8 +21,8 @@ class NodeVisitor {
 public:
     virtual void visit(List const&) = 0;
     virtual void visit(Proc const&) = 0;
-    virtual void visit(Custom const&) = 0;
     virtual void visit(Symbol const&) = 0;
+    virtual void visit(Custom const&) = 0;
 };
 
 class Node final {
@@ -32,14 +32,14 @@ public:
     Node(Node const&);
     Node(List const&);
     Node(Proc const&);
-    Node(Custom const&);
     Node(Symbol const&);
+    Node(Custom const&);
 
     Node& operator=(Node const&);
     Node& operator=(List const&);
     Node& operator=(Proc const&);
-    Node& operator=(Custom const&);
     Node& operator=(Symbol const&);
+    Node& operator=(Custom const&);
 
     void accept(NodeVisitor&) const;
 
