@@ -10,11 +10,6 @@ List const nil;
 ////////////////////////////////////////////////////////////////////////////////
 // Node::Data
 
-struct Node::Data : std::enable_shared_from_this<Node::Data> {
-    virtual ~Data() = default;
-    virtual void accept(NodeVisitor&) = 0;
-};
-
 struct List::Data : Node::Data {
     Data(Node const& h, List const& t) : head{h}, tail{t}
     {}
@@ -39,6 +34,13 @@ struct Proc::Data : Node::Data {
 
     std::string const name;
     Func const func;
+};
+
+struct Custom::Data : Node::Data {
+    void accept(NodeVisitor& visitor) override
+    {
+        visitor.visit(Custom{std::static_pointer_cast<Data>(shared_from_this())});
+    }
 };
 
 struct Number::Data : Node::Data {
@@ -89,6 +91,9 @@ Node::Node(List const& list) : data_{list.data_}
 Node::Node(Proc const& proc) : data_{proc.data_}
 {}
 
+Node::Node(Custom const& custom) : data_{custom.data_}
+{}
+
 Node::Node(Number const& number) : data_{number.data_}
 {}
 
@@ -111,6 +116,12 @@ Node& Node::operator=(List const& rhs)
 }
 
 Node& Node::operator=(Proc const& rhs)
+{
+    data_ = rhs.data_;
+    return *this;
+}
+
+Node& Node::operator=(Custom const& rhs)
 {
     data_ = rhs.data_;
     return *this;

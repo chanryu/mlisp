@@ -11,6 +11,7 @@ namespace mll {
 class Node;
 class List;
 class Proc;
+class Custom;
 class Number;
 class String;
 class Symbol;
@@ -22,6 +23,7 @@ class NodeVisitor {
 public:
     virtual void visit(List const&) = 0;
     virtual void visit(Proc const&) = 0;
+    virtual void visit(Custom const&) = 0;
     virtual void visit(Number const&) = 0;
     virtual void visit(String const&) = 0;
     virtual void visit(Symbol const&) = 0;
@@ -34,6 +36,7 @@ public:
     Node(Node const&);
     Node(List const&);
     Node(Proc const&);
+    Node(Custom const&);
     Node(Number const&);
     Node(String const&);
     Node(Symbol const&);
@@ -41,13 +44,17 @@ public:
     Node& operator=(Node const&);
     Node& operator=(List const&);
     Node& operator=(Proc const&);
+    Node& operator=(Custom const&);
     Node& operator=(Number const&);
     Node& operator=(String const&);
     Node& operator=(Symbol const&);
 
     void accept(NodeVisitor&) const;
 
-    struct Data;
+    struct Data : std::enable_shared_from_this<Data> {
+        virtual ~Data() = default;
+        virtual void accept(NodeVisitor&) = 0;
+    };
     std::shared_ptr<Data> const& data() const;
 
 private:
@@ -90,6 +97,15 @@ public:
 private:
     struct Data;
     Proc(std::shared_ptr<Data>);
+    std::shared_ptr<Data> data_;
+
+    friend class Node;
+};
+
+class Custom {
+private:
+    struct Data;
+    Custom(std::shared_ptr<Data>);
     std::shared_ptr<Data> data_;
 
     friend class Node;

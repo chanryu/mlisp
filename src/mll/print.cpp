@@ -100,6 +100,20 @@ private:
         }
     }
 
+    void visit(Proc const& proc) override
+    {
+        assert(ostream_);
+
+        *ostream_ << "<#proc: " << quote_text(proc.name()) << ">";
+    }
+
+    void visit(Custom const& /*custom*/) override
+    {
+        assert(ostream_);
+
+        *ostream_ << "<#custom>";
+    }
+
     void visit(Number const& num) override
     {
         assert(ostream_);
@@ -133,13 +147,6 @@ private:
         assert(ostream_);
 
         *ostream_ << sym.name();
-    }
-
-    void visit(Proc const& proc) override
-    {
-        assert(ostream_);
-
-        *ostream_ << "<#proc: " << quote_text(proc.name()) << ">";
     }
 
 private:

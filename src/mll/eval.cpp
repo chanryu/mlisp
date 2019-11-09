@@ -41,6 +41,16 @@ private:
         }
     }
 
+    void visit(Proc const& proc) override
+    {
+        assert(false);
+    }
+
+    void visit(Custom const& custom) override
+    {
+        result_ = custom;
+    }
+
     void visit(Number const& num) override
     {
         result_ = num;
@@ -58,11 +68,6 @@ private:
             throw EvalError("Unknown symbol: " + sym.name());
         }
         result_ = *value;
-    }
-
-    void visit(Proc const& proc) override
-    {
-        assert(false);
     }
 
 private:
