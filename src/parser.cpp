@@ -3,6 +3,8 @@
 #include "number.hpp"
 #include "string.hpp"
 
+#include <cassert>
+
 namespace {
 
 bool parse_number(std::string const& text, double* value)

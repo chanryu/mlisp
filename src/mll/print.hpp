@@ -13,3 +13,7 @@ struct PrintOptions {
 void print(std::ostream&, Node const&, PrintOptions const& = {});
 
 } // namespace mll
+
+namespace std {
+string to_string(mll::Node const& node);
+} // namespace std

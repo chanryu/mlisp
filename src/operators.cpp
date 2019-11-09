@@ -24,15 +24,6 @@
 using namespace mll;
 using namespace std::string_literals;
 
-namespace std {
-string to_string(Node const& node)
-{
-    ostringstream ss;
-    print(ss, node);
-    return ss.str();
-}
-} // namespace std
-
 namespace mlisp {
 
 namespace {

@@ -19,7 +19,6 @@ Because every programmer should write (unless already have written) their own Li
 ### TODOs
 
 - mll
-  - make primitive data types extensible
   - non-list cons cell?
 - mlisp
   - make `load_file()` to use current script path

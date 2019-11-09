@@ -5,6 +5,7 @@
 #include <mll/quote.hpp>
 
 #include <cassert>
+#include <sstream>
 #include <stack>
 #include <vector>
 
@@ -114,3 +115,12 @@ void print(std::ostream& ostream, Node const& node, PrintOptions const& options)
     Printer{options}.print(ostream, node);
 }
 } // namespace mll
+
+namespace std {
+string to_string(mll::Node const& node)
+{
+    ostringstream ss;
+    print(ss, node);
+    return ss.str();
+}
+} // namespace std

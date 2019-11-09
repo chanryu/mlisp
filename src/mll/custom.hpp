@@ -1,6 +1,7 @@
 #pragma once
 
 #include <mll/node.hpp>
+
 #include <ostream>
 
 namespace mll {
