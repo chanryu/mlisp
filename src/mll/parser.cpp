@@ -89,13 +89,13 @@ void skip_whitespaces_and_comments(std::istream& istream)
 
 struct Token {
     std::string text;
-    bool is_string;
+    bool is_double_quoted;
 };
 
 bool get_token(std::istream& istream, Token& token)
 {
     token.text.clear();
-    token.is_string = false;
+    token.is_double_quoted = false;
 
     skip_whitespaces_and_comments(istream);
 
@@ -131,28 +131,36 @@ bool get_token(std::istream& istream, Token& token)
 
         if (c == '"' && token.text.empty()) {
             token.text = read_text(istream);
-            token.is_string = true;
+            token.is_double_quoted = true;
             break;
         }
 
         token.text.push_back(c);
     }
 
-    return !token.text.empty() || token.is_string;
+    return !token.text.empty() || token.is_double_quoted;
 }
+
 } // namespace
 
 namespace mll {
 std::optional<Node> Parser::parse(std::istream& istream)
 {
+    auto make_custom_or_symbol = [this](Token const& token) -> Node {
+        if (auto custom_data = make_custom_data(token.text, token.is_double_quoted)) {
+            return Custom{custom_data};
+        }
+        return Symbol{token.text};
+    };
+
     Token token;
     while (get_token(istream, token)) {
         assert(!token.text.empty());
 
         Node node;
 
-        if (token.is_string) {
-            node = String{std::move(token.text)};
+        if (token.is_double_quoted) {
+            node = make_custom_or_symbol(token);
         }
         else if (token.text == "(" || is_quote_token(token.text)) {
             stack_.push({token.text, {}, true});
@@ -181,16 +189,7 @@ std::optional<Node> Parser::parse(std::istream& istream)
             node = list;
         }
         else {
-            std::shared_ptr<Custom::Data> custom_data;
-            if (custom_data_maker_) {
-                custom_data = custom_data_maker_(token.text, token.is_string);
-            }
-            if (custom_data) {
-                node = Custom{custom_data};
-            }
-            else {
-                node = Symbol{std::move(token.text)};
-            }
+            node = make_custom_or_symbol(token);
         }
 
         while (true) {
@@ -223,9 +222,9 @@ bool Parser::clean() const
     return stack_.empty();
 }
 
-void Parser::set_custom_data_maker(CustomDataMaker custom_data_maker)
+std::shared_ptr<Custom::Data> Parser::make_custom_data(std::string const& token, bool is_quoted)
 {
-    custom_data_maker_ = std::move(custom_data_maker);
+    return nullptr;
 }
 
 } // namespace mll

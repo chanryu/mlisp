@@ -1,6 +1,7 @@
 #include "parser.hpp"
 
 #include "number.hpp"
+#include "string.hpp"
 
 namespace {
 
@@ -21,19 +22,19 @@ bool parse_number(std::string const& text, double* value)
     return text.length() == len;
 }
 } // namespace
+
 namespace mlisp {
 
-Parser::Parser()
+std::shared_ptr<mll::Custom::Data> Parser::make_custom_data(std::string const& token, bool is_quoted)
 {
-    set_custom_data_maker([](std::string const& token, bool quoted_string) -> std::shared_ptr<mll::Custom::Data> {
-        if (!quoted_string) {
-            double value;
-            if (parse_number(token, &value)) {
-                return std::make_shared<Number::Data>(value);
-            }
-        }
-        return nullptr;
-    });
+    if (is_quoted) {
+        return std::make_shared<String::Data>(token);
+    }
+    else if (double value; parse_number(token, &value)) {
+        return std::make_shared<Number::Data>(value);
+    }
+
+    return nullptr;
 }
 
 } // namespace mlisp

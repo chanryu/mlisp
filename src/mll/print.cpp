@@ -11,36 +11,6 @@
 namespace mll {
 
 namespace {
-std::string quote_text(std::string const& text)
-{
-    std::string quoted_text;
-    quoted_text.reserve(static_cast<size_t>(text.size() * 1.5) + 2);
-    quoted_text.push_back('\"');
-    for (auto c : text) {
-        switch (c) {
-        case '\"':
-            quoted_text.append("\\\"");
-            break;
-        case '\a':
-            quoted_text.append("\\a");
-            break;
-        case '\b':
-            quoted_text.append("\\b");
-            break;
-        case '\r':
-            quoted_text.append("\\r");
-            break;
-        case '\n':
-            quoted_text.append("\\n");
-            break;
-        default:
-            quoted_text.push_back(c);
-            break;
-        }
-    }
-    quoted_text.push_back('\"');
-    return quoted_text;
-}
 
 const char* get_quote_token(Node const& node)
 {
@@ -103,7 +73,7 @@ private:
     {
         assert(ostream_);
 
-        *ostream_ << "<#proc: " << quote_text(proc.name()) << ">";
+        *ostream_ << "<#proc: " << proc.name() << ">";
     }
 
     void visit(Custom const& custom) override
@@ -111,18 +81,6 @@ private:
         assert(ostream_);
 
         custom.data()->print(*ostream_);
-    }
-
-    void visit(String const& str) override
-    {
-        assert(ostream_);
-
-        if (options_.quote_string) {
-            *ostream_ << quote_text(str.text());
-        }
-        else {
-            *ostream_ << str.text();
-        }
     }
 
     void visit(Symbol const& sym) override

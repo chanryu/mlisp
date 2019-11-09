@@ -7,6 +7,7 @@ namespace mlisp {
 
 ///////////////////////////////////////////////////////////////////////////////
 // Number::Data
+
 Number::Data::Data(double v) : value{v}
 {}
 
@@ -26,6 +27,7 @@ void Number::Data::print(std::ostream& ostream)
 
 ///////////////////////////////////////////////////////////////////////////////
 // Number
+
 Number::Number(double value) : mll::Custom{std::make_shared<Data>(value)}
 {}
 

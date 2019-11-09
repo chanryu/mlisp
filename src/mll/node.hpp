@@ -12,7 +12,6 @@ class Node;
 class List;
 class Proc;
 class Custom;
-class String;
 class Symbol;
 
 class Env;
@@ -23,7 +22,6 @@ public:
     virtual void visit(List const&) = 0;
     virtual void visit(Proc const&) = 0;
     virtual void visit(Custom const&) = 0;
-    virtual void visit(String const&) = 0;
     virtual void visit(Symbol const&) = 0;
 };
 
@@ -35,14 +33,12 @@ public:
     Node(List const&);
     Node(Proc const&);
     Node(Custom const&);
-    Node(String const&);
     Node(Symbol const&);
 
     Node& operator=(Node const&);
     Node& operator=(List const&);
     Node& operator=(Proc const&);
     Node& operator=(Custom const&);
-    Node& operator=(String const&);
     Node& operator=(Symbol const&);
 
     void accept(NodeVisitor&) const;
@@ -93,23 +89,6 @@ public:
 private:
     struct Data;
     Proc(std::shared_ptr<Data>);
-    std::shared_ptr<Data> data_;
-
-    friend class Node;
-};
-
-class String final {
-public:
-    explicit String(std::string);
-    String(String const&);
-
-    std::string const& text() const;
-
-    static std::optional<String> from_node(Node const&);
-
-private:
-    struct Data;
-    String(std::shared_ptr<Data>);
     std::shared_ptr<Data> data_;
 
     friend class Node;

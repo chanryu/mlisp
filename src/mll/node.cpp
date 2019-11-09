@@ -37,18 +37,6 @@ struct Proc::Data : Node::Data {
     Func const func;
 };
 
-struct String::Data : Node::Data {
-    explicit Data(std::string t) : text{std::move(t)}
-    {}
-
-    void accept(NodeVisitor& visitor) override
-    {
-        visitor.visit(String{std::static_pointer_cast<Data>(shared_from_this())});
-    }
-
-    std::string const text;
-};
-
 struct Symbol::Data : Node::Data {
     explicit Data(std::string n) : name{std::move(n)}
     {}
@@ -76,9 +64,6 @@ Node::Node(Proc const& proc) : data_{proc.data_}
 Node::Node(Custom const& custom) : data_{custom.data_}
 {}
 
-Node::Node(String const& string) : data_{string.data_}
-{}
-
 Node::Node(Symbol const& symbol) : data_{symbol.data_}
 {}
 
@@ -101,12 +86,6 @@ Node& Node::operator=(Proc const& rhs)
 }
 
 Node& Node::operator=(Custom const& rhs)
-{
-    data_ = rhs.data_;
-    return *this;
-}
-
-Node& Node::operator=(String const& rhs)
 {
     data_ = rhs.data_;
     return *this;
@@ -204,31 +183,6 @@ std::optional<Proc> Proc::from_node(Node const& node)
 {
     if (auto data = std::dynamic_pointer_cast<Data>(node.data())) {
         return Proc{data};
-    }
-    return std::nullopt;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// String
-
-String::String(std::string text) : data_{std::make_shared<Data>(std::move(text))}
-{}
-
-String::String(String const& other) : data_{other.data_}
-{}
-
-String::String(std::shared_ptr<Data> data) : data_{data}
-{}
-
-std::string const& String::text() const
-{
-    return data_->text;
-}
-
-std::optional<String> String::from_node(Node const& node)
-{
-    if (auto data = std::dynamic_pointer_cast<Data>(node.data())) {
-        return String{data};
     }
     return std::nullopt;
 }

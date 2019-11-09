@@ -16,15 +16,14 @@ public:
     using runtime_error::runtime_error;
 };
 
-using CustomDataMaker =
-    std::function<std::shared_ptr<Custom::Data>(std::string const& /*token*/, bool /*quoted_string*/)>;
-
 class Parser {
 public:
+    virtual ~Parser() = default;
+
     std::optional<Node> parse(std::istream&); // throws ParseError
     bool clean() const;
 
-    void set_custom_data_maker(CustomDataMaker);
+    virtual std::shared_ptr<Custom::Data> make_custom_data(std::string const& token, bool is_quoted);
 
 private:
     struct Context {
@@ -33,8 +32,6 @@ private:
         bool head_empty;
     };
     std::stack<Context> stack_;
-
-    CustomDataMaker custom_data_maker_;
 };
 
 } // namespace mll

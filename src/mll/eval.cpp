@@ -51,11 +51,6 @@ private:
         result_ = custom;
     }
 
-    void visit(String const& str) override
-    {
-        result_ = str;
-    }
-
     void visit(Symbol const& sym) override
     {
         auto value = env_.lookup(sym.name());
