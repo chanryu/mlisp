@@ -1,5 +1,6 @@
 #include <mll/parser.hpp>
 
+#include <mll/custom.hpp>
 #include <mll/node.hpp>
 #include <mll/quote.hpp>
 
@@ -88,13 +89,13 @@ void skip_whitespaces_and_comments(std::istream& istream)
 
 struct Token {
     std::string text;
-    bool is_string;
+    bool is_double_quoted;
 };
 
 bool get_token(std::istream& istream, Token& token)
 {
     token.text.clear();
-    token.is_string = false;
+    token.is_double_quoted = false;
 
     skip_whitespaces_and_comments(istream);
 
@@ -130,45 +131,40 @@ bool get_token(std::istream& istream, Token& token)
 
         if (c == '"' && token.text.empty()) {
             token.text = read_text(istream);
-            token.is_string = true;
+            token.is_double_quoted = true;
             break;
         }
 
         token.text.push_back(c);
     }
 
-    return !token.text.empty() || token.is_string;
+    return !token.text.empty() || token.is_double_quoted;
 }
 
-bool parse_number(std::string const& text, double* value)
-{
-    assert(!text.empty());
-
-    char const* s = text.c_str();
-    if (*s == '-')
-        s++;
-    if (*s == '.')
-        s++;
-    if (*s < '0' || *s > '9')
-        return false;
-
-    size_t len;
-    *value = std::stod(text.c_str(), &len);
-    return text.length() == len;
-}
 } // namespace
 
 namespace mll {
 std::optional<Node> Parser::parse(std::istream& istream)
 {
+    auto make_custom_or_symbol = [this](Token const& token) -> Node {
+        std::shared_ptr<Custom::Data> custom_data;
+        if (custom_data_func_) {
+            custom_data = custom_data_func_(token.text, token.is_double_quoted);
+        }
+        if (custom_data) {
+            return Custom{custom_data};
+        }
+        return Symbol{token.text};
+    };
+
     Token token;
     while (get_token(istream, token)) {
         assert(!token.text.empty());
 
         Node node;
 
-        if (token.is_string) {
-            node = String{std::move(token.text)};
+        if (token.is_double_quoted) {
+            node = make_custom_or_symbol(token);
         }
         else if (token.text == "(" || is_quote_token(token.text)) {
             stack_.push({token.text, {}, true});
@@ -197,12 +193,7 @@ std::optional<Node> Parser::parse(std::istream& istream)
             node = list;
         }
         else {
-            if (double value; parse_number(token.text, &value)) {
-                node = Number{value};
-            }
-            else {
-                node = Symbol{std::move(token.text)};
-            }
+            node = make_custom_or_symbol(token);
         }
 
         while (true) {
@@ -233,6 +224,11 @@ std::optional<Node> Parser::parse(std::istream& istream)
 bool Parser::clean() const
 {
     return stack_.empty();
+}
+
+void Parser::set_custom_data_func(CustomDataFunc custom_data_func)
+{
+    custom_data_func_ = std::move(custom_data_func);
 }
 
 } // namespace mll

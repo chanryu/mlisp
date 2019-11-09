@@ -5,8 +5,6 @@
 #include <mll/print.hpp>
 
 #include <cassert>
-#include <memory>
-#include <sstream>
 
 namespace mll {
 
@@ -35,20 +33,18 @@ private:
             result_ = proc->call(cdr(list), env_);
         }
         else {
-            std::ostringstream oss;
-            print(oss, node);
-            throw EvalError(oss.str() + " is not a proc.");
+            throw EvalError(std::to_string(node) + " is not a proc.");
         }
     }
 
-    void visit(Number const& num) override
+    void visit(Proc const& proc) override
     {
-        result_ = num;
+        assert(false);
     }
 
-    void visit(String const& str) override
+    void visit(Custom const& custom) override
     {
-        result_ = str;
+        result_ = custom;
     }
 
     void visit(Symbol const& sym) override
@@ -58,11 +54,6 @@ private:
             throw EvalError("Unknown symbol: " + sym.name());
         }
         result_ = *value;
-    }
-
-    void visit(Proc const& proc) override
-    {
-        assert(false);
     }
 
 private:

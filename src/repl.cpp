@@ -1,8 +1,9 @@
 #include "repl.hpp"
 
+#include "parser.hpp"
+
 #include <mll/eval.hpp>
 #include <mll/node.hpp>
-#include <mll/parser.hpp>
 #include <mll/print.hpp>
 
 #ifdef MLISP_READLINE
@@ -50,7 +51,7 @@ bool get_line(char const* prompt, std::string& line)
 
 int repl(mll::Env& env)
 {
-    auto parser = mll::Parser{};
+    mlisp::Parser parser;
 
     while (true) {
         char const* prompt;

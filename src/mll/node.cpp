@@ -1,6 +1,7 @@
 #include <mll/node.hpp>
 
-#include <array>
+#include <mll/custom.hpp>
+
 #include <map>
 
 namespace mll {
@@ -9,11 +10,6 @@ List const nil;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Node::Data
-
-struct Node::Data : std::enable_shared_from_this<Node::Data> {
-    virtual ~Data() = default;
-    virtual void accept(NodeVisitor&) = 0;
-};
 
 struct List::Data : Node::Data {
     Data(Node const& h, List const& t) : head{h}, tail{t}
@@ -41,30 +37,6 @@ struct Proc::Data : Node::Data {
     Func const func;
 };
 
-struct Number::Data : Node::Data {
-    explicit Data(double v) : value{v}
-    {}
-
-    void accept(NodeVisitor& visitor) override
-    {
-        visitor.visit(Number{std::static_pointer_cast<Data>(shared_from_this())});
-    }
-
-    double const value;
-};
-
-struct String::Data : Node::Data {
-    explicit Data(std::string t) : text{std::move(t)}
-    {}
-
-    void accept(NodeVisitor& visitor) override
-    {
-        visitor.visit(String{std::static_pointer_cast<Data>(shared_from_this())});
-    }
-
-    std::string const text;
-};
-
 struct Symbol::Data : Node::Data {
     explicit Data(std::string n) : name{std::move(n)}
     {}
@@ -83,19 +55,16 @@ struct Symbol::Data : Node::Data {
 Node::Node(Node const& other) : data_{other.data_}
 {}
 
-Node::Node(List const& list) : data_{list.data_}
+Node::Node(List const& list) : data_{list.data()}
 {}
 
-Node::Node(Proc const& proc) : data_{proc.data_}
+Node::Node(Proc const& proc) : data_{proc.data()}
 {}
 
-Node::Node(Number const& number) : data_{number.data_}
+Node::Node(Symbol const& symbol) : data_{symbol.data()}
 {}
 
-Node::Node(String const& string) : data_{string.data_}
-{}
-
-Node::Node(Symbol const& symbol) : data_{symbol.data_}
+Node::Node(Custom const& custom) : data_{custom.data()}
 {}
 
 Node& Node::operator=(Node const& rhs)
@@ -106,31 +75,25 @@ Node& Node::operator=(Node const& rhs)
 
 Node& Node::operator=(List const& rhs)
 {
-    data_ = rhs.data_;
+    data_ = rhs.data();
     return *this;
 }
 
 Node& Node::operator=(Proc const& rhs)
 {
-    data_ = rhs.data_;
-    return *this;
-}
-
-Node& Node::operator=(Number const& rhs)
-{
-    data_ = rhs.data_;
-    return *this;
-}
-
-Node& Node::operator=(String const& rhs)
-{
-    data_ = rhs.data_;
+    data_ = rhs.data();
     return *this;
 }
 
 Node& Node::operator=(Symbol const& rhs)
 {
-    data_ = rhs.data_;
+    data_ = rhs.data();
+    return *this;
+}
+
+Node& Node::operator=(Custom const& rhs)
+{
+    data_ = rhs.data();
     return *this;
 }
 
@@ -176,6 +139,11 @@ List List::tail() const
     return data_ ? data_->tail : nil;
 }
 
+std::shared_ptr<List::Data> const& List::data() const
+{
+    return data_;
+}
+
 std::optional<List> List::from_node(Node const& node)
 {
     if (!node.data()) {
@@ -216,60 +184,15 @@ Node Proc::call(List const& args, Env& env) const
     return nil;
 }
 
+std::shared_ptr<Proc::Data> const& Proc::data() const
+{
+    return data_;
+}
+
 std::optional<Proc> Proc::from_node(Node const& node)
 {
     if (auto data = std::dynamic_pointer_cast<Data>(node.data())) {
         return Proc{data};
-    }
-    return std::nullopt;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// Number
-
-Number::Number(double value) : data_{std::make_shared<Data>(value)}
-{}
-
-Number::Number(Number const& other) : data_{other.data_}
-{}
-
-Number::Number(std::shared_ptr<Data> data) : data_{data}
-{}
-
-double Number::value() const
-{
-    return data_->value;
-}
-
-std::optional<Number> Number::from_node(Node const& node)
-{
-    if (auto data = std::dynamic_pointer_cast<Data>(node.data())) {
-        return Number{data};
-    }
-    return std::nullopt;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// String
-
-String::String(std::string text) : data_{std::make_shared<Data>(std::move(text))}
-{}
-
-String::String(String const& other) : data_{other.data_}
-{}
-
-String::String(std::shared_ptr<Data> data) : data_{data}
-{}
-
-std::string const& String::text() const
-{
-    return data_->text;
-}
-
-std::optional<String> String::from_node(Node const& node)
-{
-    if (auto data = std::dynamic_pointer_cast<Data>(node.data())) {
-        return String{data};
     }
     return std::nullopt;
 }
@@ -300,6 +223,11 @@ Symbol::Symbol(std::shared_ptr<Data> data) : data_{data}
 std::string const& Symbol::name() const
 {
     return data_->name;
+}
+
+std::shared_ptr<Symbol::Data> const& Symbol::data() const
+{
+    return data_;
 }
 
 std::optional<Symbol> Symbol::from_node(Node const& node)

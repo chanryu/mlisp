@@ -11,9 +11,8 @@ namespace mll {
 class Node;
 class List;
 class Proc;
-class Number;
-class String;
 class Symbol;
+class Custom;
 
 class Env;
 using Func = std::function<Node(List const&, Env&)>;
@@ -22,9 +21,8 @@ class NodeVisitor {
 public:
     virtual void visit(List const&) = 0;
     virtual void visit(Proc const&) = 0;
-    virtual void visit(Number const&) = 0;
-    virtual void visit(String const&) = 0;
     virtual void visit(Symbol const&) = 0;
+    virtual void visit(Custom const&) = 0;
 };
 
 class Node final {
@@ -34,20 +32,21 @@ public:
     Node(Node const&);
     Node(List const&);
     Node(Proc const&);
-    Node(Number const&);
-    Node(String const&);
     Node(Symbol const&);
+    Node(Custom const&);
 
     Node& operator=(Node const&);
     Node& operator=(List const&);
     Node& operator=(Proc const&);
-    Node& operator=(Number const&);
-    Node& operator=(String const&);
     Node& operator=(Symbol const&);
+    Node& operator=(Custom const&);
 
     void accept(NodeVisitor&) const;
 
-    struct Data;
+    struct Data : std::enable_shared_from_this<Data> {
+        virtual ~Data() = default;
+        virtual void accept(NodeVisitor&) = 0;
+    };
     std::shared_ptr<Data> const& data() const;
 
 private:
@@ -66,14 +65,14 @@ public:
     Node head() const;
     List tail() const;
 
+    struct Data;
+    std::shared_ptr<Data> const& data() const;
+
     static std::optional<List> from_node(Node const&);
 
 private:
-    struct Data;
     List(std::shared_ptr<Data> const&);
     std::shared_ptr<Data> data_;
-
-    friend class Node;
 };
 
 class Proc final {
@@ -85,48 +84,14 @@ public:
     const std::string& name() const;
     Node call(List const&, Env&) const;
 
+    struct Data;
+    std::shared_ptr<Data> const& data() const;
+
     static std::optional<Proc> from_node(Node const&);
 
 private:
-    struct Data;
     Proc(std::shared_ptr<Data>);
     std::shared_ptr<Data> data_;
-
-    friend class Node;
-};
-
-class Number final {
-public:
-    explicit Number(double);
-    Number(Number const&);
-
-    double value() const;
-
-    static std::optional<Number> from_node(Node const&);
-
-private:
-    struct Data;
-    Number(std::shared_ptr<Data>);
-    std::shared_ptr<Data> data_;
-
-    friend class Node;
-};
-
-class String final {
-public:
-    explicit String(std::string);
-    String(String const&);
-
-    std::string const& text() const;
-
-    static std::optional<String> from_node(Node const&);
-
-private:
-    struct Data;
-    String(std::shared_ptr<Data>);
-    std::shared_ptr<Data> data_;
-
-    friend class Node;
 };
 
 class Symbol final {
@@ -136,14 +101,14 @@ public:
 
     std::string const& name() const;
 
+    struct Data;
+    std::shared_ptr<Data> const& data() const;
+
     static std::optional<Symbol> from_node(Node const&);
 
 private:
-    struct Data;
     Symbol(std::shared_ptr<Data>);
     std::shared_ptr<Data> data_;
-
-    friend class Node;
 };
 
 // The nil

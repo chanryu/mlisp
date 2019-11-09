@@ -1,47 +1,17 @@
 #include <mll/print.hpp>
 
+#include <mll/custom.hpp>
 #include <mll/node.hpp>
 #include <mll/quote.hpp>
 
 #include <cassert>
-#include <cmath>
-#include <iomanip>
+#include <sstream>
 #include <stack>
 #include <vector>
 
 namespace mll {
 
 namespace {
-std::string quote_text(std::string const& text)
-{
-    std::string quoted_text;
-    quoted_text.reserve(static_cast<size_t>(text.size() * 1.5) + 2);
-    quoted_text.push_back('\"');
-    for (auto c : text) {
-        switch (c) {
-        case '\"':
-            quoted_text.append("\\\"");
-            break;
-        case '\a':
-            quoted_text.append("\\a");
-            break;
-        case '\b':
-            quoted_text.append("\\b");
-            break;
-        case '\r':
-            quoted_text.append("\\r");
-            break;
-        case '\n':
-            quoted_text.append("\\n");
-            break;
-        default:
-            quoted_text.push_back(c);
-            break;
-        }
-    }
-    quoted_text.push_back('\"');
-    return quoted_text;
-}
 
 const char* get_quote_token(Node const& node)
 {
@@ -100,32 +70,18 @@ private:
         }
     }
 
-    void visit(Number const& num) override
+    void visit(Proc const& proc) override
     {
         assert(ostream_);
 
-        const bool is_integral = [&num] {
-            decltype(num.value()) int_part;
-            std::modf(num.value(), &int_part);
-            return num.value() == int_part;
-        }();
-        if (is_integral) {
-            *ostream_ << std::setprecision(0);
-        }
-
-        *ostream_ << std::fixed << num.value();
+        *ostream_ << "<#proc: " << proc.name() << ">";
     }
 
-    void visit(String const& str) override
+    void visit(Custom const& custom) override
     {
         assert(ostream_);
 
-        if (options_.quote_string) {
-            *ostream_ << quote_text(str.text());
-        }
-        else {
-            *ostream_ << str.text();
-        }
+        custom.data()->print(*ostream_, options_);
     }
 
     void visit(Symbol const& sym) override
@@ -133,13 +89,6 @@ private:
         assert(ostream_);
 
         *ostream_ << sym.name();
-    }
-
-    void visit(Proc const& proc) override
-    {
-        assert(ostream_);
-
-        *ostream_ << "<#proc: " << quote_text(proc.name()) << ">";
     }
 
 private:
@@ -166,3 +115,12 @@ void print(std::ostream& ostream, Node const& node, PrintOptions const& options)
     Printer{options}.print(ostream, node);
 }
 } // namespace mll
+
+namespace std {
+string to_string(mll::Node const& node)
+{
+    ostringstream ss;
+    print(ss, node);
+    return ss.str();
+}
+} // namespace std

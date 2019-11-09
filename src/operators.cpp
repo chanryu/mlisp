@@ -12,6 +12,8 @@
 #include <vector>
 
 #include "load.hpp"
+#include "number.hpp"
+#include "string.hpp"
 
 #define MLISP_DEFUN(cmd__, func__)                                                                                     \
     do {                                                                                                               \
@@ -21,15 +23,6 @@
 
 using namespace mll;
 using namespace std::string_literals;
-
-namespace std {
-string to_string(Node const& node)
-{
-    ostringstream ss;
-    print(ss, node);
-    return ss.str();
-}
-} // namespace std
 
 namespace mlisp {
 
@@ -339,7 +332,7 @@ void set_complementary_procs(Env& env)
     MLISP_DEFUN("load", [cmd](List args, Env& env) {
         assert_argc(args, 1, cmd);
         auto filename = to_string_or_throw(car(args), cmd);
-        return to_node(!load_file(env, filename.text()));
+        return to_node(!load_file(env, filename.value()));
     });
 }
 
@@ -425,7 +418,7 @@ void set_string_procs(Env& env)
 
         auto const str1 = to_string_or_throw(eval(car(args), env), cmd);
         auto const str2 = to_string_or_throw(eval(cadr(args), env), cmd);
-        return to_node(str1.text() == str2.text());
+        return to_node(str1.value() == str2.value());
     });
 }
 
