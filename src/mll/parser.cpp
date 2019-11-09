@@ -140,23 +140,6 @@ bool get_token(std::istream& istream, Token& token)
 
     return !token.text.empty() || token.is_string;
 }
-
-bool parse_number(std::string const& text, double* value)
-{
-    assert(!text.empty());
-
-    char const* s = text.c_str();
-    if (*s == '-')
-        s++;
-    if (*s == '.')
-        s++;
-    if (*s < '0' || *s > '9')
-        return false;
-
-    size_t len;
-    *value = std::stod(text.c_str(), &len);
-    return text.length() == len;
-}
 } // namespace
 
 namespace mll {
@@ -204,9 +187,6 @@ std::optional<Node> Parser::parse(std::istream& istream)
             }
             if (custom_data) {
                 node = Custom{custom_data};
-            }
-            else if (double value; parse_number(token.text, &value)) {
-                node = Number{value};
             }
             else {
                 node = Symbol{std::move(token.text)};

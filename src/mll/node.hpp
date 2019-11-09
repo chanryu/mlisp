@@ -12,7 +12,6 @@ class Node;
 class List;
 class Proc;
 class Custom;
-class Number;
 class String;
 class Symbol;
 
@@ -24,7 +23,6 @@ public:
     virtual void visit(List const&) = 0;
     virtual void visit(Proc const&) = 0;
     virtual void visit(Custom const&) = 0;
-    virtual void visit(Number const&) = 0;
     virtual void visit(String const&) = 0;
     virtual void visit(Symbol const&) = 0;
 };
@@ -37,7 +35,6 @@ public:
     Node(List const&);
     Node(Proc const&);
     Node(Custom const&);
-    Node(Number const&);
     Node(String const&);
     Node(Symbol const&);
 
@@ -45,7 +42,6 @@ public:
     Node& operator=(List const&);
     Node& operator=(Proc const&);
     Node& operator=(Custom const&);
-    Node& operator=(Number const&);
     Node& operator=(String const&);
     Node& operator=(Symbol const&);
 
@@ -97,23 +93,6 @@ public:
 private:
     struct Data;
     Proc(std::shared_ptr<Data>);
-    std::shared_ptr<Data> data_;
-
-    friend class Node;
-};
-
-class Number final {
-public:
-    explicit Number(double);
-    Number(Number const&);
-
-    double value() const;
-
-    static std::optional<Number> from_node(Node const&);
-
-private:
-    struct Data;
-    Number(std::shared_ptr<Data>);
     std::shared_ptr<Data> data_;
 
     friend class Node;

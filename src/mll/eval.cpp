@@ -51,11 +51,6 @@ private:
         result_ = custom;
     }
 
-    void visit(Number const& num) override
-    {
-        result_ = num;
-    }
-
     void visit(String const& str) override
     {
         result_ = str;

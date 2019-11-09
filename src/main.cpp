@@ -21,8 +21,7 @@ int main(int argc, char* argv[])
     mlisp::set_primitive_procs(*env);
     mlisp::set_complementary_procs(*env);
 
-    mlisp::set_fixnum_procs(*env);
-    // mlisp::set_number_procs(*env);
+    mlisp::set_number_procs(*env);
     mlisp::set_string_procs(*env);
     mlisp::set_symbol_procs(*env);
 

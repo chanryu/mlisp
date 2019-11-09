@@ -37,18 +37,6 @@ struct Proc::Data : Node::Data {
     Func const func;
 };
 
-struct Number::Data : Node::Data {
-    explicit Data(double v) : value{v}
-    {}
-
-    void accept(NodeVisitor& visitor) override
-    {
-        visitor.visit(Number{std::static_pointer_cast<Data>(shared_from_this())});
-    }
-
-    double const value;
-};
-
 struct String::Data : Node::Data {
     explicit Data(std::string t) : text{std::move(t)}
     {}
@@ -88,9 +76,6 @@ Node::Node(Proc const& proc) : data_{proc.data_}
 Node::Node(Custom const& custom) : data_{custom.data_}
 {}
 
-Node::Node(Number const& number) : data_{number.data_}
-{}
-
 Node::Node(String const& string) : data_{string.data_}
 {}
 
@@ -116,12 +101,6 @@ Node& Node::operator=(Proc const& rhs)
 }
 
 Node& Node::operator=(Custom const& rhs)
-{
-    data_ = rhs.data_;
-    return *this;
-}
-
-Node& Node::operator=(Number const& rhs)
 {
     data_ = rhs.data_;
     return *this;
@@ -225,31 +204,6 @@ std::optional<Proc> Proc::from_node(Node const& node)
 {
     if (auto data = std::dynamic_pointer_cast<Data>(node.data())) {
         return Proc{data};
-    }
-    return std::nullopt;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// Number
-
-Number::Number(double value) : data_{std::make_shared<Data>(value)}
-{}
-
-Number::Number(Number const& other) : data_{other.data_}
-{}
-
-Number::Number(std::shared_ptr<Data> data) : data_{data}
-{}
-
-double Number::value() const
-{
-    return data_->value;
-}
-
-std::optional<Number> Number::from_node(Node const& node)
-{
-    if (auto data = std::dynamic_pointer_cast<Data>(node.data())) {
-        return Number{data};
     }
     return std::nullopt;
 }

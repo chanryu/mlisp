@@ -5,8 +5,6 @@
 #include <mll/quote.hpp>
 
 #include <cassert>
-#include <cmath>
-#include <iomanip>
 #include <stack>
 #include <vector>
 
@@ -113,22 +111,6 @@ private:
         assert(ostream_);
 
         custom.data()->print(*ostream_);
-    }
-
-    void visit(Number const& num) override
-    {
-        assert(ostream_);
-
-        const bool is_integral = [&num] {
-            decltype(num.value()) int_part;
-            std::modf(num.value(), &int_part);
-            return num.value() == int_part;
-        }();
-        if (is_integral) {
-            *ostream_ << std::setprecision(0);
-        }
-
-        *ostream_ << std::fixed << num.value();
     }
 
     void visit(String const& str) override
