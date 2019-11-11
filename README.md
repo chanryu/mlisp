@@ -24,9 +24,10 @@ Because every programmer should write (unless already have written) their own Li
   - make `load_file()` to use current script path
   - show error messages when interpreting files
   - `exit` procedure
+  - better error messages
 - etc.
   - bootstraping script for `pre-commit` git hook for auto `clang-format`ing
-  - cmake?
+  - CMake?
 
 ### Links
 
