@@ -20,13 +20,13 @@ Because every programmer should write (unless already have written) their own Li
 
 - mll
   - non-list cons cell?
+  - unit test
 - mlisp
   - show error messages when interpreting files
   - `exit` procedure
   - better error messages
 - etc.
   - bootstraping script for `pre-commit` git hook for auto `clang-format`ing
-  - CMake?
 
 ### Links
 
