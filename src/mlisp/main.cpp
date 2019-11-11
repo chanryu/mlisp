@@ -1,9 +1,3 @@
-#if __has_include(<unistd.h>)
-#include <unistd.h> // isatty
-#define MLISP_EVAL_PIPED_STDIN 1
-#else
-#define MLISP_EVAL_PIPED_STDIN 0
-#endif
 
 #include <mll/env.hpp>
 #include <mll/eval.hpp>
@@ -13,6 +7,15 @@
 #include "operators.hpp"
 #include "parser.hpp"
 #include "repl.hpp"
+
+#include <iostream>
+
+#if __has_include(<unistd.h>)
+#include <unistd.h> // isatty
+#define MLISP_EVAL_PIPED_STDIN 1
+#else
+#define MLISP_EVAL_PIPED_STDIN 0
+#endif
 
 int main(int argc, char* argv[])
 {
