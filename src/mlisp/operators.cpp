@@ -250,7 +250,6 @@ void set_primitive_procs(Env& env)
                 assert(sym.has_value());
 
                 if (is_variadic_args(*sym)) {
-                    assert(sym->name[0] == '*');
                     args = map(args, [&env](Node const& node) {
                         return eval(node, env);
                     });
