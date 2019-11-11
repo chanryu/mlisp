@@ -2,8 +2,12 @@ language: cpp
 dist: bionic
 compiler: gcc
 
+addons:
+  apt:
+    packages:
+      - cmake
+
 script:
-  - mkdir -p build
-  - cd build && cmake ..
-  - cd build && cmake --build .
+  - cmake -Bbuild .
+  - cmake --build build
   - cd test && ./mlisp-test.sh
