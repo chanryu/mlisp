@@ -1,6 +1,6 @@
 SRC := src
 BUILD := build
-MLISP := $(BUILD)/mlisp
+MLISP := $(BUILD)/bin/mlisp
 
 SRCS := $(shell find $(SRC) -type f -name '*.cpp')
 OBJS := $(patsubst $(SRC)/%, $(BUILD)/%.o, $(SRCS))
@@ -12,6 +12,7 @@ CXXFLAGS += -Wall -DNDEBUG -pedantic -O2 -g -std=c++17
 all: $(MLISP)
 
 $(MLISP): $(OBJS)
+	@mkdir -p $(dir $@)
 	$(CXX) -o $@ $(OBJS) -L/usr/local/lib -lreadline
 
 $(BUILD)/%.o: $(SRC)/%
