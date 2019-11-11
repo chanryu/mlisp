@@ -12,12 +12,7 @@
 #include <fstream>
 #include <iostream>
 
-#if __has_include(<unistd.h>) // UNIX
 #include <unistd.h>
-#elif __has_include(<direct.h>) // WINDOWS
-#include <direct.h>
-#define getcwd _getcwd
-#endif
 
 namespace mlisp {
 
@@ -55,21 +50,12 @@ std::string make_absolute_filepath(std::string const& current_load_path, std::st
     else {
         absolute_filepath = current_load_path + "/" + filepath;
     }
-
-    // normalize slashes
-    for (auto& c : absolute_filepath) {
-        if (c == '\\') {
-            c = '/';
-        }
-    }
     return absolute_filepath;
 }
 
 std::string get_parent_path(std::string const& path)
 {
-    auto pos = path.find_last_of('/');
-    assert(pos != std::string::npos);
-    return path.substr(0, pos);
+    return path.substr(0, path.find_last_of('/'));
 }
 
 void set_load_path(mll::Env& env, std::string const& path)
