@@ -1,7 +1,6 @@
 #pragma once
 
-#include <iostream>
-#include <optional>
+#include <string>
 
 namespace mll {
 class Env;
@@ -9,7 +8,6 @@ class Env;
 
 namespace mlisp {
 
-bool load_file(mll::Env& env, const char* filename);
-bool load_file(mll::Env& env, std::string const& filename);
+bool load_file(mll::Env& env, std::string const& filepath);
 
 } // namespace mlisp

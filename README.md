@@ -21,7 +21,6 @@ Because every programmer should write (unless already have written) their own Li
 - mll
   - non-list cons cell?
 - mlisp
-  - make `load_file()` to use current script path
   - show error messages when interpreting files
   - `exit` procedure
   - better error messages
