@@ -16,7 +16,7 @@ target_link_libraries(mlisp PRIVATE mll)
 
 # mlisp test target
 file(GLOB TEST_SOURCES test/*.cpp)
-add_executable(mlisp_test ${SOURCES} ${TEST_SOURCES})
+add_executable(mlisp_test ${SOURCES} ${HEADERS} ${TEST_SOURCES})
 set_target_properties(mlisp_test PROPERTIES
     CXX_STANDARD 17
     CXX_STANDARD_REQUIRED YES
