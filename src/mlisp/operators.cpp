@@ -229,7 +229,7 @@ void set_primitive_procs(Env& env)
 
         auto symbol = to_symbol_or_throw(car(args), cmd);
         auto value = eval(cadr(args), env);
-        if (!env.update(symbol.name(), value)) {
+        if (!env.deep_update(symbol.name(), value)) {
             throw EvalError("unbound variable: " + symbol.name());
         }
         return value;

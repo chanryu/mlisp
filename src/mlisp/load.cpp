@@ -23,7 +23,7 @@ auto constexpr LOAD_PATH_KEY = "mlisp:load-path";
 std::string get_current_load_path(mll::Env const& env)
 {
     std::string load_path;
-    if (auto node = env.lookup(LOAD_PATH_KEY)) {
+    if (auto node = env.deep_lookup(LOAD_PATH_KEY)) {
         if (auto str = mll::dynamic_node_cast<String>(*node)) {
             load_path = (*str).value();
         }
