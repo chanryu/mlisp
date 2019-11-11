@@ -22,4 +22,4 @@ set_target_properties(mll_test PROPERTIES
     CXX_STANDARD 17
     CXX_STANDARD_REQUIRED YES
     CXX_EXTENSIONS OFF)
-target_link_libraries(mll_test PRIVATE mll)
+target_link_libraries(mll_test PRIVATE mll Catch2)

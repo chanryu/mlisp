@@ -4,3 +4,4 @@ project(mlisp)
 
 add_subdirectory(src/mll)
 add_subdirectory(src/mlisp)
+add_subdirectory(src/3rd-party/Catch2)
