@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-LISP="../build/mlisp"
+LISP="../build/src/mlisp/mlisp"
 FAIL_COUNT=0
 
 red() {
