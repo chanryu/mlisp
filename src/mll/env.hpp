@@ -15,8 +15,9 @@ public:
     std::shared_ptr<Env> derive_new();
 
     void set(std::string const&, Node const&);
-    bool update(std::string const&, Node const&);
-    std::optional<Node> lookup(std::string const&) const;
+    bool deep_update(std::string const&, Node const&);
+    bool shallow_update(std::string const&, Node const&);
+    std::optional<Node> deep_lookup(std::string const&) const;
     std::optional<Node> shallow_lookup(std::string const&) const;
 
 private:

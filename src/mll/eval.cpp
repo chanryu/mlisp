@@ -49,7 +49,7 @@ private:
 
     void visit(Symbol const& sym) override
     {
-        auto value = env_.lookup(sym.name());
+        auto value = env_.deep_lookup(sym.name());
         if (!value.has_value()) {
             throw EvalError("Unknown symbol: " + sym.name());
         }
