@@ -3,9 +3,4 @@ dist: bionic
 compiler: gcc
 
 script:
-  - mkdir -p build
-  - cd build
-  - cmake ..
-  - cmake --build .
-  - cd ../test
-  - ./mlisp-test.sh
+  - mkdir build && cd build && cmake .. && cmake --build . && cd ../test && ./mlisp-test.sh
