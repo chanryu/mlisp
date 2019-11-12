@@ -37,7 +37,7 @@ private:
         }
     }
 
-    void visit(Proc const& proc) override
+    void visit(Proc const& /*proc*/) override
     {
         assert(false);
     }

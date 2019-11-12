@@ -13,6 +13,11 @@ set_target_properties(mll PROPERTIES
     CXX_STANDARD 17
     CXX_STANDARD_REQUIRED YES
     CXX_EXTENSIONS OFF)
+target_compile_options(mll PRIVATE
+    $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
+        -Werror -Wall -Wextra>
+    $<$<CXX_COMPILER_ID:MSVC>:
+        -W4>)
 target_include_directories(mll PUBLIC src)
 
 # mll test target

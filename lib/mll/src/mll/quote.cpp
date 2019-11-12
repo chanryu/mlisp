@@ -120,7 +120,7 @@ Node quasiquote_list(List list, Env& env)
 
 void load_quote_procs(Env& env)
 {
-    MLL_DEFUN(SYMBOL_QUOTE, [](List const& args, Env& env) {
+    MLL_DEFUN(SYMBOL_QUOTE, [](List const& args, Env& /*env*/) {
         return car(args);
     });
 

@@ -276,7 +276,7 @@ void set_primitive_procs(Env& env)
         });
     });
 
-    MLISP_DEFUN("macro", [cmd](List args, Env& env) {
+    MLISP_DEFUN("macro", [cmd](List args, Env& /*env*/) {
         assert_argc_min(args, 2, cmd);
 
         auto formal_args = to_formal_args(car(args), cmd);
