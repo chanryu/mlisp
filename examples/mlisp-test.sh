@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
-LISP="../build/mlisp"
+PROJ=$(git rev-parse --show-toplevel)
+LISP="$PROJ/build/mlisp"
+
 FAIL_COUNT=0
 
 red() {
@@ -15,7 +17,7 @@ test() {
   if [ -z "$3" ]; then
     EVAL=$(echo "$1" | $LISP)
   else
-    EVAL=$(echo "$1" | $LISP $3.lisp)
+    EVAL=$(echo "$1" | $LISP "$PROJ/examples/$3.lisp")
   fi
   echo "$EVAL" | grep -q "^$2$"
   if [ $? -eq 0 ]; then
