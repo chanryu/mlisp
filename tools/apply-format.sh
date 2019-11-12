@@ -63,18 +63,7 @@ if [ ! -f ${CLANG_FORMAT} ]; then
   exit 1
 fi
 
-case "${1}" in
-  --about )
-    echo "Runs clang-format on source files, as long as it's contained on a"
-    echo "whitelisted directory and not contained on a blacklisted one."
-    ;;
-  * )
-    if [ "$#" -lt 1 ]; then
-      echo "You must supply a file list."
-      exit 1
-    fi
-    for file in "$@"; do
-      format_file "${file}"
-    done
-    ;;
-esac
+if [ "$#" -lt 1 ]; then
+  echo "You must supply a file list."
+  exit 1
+fi
