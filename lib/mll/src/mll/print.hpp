@@ -6,9 +6,7 @@ namespace mll {
 
 class Node;
 
-enum class PrintContext {
-    inspect, display
-};
+enum class PrintContext { inspect, display };
 
 void print(std::ostream&, Node const&, PrintContext = PrintContext::inspect);
 

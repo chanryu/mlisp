@@ -1,8 +1,8 @@
 #!/bin/bash
 
 FILE_EXTS=".c .h .cpp .hpp"
-WHITELIST_DIRS="src"
-BLACKLIST_DIRS="src/third-party"
+WHITELIST_DIRS="src lib"
+BLACKLIST_DIRS="lib/3rd-party"
 BLACKLIST_FILES=""
 
 # check whether the given file matches any of the set extensions
@@ -67,3 +67,7 @@ if [ "$#" -lt 1 ]; then
   echo "You must supply a file list."
   exit 1
 fi
+
+for file in "$@"; do
+  format_file "${file}"
+done
