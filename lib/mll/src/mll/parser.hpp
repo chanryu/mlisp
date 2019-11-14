@@ -18,8 +18,6 @@ public:
 
 class Parser {
 public:
-    virtual ~Parser() = default;
-
     std::optional<Node> parse(std::istream&); // throws ParseError
     bool clean() const;
 

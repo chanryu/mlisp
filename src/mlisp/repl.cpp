@@ -6,9 +6,12 @@
 #include <mll/node.hpp>
 #include <mll/print.hpp>
 
-#ifdef MLISP_READLINE
+#if __has_include(<readline/readline.h>)
+#define MLISP_READLINE 1
 #include <readline/history.h>
 #include <readline/readline.h>
+#else
+#define MLISP_READLINE 0
 #endif
 #include <iostream>
 #include <sstream>
@@ -19,7 +22,7 @@ namespace mlisp {
 namespace {
 bool get_line(char const* prompt, std::string& line)
 {
-#ifdef MLISP_READLINE
+#if MLISP_READLINE
     static bool once = true;
     if (once) {
         once = false;
