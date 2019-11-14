@@ -6,11 +6,11 @@ namespace mll {
 
 class Node;
 
-struct PrintOptions {
-    bool quote_string = true;
+enum class PrintContext {
+    inspect, display
 };
 
-void print(std::ostream&, Node const&, PrintOptions const& = {});
+void print(std::ostream&, Node const&, PrintContext = PrintContext::inspect);
 
 } // namespace mll
 

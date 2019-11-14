@@ -7,14 +7,14 @@
 namespace mll {
 
 class Parser;
-struct PrintOptions;
+enum class PrintContext;
 
 class Custom {
 public:
     friend class Parser;
     struct Data : Node::Data {
         void accept(NodeVisitor&) override;
-        virtual void print(std::ostream&, PrintOptions const&) = 0;
+        virtual void print(std::ostream&, PrintContext) = 0;
     };
     std::shared_ptr<Data> const& data() const;
 

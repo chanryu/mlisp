@@ -11,7 +11,7 @@ namespace mlisp {
 Number::Data::Data(double v) : value{v}
 {}
 
-void Number::Data::print(std::ostream& ostream, mll::PrintOptions const&)
+void Number::Data::print(std::ostream& ostream, mll::PrintContext /*context*/)
 {
     const bool is_integral = [this] {
         double int_part;

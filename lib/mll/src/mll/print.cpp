@@ -23,7 +23,7 @@ const char* get_quote_token(Node const& node)
 
 class Printer : NodeVisitor {
 public:
-    explicit Printer(PrintOptions const& options) : options_{options}
+    explicit Printer(PrintContext context) : context_{context}
     {}
 
     void print(std::ostream& ostream, Node const& node)
@@ -81,7 +81,7 @@ private:
     {
         assert(ostream_);
 
-        custom.data()->print(*ostream_, options_);
+        custom.data()->print(*ostream_, context_);
     }
 
     void visit(Symbol const& sym) override
@@ -104,15 +104,15 @@ private:
         is_head_stack_.pop();
     }
 
-    PrintOptions const options_;
+    PrintContext const context_;
     std::ostream* ostream_ = nullptr;
     std::stack<bool, std::vector<bool>> is_head_stack_;
 };
 } // namespace
 
-void print(std::ostream& ostream, Node const& node, PrintOptions const& options)
+void print(std::ostream& ostream, Node const& node, PrintContext context)
 {
-    Printer{options}.print(ostream, node);
+    Printer{context}.print(ostream, node);
 }
 } // namespace mll
 
