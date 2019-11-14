@@ -202,6 +202,40 @@ Proc make_lambda(std::string name, List const& formal_args, Node const& lambda_b
     });
 }
 
+Proc make_macro(std::string name, List const& formal_args, Node const& macro_body)
+{
+    return Proc(std::move(name), [formal_args, macro_body](List args, Env& env) {
+        auto macro_env = env.derive_new();
+        auto syms = formal_args;
+        while (!syms.empty()) {
+            auto sym = dynamic_node_cast<Symbol>(car(syms));
+            assert(sym.has_value());
+
+            if (is_variadic_args(*sym)) {
+                macro_env->set(sym->name().substr(1), args);
+                args = nil;
+                break;
+            }
+
+            if (args.empty()) {
+                throw EvalError("Proc: too few args");
+            }
+
+            auto val = car(args);
+            macro_env->set(sym->name(), val);
+            syms = cdr(syms);
+            args = cdr(args);
+        }
+
+        if (!args.empty()) {
+            throw EvalError("Proc: too many args");
+        }
+
+        auto expanded_expr = eval(macro_body, *macro_env);
+        return eval(expanded_expr, env);
+    });
+}
+
 } // namespace
 
 void set_primitive_procs(Env& env)
@@ -288,36 +322,7 @@ void set_primitive_procs(Env& env)
         auto formal_args = to_formal_args(car(args), cmd);
         auto macro_body = cadr(args);
 
-        return make_proc("anonymous", [formal_args, macro_body](List args, Env& env) {
-            auto macro_env = env.derive_new();
-            auto syms = formal_args;
-            while (!syms.empty()) {
-                auto sym = dynamic_node_cast<Symbol>(car(syms));
-                assert(sym.has_value());
-
-                if (is_variadic_args(*sym)) {
-                    macro_env->set(sym->name().substr(1), args);
-                    args = nil;
-                    break;
-                }
-
-                if (args.empty()) {
-                    throw EvalError("Proc: too few args");
-                }
-
-                auto val = car(args);
-                macro_env->set(sym->name(), val);
-                syms = cdr(syms);
-                args = cdr(args);
-            }
-
-            if (!args.empty()) {
-                throw EvalError("Proc: too many args");
-            }
-
-            auto expanded_expr = eval(macro_body, *macro_env);
-            return eval(expanded_expr, env);
-        });
+        return make_macro("anonymous", formal_args, macro_body);
     });
 }
 
