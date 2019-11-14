@@ -19,7 +19,7 @@
 #define MLISP_DEFUN(cmd__, func__)                                                                                     \
     do {                                                                                                               \
         auto const cmd = cmd__;                                                                                        \
-        env.set(cmd, make_proc(cmd, func__));                                                                          \
+        env.set(cmd, Proc{cmd, func__});                                                                               \
     } while (0)
 
 using namespace mll;
@@ -28,11 +28,6 @@ using namespace std::string_literals;
 namespace mlisp {
 
 namespace {
-
-inline Proc make_proc(std::string name, Func func)
-{
-    return Proc{std::move(name), std::move(func)};
-}
 
 bool is_number(Node const& node)
 {
