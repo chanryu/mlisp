@@ -15,7 +15,7 @@ public:
 
     struct Data : mll::Custom::Data {
         explicit Data(double v);
-        void print(std::ostream&, mll::PrintOptions const&) override;
+        void print(std::ostream&, mll::PrintContext) override;
         double const value;
     };
 

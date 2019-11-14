@@ -43,9 +43,9 @@ namespace mlisp {
 String::Data::Data(std::string v) : value{std::move(v)}
 {}
 
-void String::Data::print(std::ostream& ostream, mll::PrintOptions const& options)
+void String::Data::print(std::ostream& ostream, mll::PrintContext context)
 {
-    if (options.quote_string) {
+    if (context == mll::PrintContext::inspect) {
         ostream << quote_text(value);
     }
     else {
