@@ -165,6 +165,43 @@ List to_formal_args(Node const& node, char const* cmd)
     return args;
 }
 
+Proc make_lambda(std::string name, List const& formal_args, Node const& lambda_body,
+                 std::shared_ptr<Env> const& creator_env)
+{
+    return Proc(std::move(name), [formal_args, lambda_body, creator_env](List args, Env& env) {
+        auto lambda_env = creator_env->derive_new();
+        auto syms = formal_args;
+        while (!syms.empty()) {
+            auto sym = dynamic_node_cast<Symbol>(car(syms));
+            assert(sym.has_value());
+
+            if (is_variadic_args(*sym)) {
+                args = map(args, [&env](Node const& node) {
+                    return eval(node, env);
+                });
+                lambda_env->set(sym->name().substr(1), args);
+                args = nil;
+                break;
+            }
+
+            if (args.empty()) {
+                throw EvalError("Proc: too few args");
+            }
+
+            auto val = eval(car(args), env);
+            lambda_env->set(sym->name(), val);
+            syms = cdr(syms);
+            args = cdr(args);
+        }
+
+        if (!args.empty()) {
+            throw EvalError("Proc: too many args");
+        }
+
+        return eval(lambda_body, *lambda_env);
+    });
+}
+
 } // namespace
 
 void set_primitive_procs(Env& env)
@@ -242,38 +279,7 @@ void set_primitive_procs(Env& env)
         auto lambda_body = cadr(args);
         auto creator_env = env.shared_from_this();
 
-        return make_proc(cmd, [formal_args, lambda_body, creator_env](List args, Env& env) {
-            auto lambda_env = creator_env->derive_new();
-            auto syms = formal_args;
-            while (!syms.empty()) {
-                auto sym = dynamic_node_cast<Symbol>(car(syms));
-                assert(sym.has_value());
-
-                if (is_variadic_args(*sym)) {
-                    args = map(args, [&env](Node const& node) {
-                        return eval(node, env);
-                    });
-                    lambda_env->set(sym->name().substr(1), args);
-                    args = nil;
-                    break;
-                }
-
-                if (args.empty()) {
-                    throw EvalError("Proc: too few args");
-                }
-
-                auto val = eval(car(args), env);
-                lambda_env->set(sym->name(), val);
-                syms = cdr(syms);
-                args = cdr(args);
-            }
-
-            if (!args.empty()) {
-                throw EvalError("Proc: too many args");
-            }
-
-            return eval(lambda_body, *lambda_env);
-        });
+        return make_lambda("anonymous", formal_args, lambda_body, creator_env);
     });
 
     MLISP_DEFUN("macro", [cmd](List args, Env& /*env*/) {
@@ -282,7 +288,7 @@ void set_primitive_procs(Env& env)
         auto formal_args = to_formal_args(car(args), cmd);
         auto macro_body = cadr(args);
 
-        return make_proc(cmd, [formal_args, macro_body](List args, Env& env) {
+        return make_proc("anonymous", [formal_args, macro_body](List args, Env& env) {
             auto macro_env = env.derive_new();
             auto syms = formal_args;
             while (!syms.empty()) {
