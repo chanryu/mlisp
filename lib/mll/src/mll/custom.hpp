@@ -11,7 +11,8 @@ enum class PrintContext;
 
 class Custom {
 public:
-    friend class Parser;
+    Custom(Custom const&);
+
     struct Data : Node::Data {
         void accept(NodeVisitor&) override;
         virtual void print(std::ostream&, PrintContext) = 0;
@@ -19,9 +20,10 @@ public:
     std::shared_ptr<Data> const& data() const;
 
 protected:
-    explicit Custom(std::shared_ptr<Data>);
+    explicit Custom(std::shared_ptr<Data> const&);
 
 private:
+    friend class Parser;
     std::shared_ptr<Data> data_;
 };
 
