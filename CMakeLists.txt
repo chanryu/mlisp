@@ -6,7 +6,9 @@ project(mlisp)
 # libraries
 add_subdirectory(lib/mll)
 add_subdirectory(lib/3rd-party/Catch2)
-add_subdirectory(lib/3rd-party/linenoise)
+if(UNIX)
+    add_subdirectory(lib/3rd-party/linenoise)
+endif()
 
 ################################################################################
 # mlisp executable target
@@ -29,7 +31,11 @@ target_compile_options(mlisp PRIVATE
         -Werror -Wall -Wextra>
     $<$<CXX_COMPILER_ID:MSVC>:
         -W4>)
-target_link_libraries(mlisp PRIVATE mll linenoise)
+target_link_libraries(mlisp PRIVATE mll)
+if(UNIX)
+    target_link_libraries(mlisp PRIVATE linenoise)
+endif()
+
 
 ################################################################################
 # mlisp test target
