@@ -6,9 +6,11 @@
 #include <mll/node.hpp>
 #include <mll/print.hpp>
 
-#ifdef MLISP_READLINE
-#include <readline/history.h>
-#include <readline/readline.h>
+#if __has_include(<linenoise/linenoise.h>)
+#include <linenoise/linenoise.h>
+#define MLISP_LINENOISE 1
+#else
+#define MLISP_LINENOISE 0
 #endif
 
 #include <iostream>
@@ -20,21 +22,18 @@ namespace mlisp {
 namespace {
 bool get_line(char const* prompt, std::string& line)
 {
-#ifdef MLISP_READLINE
-    auto buf = readline(prompt);
-    if (buf) {
-        line = buf;
-        free(buf);
+#if MLISP_LINENOISE
+    if (auto rp = ::linenoise(prompt)) {
+        std::unique_ptr<char, decltype(::free)*> sp{rp, ::free};
+        line = sp.get();
         if (!line.empty()) {
-            add_history(line.c_str());
+            linenoiseHistoryAdd(line.c_str());
         }
-        line.push_back('\n');
         return true;
     }
 #else
     std::cout << prompt;
     if (std::getline(std::cin, line)) {
-        line.push_back('\n');
         return true;
     }
 #endif
