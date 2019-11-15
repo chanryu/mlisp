@@ -6,6 +6,7 @@ project(mlisp)
 # libraries
 add_subdirectory(lib/mll)
 add_subdirectory(lib/3rd-party/Catch2)
+add_subdirectory(lib/3rd-party/linenoise)
 
 ################################################################################
 # mlisp executable target
@@ -28,11 +29,11 @@ target_compile_options(mlisp PRIVATE
         -Werror -Wall -Wextra>
     $<$<CXX_COMPILER_ID:MSVC>:
         -W4>)
-target_link_libraries(mlisp PRIVATE mll)
+target_link_libraries(mlisp PRIVATE mll linenoise)
 
 ################################################################################
 # mlisp test target
-list(REMOVE_ITEM MLISP_SOURCES src/mlisp/main.cpp)
+list(REMOVE_ITEM MLISP_SOURCES src/mlisp/main.cpp src/mlisp/repl.cpp)
 file(GLOB TEST_SOURCES src/test/*.cpp)
 add_executable(mlisp_test ${MLISP_SOURCES} ${MLISP_HEADERS} ${TEST_SOURCES})
 target_include_directories(mlisp_test PRIVATE src/mlisp)
