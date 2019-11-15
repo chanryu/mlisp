@@ -142,7 +142,7 @@ bool is_variadic_args(Symbol const& sym)
     return sym.name().size() > 1 && sym.name()[0] == '*';
 }
 
-List to_formal_args(Node const& node, char const* cmd)
+List to_formal_args_or_throw(Node const& node, char const* cmd)
 {
     auto args = to_list_or_throw(node, cmd);
 
@@ -160,7 +160,7 @@ List to_formal_args(Node const& node, char const* cmd)
     return args;
 }
 
-Proc make_lambda(std::string name, List const& formal_args, Node const& lambda_body,
+Node make_lambda(std::string name, List const& formal_args, Node const& lambda_body,
                  std::shared_ptr<Env> const& creator_env)
 {
     return Proc(std::move(name), [formal_args, lambda_body, creator_env](List args, Env& env) {
@@ -284,10 +284,26 @@ void set_primitive_procs(Env& env)
     MLISP_DEFUN("define", [cmd](List args, Env& env) {
         assert_argc(args, 2, cmd);
 
-        auto symbol = to_symbol_or_throw(car(args), cmd);
-        auto value = eval(cadr(args), env);
-        env.set(symbol.name(), value);
-        return value;
+        auto first_arg = car(args);
+
+        if (auto sym = dynamic_node_cast<Symbol>(first_arg)) {
+            auto value = eval(cadr(args), env);
+            env.set(sym->name(), value);
+            return value;
+        }
+
+        auto list = dynamic_node_cast<List>(first_arg);
+        if (!list) {
+            throw EvalError("`define' expects symbol or list for the 1st argument");
+        }
+
+        auto name = to_symbol_or_throw(car(*list), cmd);
+        auto formal_args = to_formal_args_or_throw(cdr(*list), cmd);
+        auto lambda_body = cadr(args);
+        auto creator_env = env.shared_from_this();
+        auto func = make_lambda(name.name(), formal_args, lambda_body, creator_env);
+        env.set(name.name(), func);
+        return func;
     });
 
     MLISP_DEFUN("set!", [cmd](List args, Env& env) {
@@ -304,7 +320,7 @@ void set_primitive_procs(Env& env)
     MLISP_DEFUN("lambda", [cmd](List args, Env& env) {
         assert_argc_min(args, 2, cmd);
 
-        auto formal_args = to_formal_args(car(args), cmd);
+        auto formal_args = to_formal_args_or_throw(car(args), cmd);
         auto lambda_body = cadr(args);
         auto creator_env = env.shared_from_this();
 
@@ -314,7 +330,7 @@ void set_primitive_procs(Env& env)
     MLISP_DEFUN("macro", [cmd](List args, Env& /*env*/) {
         assert_argc_min(args, 2, cmd);
 
-        auto formal_args = to_formal_args(car(args), cmd);
+        auto formal_args = to_formal_args_or_throw(car(args), cmd);
         auto macro_body = cadr(args);
 
         return make_macro("anonymous", formal_args, macro_body);
