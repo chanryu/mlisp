@@ -12,11 +12,13 @@
 #include <fstream>
 #include <iostream>
 
-#ifdef _WIN32
-#include <direct.h>
-#define _getcwd getcwd
-#else
+#if __has_include(<unistd.h>)
 #include <unistd.h>
+#elif defined(_WIN32)
+#include <direct.h>
+#define getcwd _getcwd
+#else
+#error "cannot find getcwd()"
 #endif
 
 namespace mlisp {
