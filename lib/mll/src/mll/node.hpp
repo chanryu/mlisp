@@ -50,7 +50,7 @@ public:
     std::shared_ptr<Data> const& data() const;
 
 private:
-    std::shared_ptr<Data> data_;
+    std::shared_ptr<Data> _data;
 };
 
 class List final {
@@ -72,7 +72,7 @@ public:
 
 private:
     List(std::shared_ptr<Data> const&);
-    std::shared_ptr<Data> data_;
+    std::shared_ptr<Data> _data;
 };
 
 class Proc final {
@@ -91,7 +91,7 @@ public:
 
 private:
     Proc(std::shared_ptr<Data>);
-    std::shared_ptr<Data> data_;
+    std::shared_ptr<Data> _data;
 };
 
 class Symbol final {
@@ -108,7 +108,7 @@ public:
 
 private:
     Symbol(std::shared_ptr<Data>);
-    std::shared_ptr<Data> data_;
+    std::shared_ptr<Data> _data;
 };
 
 // The nil

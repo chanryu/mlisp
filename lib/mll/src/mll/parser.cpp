@@ -148,8 +148,8 @@ std::optional<Node> Parser::parse(std::istream& istream)
 {
     auto make_custom_or_symbol = [this](Token const& token) -> Node {
         std::shared_ptr<Custom::Data> custom_data;
-        if (custom_data_func_) {
-            custom_data = custom_data_func_(token.text, token.is_double_quoted);
+        if (_custom_data_func) {
+            custom_data = _custom_data_func(token.text, token.is_double_quoted);
         }
         if (custom_data) {
             return Custom{custom_data};
@@ -167,18 +167,18 @@ std::optional<Node> Parser::parse(std::istream& istream)
             node = make_custom_or_symbol(token);
         }
         else if (token.text == "(" || is_quote_token(token.text)) {
-            stack_.push({token.text, {}, true});
+            _stack.push({token.text, {}, true});
             continue;
         }
         else if (token.text == ")") {
             List list;
             while (true) {
-                if (stack_.empty() || quote_symbol_name_from_token(stack_.top().token) != nullptr) {
+                if (_stack.empty() || quote_symbol_name_from_token(_stack.top().token) != nullptr) {
                     throw mll::ParseError{"redundant ')'"};
                 }
 
-                auto c = stack_.top();
-                stack_.pop();
+                auto c = _stack.top();
+                _stack.pop();
                 if (c.head_empty) {
                     assert(c.token == "(");
                     assert(list.empty());
@@ -197,22 +197,22 @@ std::optional<Node> Parser::parse(std::istream& istream)
         }
 
         while (true) {
-            if (stack_.empty()) {
+            if (_stack.empty()) {
                 return node;
             }
 
-            if (auto quote_name = quote_symbol_name_from_token(stack_.top().token)) {
-                stack_.pop();
+            if (auto quote_name = quote_symbol_name_from_token(_stack.top().token)) {
+                _stack.pop();
                 node = cons(Symbol{quote_name}, cons(node, nil));
                 continue;
             }
 
-            if (stack_.top().head_empty) {
-                stack_.top().head = node;
-                stack_.top().head_empty = false;
+            if (_stack.top().head_empty) {
+                _stack.top().head = node;
+                _stack.top().head_empty = false;
             }
             else {
-                stack_.push({/*token*/ "", node, false});
+                _stack.push({/*token*/ "", node, false});
             }
             break;
         }
@@ -223,12 +223,12 @@ std::optional<Node> Parser::parse(std::istream& istream)
 
 bool Parser::clean() const
 {
-    return stack_.empty();
+    return _stack.empty();
 }
 
 void Parser::set_custom_data_func(CustomDataFunc custom_data_func)
 {
-    custom_data_func_ = std::move(custom_data_func);
+    _custom_data_func = std::move(custom_data_func);
 }
 
 } // namespace mll

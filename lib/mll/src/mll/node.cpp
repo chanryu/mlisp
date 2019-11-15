@@ -52,55 +52,55 @@ struct Symbol::Data : Node::Data {
 ////////////////////////////////////////////////////////////////////////////////
 // Node
 
-Node::Node(Node const& other) : data_{other.data_}
+Node::Node(Node const& other) : _data{other._data}
 {}
 
-Node::Node(List const& list) : data_{list.data()}
+Node::Node(List const& list) : _data{list.data()}
 {}
 
-Node::Node(Proc const& proc) : data_{proc.data()}
+Node::Node(Proc const& proc) : _data{proc.data()}
 {}
 
-Node::Node(Symbol const& symbol) : data_{symbol.data()}
+Node::Node(Symbol const& symbol) : _data{symbol.data()}
 {}
 
-Node::Node(Custom const& custom) : data_{custom.data()}
+Node::Node(Custom const& custom) : _data{custom.data()}
 {}
 
 Node& Node::operator=(Node const& rhs)
 {
-    data_ = rhs.data_;
+    _data = rhs._data;
     return *this;
 }
 
 Node& Node::operator=(List const& rhs)
 {
-    data_ = rhs.data();
+    _data = rhs.data();
     return *this;
 }
 
 Node& Node::operator=(Proc const& rhs)
 {
-    data_ = rhs.data();
+    _data = rhs.data();
     return *this;
 }
 
 Node& Node::operator=(Symbol const& rhs)
 {
-    data_ = rhs.data();
+    _data = rhs.data();
     return *this;
 }
 
 Node& Node::operator=(Custom const& rhs)
 {
-    data_ = rhs.data();
+    _data = rhs.data();
     return *this;
 }
 
 void Node::accept(NodeVisitor& visitor) const
 {
-    if (data_) {
-        data_->accept(visitor);
+    if (_data) {
+        _data->accept(visitor);
     }
     else {
         visitor.visit(nil);
@@ -109,39 +109,39 @@ void Node::accept(NodeVisitor& visitor) const
 
 std::shared_ptr<Node::Data> const& Node::data() const
 {
-    return data_;
+    return _data;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // List
 
-List::List(List const& other) : data_{other.data_}
+List::List(List const& other) : _data{other._data}
 {}
 
-List::List(Node const& head, List const& tail) : data_{std::make_shared<Data>(head, tail)}
+List::List(Node const& head, List const& tail) : _data{std::make_shared<Data>(head, tail)}
 {}
 
-List::List(std::shared_ptr<Data> const& data) : data_{data}
+List::List(std::shared_ptr<Data> const& data) : _data{data}
 {}
 
 bool List::empty() const
 {
-    return !data_;
+    return !_data;
 }
 
 Node List::head() const
 {
-    return data_ ? data_->head : nil;
+    return _data ? _data->head : nil;
 }
 
 List List::tail() const
 {
-    return data_ ? data_->tail : nil;
+    return _data ? _data->tail : nil;
 }
 
 std::shared_ptr<List::Data> const& List::data() const
 {
-    return data_;
+    return _data;
 }
 
 std::optional<List> List::from_node(Node const& node)
@@ -159,34 +159,34 @@ std::optional<List> List::from_node(Node const& node)
 ////////////////////////////////////////////////////////////////////////////////
 // Proc
 
-Proc::Proc(Func func) : data_{std::make_shared<Data>("anonymous", std::move(func))}
+Proc::Proc(Func func) : _data{std::make_shared<Data>("anonymous", std::move(func))}
 {}
 
-Proc::Proc(std::string name, Func func) : data_{std::make_shared<Data>(std::move(name), std::move(func))}
+Proc::Proc(std::string name, Func func) : _data{std::make_shared<Data>(std::move(name), std::move(func))}
 {}
 
-Proc::Proc(Proc const& other) : data_{other.data_}
+Proc::Proc(Proc const& other) : _data{other._data}
 {}
 
-Proc::Proc(std::shared_ptr<Data> data) : data_{data}
+Proc::Proc(std::shared_ptr<Data> data) : _data{data}
 {}
 
 const std::string& Proc::name() const
 {
-    return data_->name;
+    return _data->name;
 }
 
 Node Proc::call(List const& args, Env& env) const
 {
-    if (data_->func) {
-        return data_->func(args, env);
+    if (_data->func) {
+        return _data->func(args, env);
     }
     return nil;
 }
 
 std::shared_ptr<Proc::Data> const& Proc::data() const
 {
-    return data_;
+    return _data;
 }
 
 std::optional<Proc> Proc::from_node(Node const& node)
@@ -206,28 +206,28 @@ Symbol::Symbol(std::string name)
 
     auto i = symbols.find(name);
     if (i == symbols.end()) {
-        data_ = std::make_shared<Data>(std::move(name));
-        symbols.insert(std::make_pair(data_->name, data_));
+        _data = std::make_shared<Data>(std::move(name));
+        symbols.insert(std::make_pair(_data->name, _data));
     }
     else {
-        data_ = i->second;
+        _data = i->second;
     }
 }
 
-Symbol::Symbol(Symbol const& other) : data_{other.data_}
+Symbol::Symbol(Symbol const& other) : _data{other._data}
 {}
 
-Symbol::Symbol(std::shared_ptr<Data> data) : data_{data}
+Symbol::Symbol(std::shared_ptr<Data> data) : _data{data}
 {}
 
 std::string const& Symbol::name() const
 {
-    return data_->name;
+    return _data->name;
 }
 
 std::shared_ptr<Symbol::Data> const& Symbol::data() const
 {
-    return data_;
+    return _data;
 }
 
 std::optional<Symbol> Symbol::from_node(Node const& node)

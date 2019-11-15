@@ -22,8 +22,8 @@ public:
 
 private:
     Env() = default;
-    std::shared_ptr<Env> base_;
-    std::map<std::string, Node> vars_;
+    std::shared_ptr<Env> _base;
+    std::map<std::string, Node> _vars;
 };
 
 } // namespace mll

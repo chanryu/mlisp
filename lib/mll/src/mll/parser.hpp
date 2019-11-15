@@ -31,9 +31,9 @@ private:
         Node head;
         bool head_empty;
     };
-    std::stack<Context> stack_;
+    std::stack<Context> _stack;
 
-    CustomDataFunc custom_data_func_;
+    CustomDataFunc _custom_data_func;
 };
 
 } // namespace mll

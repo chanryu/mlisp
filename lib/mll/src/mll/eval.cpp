@@ -11,26 +11,26 @@ namespace mll {
 namespace {
 class Evaluator : NodeVisitor {
 public:
-    explicit Evaluator(Env& env) : env_{env}
+    explicit Evaluator(Env& env) : _env{env}
     {}
 
     Node evaluate(Node const& expr)
     {
         expr.accept(*this);
-        return result_;
+        return _result;
     }
 
 private:
     void visit(List const& list) override
     {
         if (list.empty()) {
-            result_ = nil;
+            _result = nil;
             return;
         }
 
-        auto node = eval(car(list), env_);
+        auto node = eval(car(list), _env);
         if (auto proc = dynamic_node_cast<Proc>(node)) {
-            result_ = proc->call(cdr(list), env_);
+            _result = proc->call(cdr(list), _env);
         }
         else {
             throw EvalError(std::to_string(node) + " is not a proc.");
@@ -44,21 +44,21 @@ private:
 
     void visit(Custom const& custom) override
     {
-        result_ = custom;
+        _result = custom;
     }
 
     void visit(Symbol const& sym) override
     {
-        auto value = env_.deep_lookup(sym.name());
+        auto value = _env.deep_lookup(sym.name());
         if (!value.has_value()) {
             throw EvalError("Unknown symbol: " + sym.name());
         }
-        result_ = *value;
+        _result = *value;
     }
 
 private:
-    Env& env_;
-    Node result_;
+    Env& _env;
+    Node _result;
 };
 } // namespace
 

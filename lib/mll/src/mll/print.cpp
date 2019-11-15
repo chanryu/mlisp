@@ -23,23 +23,23 @@ const char* get_quote_token(Node const& node)
 
 class Printer : NodeVisitor {
 public:
-    explicit Printer(PrintContext context) : context_{context}
+    explicit Printer(PrintContext context) : _context{context}
     {}
 
     void print(std::ostream& ostream, Node const& node)
     {
-        ostream_ = &ostream;
+        _ostream = &ostream;
         print(node, /* is_head */ true);
-        ostream_ = nullptr;
+        _ostream = nullptr;
     }
 
 private:
     void visit(List const& list) override
     {
-        assert(ostream_);
+        assert(_ostream);
 
         if (list.empty()) {
-            *ostream_ << "()";
+            *_ostream << "()";
             return;
         }
 
@@ -47,11 +47,11 @@ private:
         const auto quoted = quote_token != nullptr;
 
         if (quoted) {
-            *ostream_ << quote_token;
+            *_ostream << quote_token;
         }
         else {
             if (is_head()) {
-                *ostream_ << '(';
+                *_ostream << '(';
             }
             auto head = car(list);
             print(head, /* is_head */ true);
@@ -60,53 +60,53 @@ private:
         auto tail = cdr(list);
         if (!tail.empty()) {
             if (!quoted) {
-                *ostream_ << ' ';
+                *_ostream << ' ';
             }
             print(tail, /* is_head */ false);
         }
 
         if (!quoted && is_head()) {
-            *ostream_ << ')';
+            *_ostream << ')';
         }
     }
 
     void visit(Proc const& proc) override
     {
-        assert(ostream_);
+        assert(_ostream);
 
-        *ostream_ << "<#proc: " << proc.name() << ">";
+        *_ostream << "<#proc: " << proc.name() << ">";
     }
 
     void visit(Custom const& custom) override
     {
-        assert(ostream_);
+        assert(_ostream);
 
-        custom.data()->print(*ostream_, context_);
+        custom.data()->print(*_ostream, _context);
     }
 
     void visit(Symbol const& sym) override
     {
-        assert(ostream_);
+        assert(_ostream);
 
-        *ostream_ << sym.name();
+        *_ostream << sym.name();
     }
 
 private:
     bool is_head() const
     {
-        return is_head_stack_.top();
+        return _is_head_stack.top();
     }
 
     void print(Node const& node, bool is_head)
     {
-        is_head_stack_.push(is_head);
+        _is_head_stack.push(is_head);
         node.accept(*this);
-        is_head_stack_.pop();
+        _is_head_stack.pop();
     }
 
-    PrintContext const context_;
-    std::ostream* ostream_ = nullptr;
-    std::stack<bool, std::vector<bool>> is_head_stack_;
+    PrintContext const _context;
+    std::ostream* _ostream = nullptr;
+    std::stack<bool, std::vector<bool>> _is_head_stack;
 };
 } // namespace
 

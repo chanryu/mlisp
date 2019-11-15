@@ -24,7 +24,7 @@ protected:
 
 private:
     friend class Parser;
-    std::shared_ptr<Data> data_;
+    std::shared_ptr<Data> _data;
 };
 
 } // namespace mll
