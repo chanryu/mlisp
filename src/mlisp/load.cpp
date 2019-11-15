@@ -12,7 +12,12 @@
 #include <fstream>
 #include <iostream>
 
+#ifdef _WIN32
+#include << direct.h>
+#define _getcwd getcwd
+#else
 #include <unistd.h>
+#endif
 
 namespace mlisp {
 
