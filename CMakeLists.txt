@@ -30,11 +30,6 @@ target_compile_options(mlisp PRIVATE
         -W4>)
 target_link_libraries(mlisp PRIVATE mll)
 
-# mlisp readline support
-target_include_directories(mlisp PRIVATE /usr/local/include)
-target_link_directories(mlisp PRIVATE /usr/local/lib)
-target_link_libraries(mlisp PRIVATE readline)
-
 ################################################################################
 # mlisp test target
 list(REMOVE_ITEM MLISP_SOURCES src/mlisp/main.cpp)
@@ -46,8 +41,3 @@ set_target_properties(mlisp_test PROPERTIES
     CXX_STANDARD_REQUIRED YES
     CXX_EXTENSIONS OFF)
 target_link_libraries(mlisp_test PRIVATE mll Catch2)
-
-# mlisp readline support
-target_include_directories(mlisp_test PRIVATE /usr/local/include)
-target_link_directories(mlisp_test PRIVATE /usr/local/lib)
-target_link_libraries(mlisp_test PRIVATE readline)

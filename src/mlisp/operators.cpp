@@ -19,7 +19,7 @@
 #define MLISP_DEFUN(cmd__, func__)                                                                                     \
     do {                                                                                                               \
         auto const cmd = cmd__;                                                                                        \
-        env.set(cmd, make_proc(cmd, func__));                                                                          \
+        env.set(cmd, Proc{cmd, func__});                                                                               \
     } while (0)
 
 using namespace mll;
@@ -28,11 +28,6 @@ using namespace std::string_literals;
 namespace mlisp {
 
 namespace {
-
-inline Proc make_proc(std::string name, Func func)
-{
-    return Proc{std::move(name), std::move(func)};
-}
 
 bool is_number(Node const& node)
 {
@@ -147,7 +142,7 @@ bool is_variadic_args(Symbol const& sym)
     return sym.name().size() > 1 && sym.name()[0] == '*';
 }
 
-List to_formal_args(Node const& node, char const* cmd)
+List to_formal_args_or_throw(Node const& node, char const* cmd)
 {
     auto args = to_list_or_throw(node, cmd);
 
@@ -163,6 +158,77 @@ List to_formal_args(Node const& node, char const* cmd)
     }
 
     return args;
+}
+
+Node make_lambda(std::string name, List const& formal_args, Node const& lambda_body,
+                 std::shared_ptr<Env> const& outer_env)
+{
+    return Proc(std::move(name), [formal_args, lambda_body, outer_env](List args, Env& env) {
+        auto lambda_env = outer_env->derive_new();
+        auto syms = formal_args;
+        while (!syms.empty()) {
+            auto sym = dynamic_node_cast<Symbol>(car(syms));
+            assert(sym.has_value());
+
+            if (is_variadic_args(*sym)) {
+                args = map(args, [&env](Node const& node) {
+                    return eval(node, env);
+                });
+                lambda_env->set(sym->name().substr(1), args);
+                args = nil;
+                break;
+            }
+
+            if (args.empty()) {
+                throw EvalError("Proc: too few args");
+            }
+
+            auto val = eval(car(args), env);
+            lambda_env->set(sym->name(), val);
+            syms = cdr(syms);
+            args = cdr(args);
+        }
+
+        if (!args.empty()) {
+            throw EvalError("Proc: too many args");
+        }
+
+        return eval(lambda_body, *lambda_env);
+    });
+}
+
+Proc make_macro(std::string name, List const& formal_args, Node const& macro_body)
+{
+    return Proc(std::move(name), [formal_args, macro_body](List args, Env& env) {
+        auto macro_env = env.derive_new();
+        auto syms = formal_args;
+        while (!syms.empty()) {
+            auto sym = dynamic_node_cast<Symbol>(car(syms));
+            assert(sym.has_value());
+
+            if (is_variadic_args(*sym)) {
+                macro_env->set(sym->name().substr(1), args);
+                args = nil;
+                break;
+            }
+
+            if (args.empty()) {
+                throw EvalError("Proc: too few args");
+            }
+
+            auto val = car(args);
+            macro_env->set(sym->name(), val);
+            syms = cdr(syms);
+            args = cdr(args);
+        }
+
+        if (!args.empty()) {
+            throw EvalError("Proc: too many args");
+        }
+
+        auto expanded_expr = eval(macro_body, *macro_env);
+        return eval(expanded_expr, env);
+    });
 }
 
 } // namespace
@@ -218,10 +284,26 @@ void set_primitive_procs(Env& env)
     MLISP_DEFUN("define", [cmd](List args, Env& env) {
         assert_argc(args, 2, cmd);
 
-        auto symbol = to_symbol_or_throw(car(args), cmd);
-        auto value = eval(cadr(args), env);
-        env.set(symbol.name(), value);
-        return value;
+        auto first_arg = car(args);
+
+        if (auto sym = dynamic_node_cast<Symbol>(first_arg)) {
+            auto value = eval(cadr(args), env);
+            env.set(sym->name(), value);
+            return value;
+        }
+
+        auto list = dynamic_node_cast<List>(first_arg);
+        if (!list) {
+            throw EvalError("`define' expects symbol or list for the 1st argument");
+        }
+
+        auto name = to_symbol_or_throw(car(*list), cmd);
+        auto formal_args = to_formal_args_or_throw(cdr(*list), cmd);
+        auto lambda_body = cadr(args);
+        auto outer_env = env.shared_from_this();
+        auto func = make_lambda(name.name(), formal_args, lambda_body, outer_env);
+        env.set(name.name(), func);
+        return func;
     });
 
     MLISP_DEFUN("set!", [cmd](List args, Env& env) {
@@ -238,80 +320,20 @@ void set_primitive_procs(Env& env)
     MLISP_DEFUN("lambda", [cmd](List args, Env& env) {
         assert_argc_min(args, 2, cmd);
 
-        auto formal_args = to_formal_args(car(args), cmd);
+        auto formal_args = to_formal_args_or_throw(car(args), cmd);
         auto lambda_body = cadr(args);
-        auto creator_env = env.shared_from_this();
+        auto outer_env = env.shared_from_this();
 
-        return make_proc(cmd, [formal_args, lambda_body, creator_env](List args, Env& env) {
-            auto lambda_env = creator_env->derive_new();
-            auto syms = formal_args;
-            while (!syms.empty()) {
-                auto sym = dynamic_node_cast<Symbol>(car(syms));
-                assert(sym.has_value());
-
-                if (is_variadic_args(*sym)) {
-                    args = map(args, [&env](Node const& node) {
-                        return eval(node, env);
-                    });
-                    lambda_env->set(sym->name().substr(1), args);
-                    args = nil;
-                    break;
-                }
-
-                if (args.empty()) {
-                    throw EvalError("Proc: too few args");
-                }
-
-                auto val = eval(car(args), env);
-                lambda_env->set(sym->name(), val);
-                syms = cdr(syms);
-                args = cdr(args);
-            }
-
-            if (!args.empty()) {
-                throw EvalError("Proc: too many args");
-            }
-
-            return eval(lambda_body, *lambda_env);
-        });
+        return make_lambda("anonymous", formal_args, lambda_body, outer_env);
     });
 
     MLISP_DEFUN("macro", [cmd](List args, Env& /*env*/) {
         assert_argc_min(args, 2, cmd);
 
-        auto formal_args = to_formal_args(car(args), cmd);
+        auto formal_args = to_formal_args_or_throw(car(args), cmd);
         auto macro_body = cadr(args);
 
-        return make_proc(cmd, [formal_args, macro_body](List args, Env& env) {
-            auto macro_env = env.derive_new();
-            auto syms = formal_args;
-            while (!syms.empty()) {
-                auto sym = dynamic_node_cast<Symbol>(car(syms));
-                assert(sym.has_value());
-
-                if (is_variadic_args(*sym)) {
-                    macro_env->set(sym->name().substr(1), args);
-                    args = nil;
-                    break;
-                }
-
-                if (args.empty()) {
-                    throw EvalError("Proc: too few args");
-                }
-
-                auto val = car(args);
-                macro_env->set(sym->name(), val);
-                syms = cdr(syms);
-                args = cdr(args);
-            }
-
-            if (!args.empty()) {
-                throw EvalError("Proc: too many args");
-            }
-
-            auto expanded_expr = eval(macro_body, *macro_env);
-            return eval(expanded_expr, env);
-        });
+        return make_macro("anonymous", formal_args, macro_body);
     });
 }
 
