@@ -6,13 +6,11 @@
 #include <mll/node.hpp>
 #include <mll/print.hpp>
 
-#if __has_include(<readline/readline.h>)
-#define MLISP_READLINE 1
+#ifdef MLISP_READLINE
 #include <readline/history.h>
 #include <readline/readline.h>
-#else
-#define MLISP_READLINE 0
 #endif
+
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
@@ -22,15 +20,7 @@ namespace mlisp {
 namespace {
 bool get_line(char const* prompt, std::string& line)
 {
-#if MLISP_READLINE
-    static bool once = true;
-    if (once) {
-        once = false;
-        // By default readline does filename completion. We disable this
-        // by asking readline to just insert the TAB character itself.
-        rl_bind_key('\t', rl_insert);
-    }
-
+#ifdef MLISP_READLINE
     auto buf = readline(prompt);
     if (buf) {
         line = buf;

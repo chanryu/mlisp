@@ -161,10 +161,10 @@ List to_formal_args_or_throw(Node const& node, char const* cmd)
 }
 
 Node make_lambda(std::string name, List const& formal_args, Node const& lambda_body,
-                 std::shared_ptr<Env> const& creator_env)
+                 std::shared_ptr<Env> const& outer_env)
 {
-    return Proc(std::move(name), [formal_args, lambda_body, creator_env](List args, Env& env) {
-        auto lambda_env = creator_env->derive_new();
+    return Proc(std::move(name), [formal_args, lambda_body, outer_env](List args, Env& env) {
+        auto lambda_env = outer_env->derive_new();
         auto syms = formal_args;
         while (!syms.empty()) {
             auto sym = dynamic_node_cast<Symbol>(car(syms));
@@ -300,8 +300,8 @@ void set_primitive_procs(Env& env)
         auto name = to_symbol_or_throw(car(*list), cmd);
         auto formal_args = to_formal_args_or_throw(cdr(*list), cmd);
         auto lambda_body = cadr(args);
-        auto creator_env = env.shared_from_this();
-        auto func = make_lambda(name.name(), formal_args, lambda_body, creator_env);
+        auto outer_env = env.shared_from_this();
+        auto func = make_lambda(name.name(), formal_args, lambda_body, outer_env);
         env.set(name.name(), func);
         return func;
     });
@@ -322,9 +322,9 @@ void set_primitive_procs(Env& env)
 
         auto formal_args = to_formal_args_or_throw(car(args), cmd);
         auto lambda_body = cadr(args);
-        auto creator_env = env.shared_from_this();
+        auto outer_env = env.shared_from_this();
 
-        return make_lambda("anonymous", formal_args, lambda_body, creator_env);
+        return make_lambda("anonymous", formal_args, lambda_body, outer_env);
     });
 
     MLISP_DEFUN("macro", [cmd](List args, Env& /*env*/) {
