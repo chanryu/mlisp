@@ -21,7 +21,7 @@ constexpr std::array<char, 128> esctbl = {{
     '\r', 0x00, '\t', 0x00, '\v', 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 }};
 
-bool is_whitespace(char c)
+bool is_whitespace(int c)
 {
     return c == ' ' || c == '\t' || c == '\r' || c == '\n';
 }
