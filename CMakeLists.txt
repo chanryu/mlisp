@@ -2,13 +2,13 @@ cmake_minimum_required(VERSION 3.11)
 
 project(mlisp)
 
+
 ################################################################################
 # libraries
 add_subdirectory(lib/mll)
 add_subdirectory(lib/3rd-party/Catch2)
-if(UNIX)
-    add_subdirectory(lib/3rd-party/linenoise)
-endif()
+add_subdirectory(lib/3rd-party/linenoise)
+
 
 ################################################################################
 # mlisp executable target
@@ -26,15 +26,9 @@ set_target_properties(mlisp PROPERTIES
     CXX_STANDARD 17
     CXX_STANDARD_REQUIRED YES
     CXX_EXTENSIONS OFF)
-target_compile_options(mlisp PRIVATE
-    $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
-        -Werror -Wall -Wextra>
-    $<$<CXX_COMPILER_ID:MSVC>:
-        -W4>)
+target_compile_options(mlisp PRIVATE -Werror -Wall -Wextra)
 target_link_libraries(mlisp PRIVATE mll)
-if(UNIX)
-    target_link_libraries(mlisp PRIVATE linenoise)
-endif()
+target_link_libraries(mlisp PRIVATE linenoise)
 
 
 ################################################################################
