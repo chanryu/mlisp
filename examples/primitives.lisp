@@ -3,14 +3,10 @@
     (macro (name args body)
         `(define ,name (macro ,args ,body))))
 
-; define-macro
-(define define-macro
-    (macro (name_args body)
-        `(define ,(car name_args) (macro ,(cdr name_args) ,body))))
-
 ; defun
-(defmacro defun (name args body)
-    `(define (,name ,@args) ,body))
+(define defun
+    (macro (name args body)
+        `(define ,name (lambda ,args ,body))))
 
 ; list
 (defun list (*args) args)

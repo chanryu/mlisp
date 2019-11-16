@@ -10,6 +10,7 @@
 #include <iostream>
 #include <sstream>
 #include <stack>
+#include <string_view>
 #include <vector>
 
 #include "load.hpp"
@@ -43,6 +44,14 @@ bool is_symbol(Node const& node)
 {
     return dynamic_node_cast<Symbol>(node).has_value();
 }
+
+bool match_symbol(Node const& node, std::string_view name)
+{
+    if (auto symbol = dynamic_node_cast<Symbol>(node)) {
+        return symbol->name() == name;
+    }
+    return false;
+};
 
 bool to_bool(Node const& node)
 {
@@ -270,7 +279,7 @@ void set_primitive_procs(Env& env)
         while (!args.empty()) {
             auto clause = to_list_or_throw(car(args), cmd);
             auto pred = car(clause);
-            if (to_bool(eval(pred, env))) {
+            if (match_symbol(pred, "else") || to_bool(eval(pred, env))) {
                 for (auto expr = cdr(clause); !expr.empty(); expr = cdr(expr)) {
                     result = eval(car(expr), env);
                 }
@@ -284,26 +293,10 @@ void set_primitive_procs(Env& env)
     MLISP_DEFUN("define", [cmd](List args, Env& env) {
         assert_argc(args, 2, cmd);
 
-        auto first_arg = car(args);
-
-        if (auto sym = dynamic_node_cast<Symbol>(first_arg)) {
-            auto value = eval(cadr(args), env);
-            env.set(sym->name(), value);
-            return value;
-        }
-
-        auto list = dynamic_node_cast<List>(first_arg);
-        if (!list) {
-            throw EvalError("`define' expects symbol or list for the 1st argument");
-        }
-
-        auto name = to_symbol_or_throw(car(*list), cmd);
-        auto formal_args = to_formal_args_or_throw(cdr(*list), cmd);
-        auto lambda_body = cadr(args);
-        auto outer_env = env.shared_from_this();
-        auto func = make_lambda(name.name(), formal_args, lambda_body, outer_env);
-        env.set(name.name(), func);
-        return func;
+        auto symbol = to_symbol_or_throw(car(args), cmd);
+        auto value = eval(cadr(args), env);
+        env.set(symbol.name(), value);
+        return value;
     });
 
     MLISP_DEFUN("set!", [cmd](List args, Env& env) {
