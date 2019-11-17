@@ -45,14 +45,6 @@ bool is_symbol(Node const& node)
     return dynamic_node_cast<Symbol>(node).has_value();
 }
 
-bool match_symbol(Node const& node, std::string_view name)
-{
-    if (auto symbol = dynamic_node_cast<Symbol>(node)) {
-        return symbol->name() == name;
-    }
-    return false;
-};
-
 bool to_bool(Node const& node)
 {
     auto list = dynamic_node_cast<List>(node);
@@ -279,10 +271,8 @@ void set_primitive_procs(Env& env)
         while (!args.empty()) {
             auto clause = to_list_or_throw(car(args), cmd);
             if (to_bool(eval(car(clause), env))) {
-                for (auto expr = cdr(clause); !expr.empty(); expr = cdr(expr)) {
-                    result = eval(car(expr), env);
-                }
-                return result;
+                result = eval(cadr(clause), env);
+                break;
             }
             args = cdr(args);
         }
