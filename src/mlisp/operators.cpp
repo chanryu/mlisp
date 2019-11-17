@@ -278,8 +278,7 @@ void set_primitive_procs(Env& env)
         Node result;
         while (!args.empty()) {
             auto clause = to_list_or_throw(car(args), cmd);
-            auto pred = car(clause);
-            if (match_symbol(pred, "else") || to_bool(eval(pred, env))) {
+            if (to_bool(eval(car(clause), env))) {
                 for (auto expr = cdr(clause); !expr.empty(); expr = cdr(expr)) {
                     result = eval(car(expr), env);
                 }

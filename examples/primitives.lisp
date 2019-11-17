@@ -8,6 +8,9 @@
     (macro (name args body)
         `(define ,name (lambda ,args ,body))))
 
+; nil
+(define nil '())
+
 ; list
 (defun list (*args) args)
 
@@ -32,45 +35,48 @@
   (cdr (car x)))
 
 ; null?
-(defun null? (x)
-  (eq x '()))
+(defun null? (x) (eq x nil))
 
 ; and
 (defun and (x y)
-  (cond (x (cond (y 't) ('t '())))
-  		('t '())))
+  (cond (x (cond (y 't)
+                 ('t nil)))
+  		  ('t nil)))
 
 ; not?
 (defun not? (x)
-  (cond (x '())
-		('t 't)))
+  (cond (x nil)
+		    ('t 't)))
 
 ; append
 (defun append (x y)
   (cond ((null? x) y)
-		('t (cons (car x) (append (cdr x) y)))))
+	    	('t (cons (car x) (append (cdr x) y)))))
 
 ; pair
 (defun pair (x y)
-  (cond ((and (null? x) (null? y)) '())
+  (cond ((and (null? x) (null? y)) nil)
 		((and (not? (atom x)) (not? (atom y)))
-		 (cons (cons (car x) (cons (car y) '()))
+		 (cons (cons (car x) (cons (car y) nil))
 			   (pair (cdr x) (cdr y))))))
 
 ; assoc
 (defun assoc (x y)
   (cond ((eq (caar y) x) (cadar y))
-		('t (assoc x (cdr y)))))
+		    ('t (assoc x (cdr y)))))
 
 ; subst
 (defun subst (x y z)
-  (cond ((atom z)
-		 (cond ((eq z y) x)
-			   ('t z)))
-		('t (cons (subst x y (car z))
-				  (subst x y (cdr z))))))
+  (cond ((atom z) (cond ((eq z y) x)
+                        ('t       z)))
+		    ('t (cons (subst x y (car z)) (subst x y (cdr z))))))
+
+; reverse
+(defun reverse (lst)
+    (cond ((null? lst) lst)
+          (else (append (reverse (cdr lst)) (list (car lst))))))
 
 ; begin
 (defun begin (*args)
     (cond ((atom (cdr args)) (car args))
-            ('t (begin (car (cdr args))))))
+          ('t (begin (cadr args)))))
