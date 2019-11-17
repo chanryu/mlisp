@@ -27,8 +27,7 @@ set_target_properties(mlisp PROPERTIES
     CXX_STANDARD_REQUIRED YES
     CXX_EXTENSIONS OFF)
 target_compile_options(mlisp PRIVATE -Werror -Wall -Wextra)
-target_link_libraries(mlisp PRIVATE mll)
-target_link_libraries(mlisp PRIVATE linenoise)
+target_link_libraries(mlisp PRIVATE mll linenoise)
 
 
 ################################################################################
