@@ -4,6 +4,10 @@
 
 namespace mlisp {
 
-MLL_CUSTOM_TYPE_DECL(Number, double);
+struct NumberPrinter {
+    NumberPrinter(std::ostream&, mll::PrintContext, double);
+};
+
+using Number = mll::CustomType<double, NumberPrinter>;
 
 } // namespace mlisp

@@ -6,6 +6,10 @@
 
 namespace mlisp {
 
-MLL_CUSTOM_TYPE_DECL(String, std::string);
+struct StringPrinter {
+    StringPrinter(std::ostream&, mll::PrintContext, std::string const&);
+};
+
+using String = mll::CustomType<std::string, StringPrinter>;
 
 } // namespace mlisp

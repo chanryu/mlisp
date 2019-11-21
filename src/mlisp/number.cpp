@@ -5,7 +5,9 @@
 #include <sstream>
 
 namespace mlisp {
-MLL_CUSTOM_TYPE_IMPL(Number, double, [](auto& ostream, auto /*context*/, auto value) {
+
+NumberPrinter::NumberPrinter(std::ostream& ostream, mll::PrintContext /*context*/, double value)
+{
     auto str = (std::ostringstream{} << std::fixed << value).str();
 
     auto const dot_pos = str.find('.');
@@ -21,5 +23,6 @@ MLL_CUSTOM_TYPE_IMPL(Number, double, [](auto& ostream, auto /*context*/, auto va
     }
 
     ostream << str;
-});
+}
+
 } // namespace mlisp
