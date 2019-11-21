@@ -6,7 +6,7 @@
 
 namespace mlisp {
 
-NumberPrinter::NumberPrinter(std::ostream& ostream, mll::PrintContext /*context*/, double value)
+void NumberPrinter::print(std::ostream& ostream, mll::PrintContext /*context*/, double value)
 {
     std::ostringstream oss;
     oss << std::fixed << value;

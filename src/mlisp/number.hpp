@@ -5,7 +5,7 @@
 namespace mlisp {
 
 struct NumberPrinter {
-    NumberPrinter(std::ostream&, mll::PrintContext, double);
+    static void print(std::ostream&, mll::PrintContext, double);
 };
 
 using Number = mll::CustomType<double, NumberPrinter>;

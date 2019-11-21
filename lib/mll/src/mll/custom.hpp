@@ -27,7 +27,7 @@ private:
     std::shared_ptr<Data> _data;
 };
 
-template <typename ValueType, typename PrintFunc>
+template <typename ValueType, typename ValuePrinter>
 class CustomType final : public ::mll::Custom {
 public:
     struct Data : ::mll::Custom::Data {
@@ -35,7 +35,7 @@ public:
         {}
         void print(std::ostream& ostream, ::mll::PrintContext context) final
         {
-            PrintFunc(ostream, context, value);
+            ValuePrinter::print(ostream, context, value);
         }
         ValueType const value;
     };

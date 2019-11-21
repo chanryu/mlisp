@@ -37,7 +37,7 @@ std::string quote_text(std::string const& text)
 
 namespace mlisp {
 
-StringPrinter::StringPrinter(std::ostream& ostream, mll::PrintContext context, std::string const& value)
+void StringPrinter::print(std::ostream& ostream, mll::PrintContext context, std::string const& value)
 {
     if (context == mll::PrintContext::inspect) {
         ostream << quote_text(value);
@@ -47,12 +47,4 @@ StringPrinter::StringPrinter(std::ostream& ostream, mll::PrintContext context, s
     }
 }
 
-// MLL_CUSTOM_TYPE_IMPL(String, std::string, [](auto& ostream, auto context, auto const& value) {
-//     if (context == mll::PrintContext::inspect) {
-//         ostream << quote_text(value);
-//     }
-//     else {
-//         ostream << value;
-//     }
-// });
 } // namespace mlisp

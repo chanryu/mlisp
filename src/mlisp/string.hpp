@@ -7,7 +7,7 @@
 namespace mlisp {
 
 struct StringPrinter {
-    StringPrinter(std::ostream&, mll::PrintContext, std::string const&);
+    static void print(std::ostream&, mll::PrintContext, std::string const&);
 };
 
 using String = mll::CustomType<std::string, StringPrinter>;
