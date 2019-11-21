@@ -14,7 +14,7 @@ public:
     Custom(Custom const&);
 
     struct Data : Node::Data {
-        void accept(NodeVisitor&) override;
+        void accept(NodeVisitor&) final;
         virtual void print(std::ostream&, PrintContext) = 0;
     };
     std::shared_ptr<Data> const& data() const;
