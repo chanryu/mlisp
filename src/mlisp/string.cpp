@@ -37,13 +37,7 @@ std::string quote_text(std::string const& text)
 
 namespace mlisp {
 
-///////////////////////////////////////////////////////////////////////////////
-// String::Data
-
-String::Data::Data(std::string v) : value{std::move(v)}
-{}
-
-void String::Data::print(std::ostream& ostream, mll::PrintContext context)
+StringPrinter::StringPrinter(std::ostream& ostream, mll::PrintContext context, std::string const& value)
 {
     if (context == mll::PrintContext::inspect) {
         ostream << quote_text(value);
@@ -53,29 +47,12 @@ void String::Data::print(std::ostream& ostream, mll::PrintContext context)
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// String
-
-String::String(std::string value) : mll::Custom{std::make_shared<Data>(std::move(value))}
-{}
-
-String::String(String const& other) : mll::Custom{other}
-{}
-
-String::String(std::shared_ptr<Data> const& data) : mll::Custom{data}
-{}
-
-std::string const& String::value() const
-{
-    return static_cast<Data*>(Custom::data().get())->value;
-}
-
-std::optional<String> String::from_node(mll::Node const& node)
-{
-    if (auto data = std::dynamic_pointer_cast<Data>(node.data())) {
-        return String{data};
-    }
-    return std::nullopt;
-}
-
+// MLL_CUSTOM_TYPE_IMPL(String, std::string, [](auto& ostream, auto context, auto const& value) {
+//     if (context == mll::PrintContext::inspect) {
+//         ostream << quote_text(value);
+//     }
+//     else {
+//         ostream << value;
+//     }
+// });
 } // namespace mlisp

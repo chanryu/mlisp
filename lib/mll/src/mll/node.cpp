@@ -15,7 +15,7 @@ struct List::Data : Node::Data {
     Data(Node const& h, List const& t) : head{h}, tail{t}
     {}
 
-    void accept(NodeVisitor& visitor) override
+    void accept(NodeVisitor& visitor) final
     {
         visitor.visit(List{std::static_pointer_cast<Data>(shared_from_this())});
     }
@@ -28,7 +28,7 @@ struct Proc::Data : Node::Data {
     explicit Data(std::string n, Func f) : name{std::move(n)}, func{std::move(f)}
     {}
 
-    void accept(NodeVisitor& visitor) override
+    void accept(NodeVisitor& visitor) final
     {
         visitor.visit(Proc{std::static_pointer_cast<Data>(shared_from_this())});
     }
@@ -41,7 +41,7 @@ struct Symbol::Data : Node::Data {
     explicit Data(std::string n) : name{std::move(n)}
     {}
 
-    void accept(NodeVisitor& visitor) override
+    void accept(NodeVisitor& visitor) final
     {
         visitor.visit(Symbol{std::static_pointer_cast<Data>(shared_from_this())});
     }

@@ -1,57 +1,31 @@
 #include "number.hpp"
 
-#include <cmath>
+#include <cassert>
 #include <iomanip>
+#include <sstream>
 
 namespace mlisp {
 
-///////////////////////////////////////////////////////////////////////////////
-// Number::Data
-
-Number::Data::Data(double v) : value{v}
-{}
-
-void Number::Data::print(std::ostream& ostream, mll::PrintContext /*context*/)
+NumberPrinter::NumberPrinter(std::ostream& ostream, mll::PrintContext /*context*/, double value)
 {
-    bool const is_integral = [this] {
-        double dummy;
-        return std::modf(value, &dummy) == .0;
-    }();
+    std::ostringstream oss;
+    oss << std::fixed << value;
 
-    if (is_integral) {
-        auto const old_precision = ostream.precision();
-        ostream << std::setprecision(0);
-        ostream << std::fixed << value;
-        ostream << std::setprecision(old_precision);
+    auto str = oss.str();
+
+    auto const dot_pos = str.find('.');
+    assert(dot_pos != 0);
+    assert(dot_pos != std::string::npos);
+
+    auto const last_not_0_pos = str.find_last_not_of('0');
+    if (last_not_0_pos == dot_pos) {
+        str.resize(last_not_0_pos);
     }
-    else {
-        ostream << value;
+    else if (last_not_0_pos != std::string::npos) {
+        str.resize(last_not_0_pos + 1);
     }
-}
 
-///////////////////////////////////////////////////////////////////////////////
-// Number
-
-Number::Number(double value) : mll::Custom{std::make_shared<Data>(value)}
-{}
-
-Number::Number(Number const& other) : mll::Custom{other}
-{}
-
-Number::Number(std::shared_ptr<Data> const& data) : mll::Custom{data}
-{}
-
-double Number::value() const
-{
-    return static_cast<Data*>(Custom::data().get())->value;
-}
-
-std::optional<Number> Number::from_node(mll::Node const& node)
-{
-    if (auto data = std::dynamic_pointer_cast<Data>(node.data())) {
-        return Number{data};
-    }
-    return std::nullopt;
+    ostream << str;
 }
 
 } // namespace mlisp
