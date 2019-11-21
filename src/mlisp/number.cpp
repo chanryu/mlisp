@@ -1,6 +1,6 @@
 #include "number.hpp"
 
-#include <cmath>
+#include <cassert>
 #include <iomanip>
 #include <sstream>
 
