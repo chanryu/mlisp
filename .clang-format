@@ -7,7 +7,7 @@ AccessModifierOffset: -4
 AlwaysBreakTemplateDeclarations: true
 AllowShortFunctionsOnASingleLine: false
 AllowShortIfStatementsOnASingleLine: false
-AllowShortLambdasOnASingleLine: false
+#AllowShortLambdasOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
 BreakBeforeBraces: Custom
 BraceWrapping:

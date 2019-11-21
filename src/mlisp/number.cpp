@@ -13,16 +13,20 @@ Number::Data::Data(double v) : value{v}
 
 void Number::Data::print(std::ostream& ostream, mll::PrintContext /*context*/)
 {
-    const bool is_integral = [this] {
-        double int_part;
-        std::modf(value, &int_part);
-        return value == int_part;
+    bool const is_integral = [this] {
+        double dummy;
+        return std::modf(value, &dummy) == .0;
     }();
-    if (is_integral) {
-        ostream << std::setprecision(0);
-    }
 
-    ostream << std::fixed << value;
+    if (is_integral) {
+        auto const old_precision = ostream.precision();
+        ostream << std::setprecision(0);
+        ostream << std::fixed << value;
+        ostream << std::setprecision(old_precision);
+    }
+    else {
+        ostream << value;
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

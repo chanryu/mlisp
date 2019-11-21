@@ -5,8 +5,8 @@
 
 ; defun
 (define defun
-    (macro (name args body)
-        `(define ,name (lambda ,args ,body))))
+    (macro (name args *body)
+        `(define ,name (lambda ,args ,@body))))
 
 ; nil
 (define nil '())
@@ -74,9 +74,12 @@
 ; reverse
 (defun reverse (lst)
     (cond ((null? lst) lst)
-          (else (append (reverse (cdr lst)) (list (car lst))))))
+          ('t (append (reverse (cdr lst)) (list (car lst))))))
 
 ; begin
 (defun begin (*args)
-    (cond ((atom (cdr args)) (car args))
-          ('t (begin (cadr args)))))
+  (defun seq (ls)
+    (cond ((atom (cdr ls)) (car ls))
+          ('t (seq (cdr ls))))
+  )
+  (seq args))
