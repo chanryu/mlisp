@@ -161,7 +161,7 @@ List to_formal_args_or_throw(Node const& node, char const* cmd)
     return args;
 }
 
-Node make_lambda(std::string name, List const& formal_args, Node const& lambda_body,
+Node make_lambda(std::string name, List const& formal_args, List const& lambda_body,
                  std::shared_ptr<Env> const& outer_env)
 {
     return Proc(std::move(name), [formal_args, lambda_body, outer_env](List args, Env& env) {
@@ -172,9 +172,7 @@ Node make_lambda(std::string name, List const& formal_args, Node const& lambda_b
             assert(sym.has_value());
 
             if (is_variadic_args(*sym)) {
-                args = map(args, [&env](Node const& node) {
-                    return eval(node, env);
-                });
+                args = map(args, [&env](Node const& node) { return eval(node, env); });
                 lambda_env->set(sym->name().substr(1), args);
                 args = nil;
                 break;
@@ -194,7 +192,10 @@ Node make_lambda(std::string name, List const& formal_args, Node const& lambda_b
             throw EvalError("Proc: too many args");
         }
 
-        return eval(lambda_body, *lambda_env);
+        Node result;
+        for_each(lambda_body, [&result, lambda_env](auto const& expr) { result = eval(expr, *lambda_env); });
+
+        return result;
     });
 }
 
@@ -227,8 +228,8 @@ Proc make_macro(std::string name, List const& formal_args, Node const& macro_bod
             throw EvalError("Proc: too many args");
         }
 
-        auto expanded_expr = eval(macro_body, *macro_env);
-        return eval(expanded_expr, env);
+        auto expr = eval(macro_body, *macro_env);
+        return eval(expr, env);
     });
 }
 
@@ -303,7 +304,7 @@ void set_primitive_procs(Env& env)
         assert_argc_min(args, 2, cmd);
 
         auto formal_args = to_formal_args_or_throw(car(args), cmd);
-        auto lambda_body = cadr(args);
+        auto lambda_body = cdr(args);
         auto outer_env = env.shared_from_this();
 
         return make_lambda("anonymous", formal_args, lambda_body, outer_env);
@@ -328,7 +329,7 @@ void set_complementary_procs(Env& env)
             }
             print(std::cout, eval(expr, env), PrintContext::display);
         });
-        std::cout << '\n';
+        std::cout << std::endl;
         return nil;
     });
 
@@ -365,9 +366,8 @@ void set_number_procs(Env& env)
 
     MLISP_DEFUN("+", [cmd](List args, Env& env) {
         auto result = 0.0;
-        for_each(args, [&result, &env, cmd](auto const& arg) {
-            result += to_number_or_throw(eval(arg, env), cmd).value();
-        });
+        for_each(args,
+                 [&result, &env, cmd](auto const& arg) { result += to_number_or_throw(eval(arg, env), cmd).value(); });
         return Number{result};
     });
 
@@ -402,9 +402,8 @@ void set_number_procs(Env& env)
         assert_argc_min(args, 2, cmd);
 
         auto result = to_number_or_throw(eval(car(args), env), cmd).value();
-        for_each(cdr(args), [&result, &env, cmd](auto const& arg) {
-            result /= to_number_or_throw(eval(arg, env), cmd).value();
-        });
+        for_each(cdr(args),
+                 [&result, &env, cmd](auto const& arg) { result /= to_number_or_throw(eval(arg, env), cmd).value(); });
         return Number{result};
     });
 }
