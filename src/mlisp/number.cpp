@@ -8,7 +8,10 @@ namespace mlisp {
 
 NumberPrinter::NumberPrinter(std::ostream& ostream, mll::PrintContext /*context*/, double value)
 {
-    auto str = (std::ostringstream{} << std::fixed << value).str();
+    std::ostringstream oss;
+    oss << std::fixed << value;
+
+    auto str = oss.str();
 
     auto const dot_pos = str.find('.');
     assert(dot_pos != 0);
