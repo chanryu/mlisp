@@ -30,7 +30,7 @@ private:
 } // namespace mll
 
 #define MLL_CUSTOM_TYPE_DECL(ClassName, ValueType)                                                                     \
-    class ClassName : public ::mll::Custom {                                                                           \
+    class ClassName final : public ::mll::Custom {                                                                     \
     public:                                                                                                            \
         explicit ClassName(ValueType);                                                                                 \
         ClassName(ClassName const&);                                                                                   \
@@ -38,7 +38,7 @@ private:
         ValueType const& value() const;                                                                                \
         struct Data : ::mll::Custom::Data {                                                                            \
             explicit Data(ValueType v);                                                                                \
-            void print(std::ostream&, ::mll::PrintContext) override;                                                   \
+            void print(std::ostream&, ::mll::PrintContext) final;                                                      \
             ValueType const value;                                                                                     \
         };                                                                                                             \
                                                                                                                        \
