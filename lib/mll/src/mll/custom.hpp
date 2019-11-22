@@ -13,25 +13,25 @@ class Custom {
 public:
     Custom(Custom const&);
 
-    struct Data : Node::Data {
+    struct Core : Node::Core {
         void accept(NodeVisitor&) final;
         virtual void print(std::ostream&, PrintContext) = 0;
     };
-    std::shared_ptr<Data> const& data() const;
+    std::shared_ptr<Core> const& core() const;
 
 protected:
-    explicit Custom(std::shared_ptr<Data> const&);
+    explicit Custom(std::shared_ptr<Core> const&);
 
 private:
     friend class Parser;
-    std::shared_ptr<Data> _data;
+    std::shared_ptr<Core> _core;
 };
 
 template <typename ValueType, typename ValuePrinter>
 class CustomType final : public ::mll::Custom {
 public:
-    struct Data : ::mll::Custom::Data {
-        explicit Data(ValueType v) : value{std::move(v)}
+    struct Core : ::mll::Custom::Core {
+        explicit Core(ValueType v) : value{std::move(v)}
         {}
         void print(std::ostream& ostream, ::mll::PrintContext context) final
         {
@@ -40,7 +40,7 @@ public:
         ValueType const value;
     };
 
-    explicit CustomType(ValueType value) : ::mll::Custom{std::make_shared<Data>(std::move(value))}
+    explicit CustomType(ValueType value) : ::mll::Custom{std::make_shared<Core>(std::move(value))}
     {}
 
     CustomType(CustomType const& other) : ::mll::Custom{other}
@@ -48,19 +48,19 @@ public:
 
     static std::optional<CustomType> from_node(::mll::Node const& node)
     {
-        if (auto data = std::dynamic_pointer_cast<Data>(node.data())) {
-            return CustomType{data};
+        if (auto core = std::dynamic_pointer_cast<Core>(node.core())) {
+            return CustomType{core};
         }
         return std::nullopt;
     }
 
     ValueType const& value() const
     {
-        return std::static_pointer_cast<Data>(::mll::Custom::data())->value;
+        return std::static_pointer_cast<Core>(::mll::Custom::core())->value;
     }
 
 private:
-    CustomType(std::shared_ptr<Data> const& data) : ::mll::Custom{data}
+    CustomType(std::shared_ptr<Core> const& core) : ::mll::Custom{core}
     {}
 };
 

@@ -6,5 +6,5 @@ TEST_CASE("node can be nil", "[Node]")
 {
     mll::Node node;
 
-    REQUIRE(node.data() == nullptr);
+    REQUIRE(node.core() == nullptr);
 }

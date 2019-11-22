@@ -11,39 +11,39 @@ List const nil;
 ////////////////////////////////////////////////////////////////////////////////
 // Node::Data
 
-struct List::Data : Node::Data {
-    Data(Node const& h, List const& t) : head{h}, tail{t}
+struct List::Core : Node::Core {
+    Core(Node const& h, List const& t) : head{h}, tail{t}
     {}
 
     void accept(NodeVisitor& visitor) final
     {
-        visitor.visit(List{std::static_pointer_cast<Data>(shared_from_this())});
+        visitor.visit(List{std::static_pointer_cast<Core>(shared_from_this())});
     }
 
     Node const head;
     List const tail;
 };
 
-struct Proc::Data : Node::Data {
-    explicit Data(std::string n, Func f) : name{std::move(n)}, func{std::move(f)}
+struct Proc::Core : Node::Core {
+    explicit Core(std::string n, Func f) : name{std::move(n)}, func{std::move(f)}
     {}
 
     void accept(NodeVisitor& visitor) final
     {
-        visitor.visit(Proc{std::static_pointer_cast<Data>(shared_from_this())});
+        visitor.visit(Proc{std::static_pointer_cast<Core>(shared_from_this())});
     }
 
     std::string const name;
     Func const func;
 };
 
-struct Symbol::Data : Node::Data {
-    explicit Data(std::string n) : name{std::move(n)}
+struct Symbol::Core : Node::Core {
+    explicit Core(std::string n) : name{std::move(n)}
     {}
 
     void accept(NodeVisitor& visitor) final
     {
-        visitor.visit(Symbol{std::static_pointer_cast<Data>(shared_from_this())});
+        visitor.visit(Symbol{std::static_pointer_cast<Core>(shared_from_this())});
     }
 
     std::string const name;
@@ -52,106 +52,106 @@ struct Symbol::Data : Node::Data {
 ////////////////////////////////////////////////////////////////////////////////
 // Node
 
-Node::Node(Node const& other) : _data{other._data}
+Node::Node(Node const& other) : _core{other._core}
 {}
 
-Node::Node(List const& list) : _data{list.data()}
+Node::Node(List const& list) : _core{list.core()}
 {}
 
-Node::Node(Proc const& proc) : _data{proc.data()}
+Node::Node(Proc const& proc) : _core{proc.core()}
 {}
 
-Node::Node(Symbol const& symbol) : _data{symbol.data()}
+Node::Node(Symbol const& symbol) : _core{symbol.core()}
 {}
 
-Node::Node(Custom const& custom) : _data{custom.data()}
+Node::Node(Custom const& custom) : _core{custom.core()}
 {}
 
 Node& Node::operator=(Node const& rhs)
 {
-    _data = rhs._data;
+    _core = rhs._core;
     return *this;
 }
 
 Node& Node::operator=(List const& rhs)
 {
-    _data = rhs.data();
+    _core = rhs.core();
     return *this;
 }
 
 Node& Node::operator=(Proc const& rhs)
 {
-    _data = rhs.data();
+    _core = rhs.core();
     return *this;
 }
 
 Node& Node::operator=(Symbol const& rhs)
 {
-    _data = rhs.data();
+    _core = rhs.core();
     return *this;
 }
 
 Node& Node::operator=(Custom const& rhs)
 {
-    _data = rhs.data();
+    _core = rhs.core();
     return *this;
 }
 
 void Node::accept(NodeVisitor& visitor) const
 {
-    if (_data) {
-        _data->accept(visitor);
+    if (_core) {
+        _core->accept(visitor);
     }
     else {
         visitor.visit(nil);
     }
 }
 
-std::shared_ptr<Node::Data> const& Node::data() const
+std::shared_ptr<Node::Core> const& Node::core() const
 {
-    return _data;
+    return _core;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // List
 
-List::List(List const& other) : _data{other._data}
+List::List(List const& other) : _core{other._core}
 {}
 
-List::List(Node const& head, List const& tail) : _data{std::make_shared<Data>(head, tail)}
+List::List(Node const& head, List const& tail) : _core{std::make_shared<Core>(head, tail)}
 {}
 
-List::List(std::shared_ptr<Data> const& data) : _data{data}
+List::List(std::shared_ptr<Core> const& core) : _core{core}
 {}
 
 bool List::empty() const
 {
-    return !_data;
+    return !_core;
 }
 
 Node List::head() const
 {
-    return _data ? _data->head : nil;
+    return _core ? _core->head : nil;
 }
 
 List List::tail() const
 {
-    return _data ? _data->tail : nil;
+    return _core ? _core->tail : nil;
 }
 
-std::shared_ptr<List::Data> const& List::data() const
+std::shared_ptr<List::Core> const& List::core() const
 {
-    return _data;
+    return _core;
 }
 
 std::optional<List> List::from_node(Node const& node)
 {
-    if (!node.data()) {
+    if (!node.core()) {
         return nil;
     }
 
-    if (auto data = std::dynamic_pointer_cast<Data>(node.data())) {
-        return List{data};
+    if (auto core = std::dynamic_pointer_cast<Core>(node.core())) {
+        return List{core};
     }
     return std::nullopt;
 }
@@ -159,40 +159,40 @@ std::optional<List> List::from_node(Node const& node)
 ////////////////////////////////////////////////////////////////////////////////
 // Proc
 
-Proc::Proc(Func func) : _data{std::make_shared<Data>("anonymous", std::move(func))}
+Proc::Proc(Func func) : _core{std::make_shared<Core>("anonymous", std::move(func))}
 {}
 
-Proc::Proc(std::string name, Func func) : _data{std::make_shared<Data>(std::move(name), std::move(func))}
+Proc::Proc(std::string name, Func func) : _core{std::make_shared<Core>(std::move(name), std::move(func))}
 {}
 
-Proc::Proc(Proc const& other) : _data{other._data}
+Proc::Proc(Proc const& other) : _core{other._core}
 {}
 
-Proc::Proc(std::shared_ptr<Data> data) : _data{data}
+Proc::Proc(std::shared_ptr<Core> core) : _core{core}
 {}
 
 const std::string& Proc::name() const
 {
-    return _data->name;
+    return _core->name;
 }
 
 Node Proc::call(List const& args, Env& env) const
 {
-    if (_data->func) {
-        return _data->func(args, env);
+    if (_core->func) {
+        return _core->func(args, env);
     }
     return nil;
 }
 
-std::shared_ptr<Proc::Data> const& Proc::data() const
+std::shared_ptr<Proc::Core> const& Proc::core() const
 {
-    return _data;
+    return _core;
 }
 
 std::optional<Proc> Proc::from_node(Node const& node)
 {
-    if (auto data = std::dynamic_pointer_cast<Data>(node.data())) {
-        return Proc{data};
+    if (auto core = std::dynamic_pointer_cast<Core>(node.core())) {
+        return Proc{core};
     }
     return std::nullopt;
 }
@@ -202,38 +202,38 @@ std::optional<Proc> Proc::from_node(Node const& node)
 
 Symbol::Symbol(std::string name)
 {
-    thread_local std::map<std::string, std::shared_ptr<Data>> symbols;
+    thread_local std::map<std::string, std::shared_ptr<Core>> symbols;
 
     auto i = symbols.find(name);
     if (i == symbols.end()) {
-        _data = std::make_shared<Data>(std::move(name));
-        symbols.insert(std::make_pair(_data->name, _data));
+        _core = std::make_shared<Core>(std::move(name));
+        symbols.insert(std::make_pair(_core->name, _core));
     }
     else {
-        _data = i->second;
+        _core = i->second;
     }
 }
 
-Symbol::Symbol(Symbol const& other) : _data{other._data}
+Symbol::Symbol(Symbol const& other) : _core{other._core}
 {}
 
-Symbol::Symbol(std::shared_ptr<Data> data) : _data{data}
+Symbol::Symbol(std::shared_ptr<Core> core) : _core{core}
 {}
 
 std::string const& Symbol::name() const
 {
-    return _data->name;
+    return _core->name;
 }
 
-std::shared_ptr<Symbol::Data> const& Symbol::data() const
+std::shared_ptr<Symbol::Core> const& Symbol::core() const
 {
-    return _data;
+    return _core;
 }
 
 std::optional<Symbol> Symbol::from_node(Node const& node)
 {
-    if (auto data = std::dynamic_pointer_cast<Data>(node.data())) {
-        return Symbol{data};
+    if (auto core = std::dynamic_pointer_cast<Core>(node.core())) {
+        return Symbol{core};
     }
     return std::nullopt;
 }

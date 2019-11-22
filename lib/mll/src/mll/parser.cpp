@@ -147,7 +147,7 @@ namespace mll {
 std::optional<Node> Parser::parse(std::istream& istream)
 {
     auto make_custom_or_symbol = [this](Token const& token) -> Node {
-        std::shared_ptr<Custom::Data> custom_data;
+        std::shared_ptr<Custom::Core> custom_data;
         if (_custom_data_func) {
             custom_data = _custom_data_func(token.text, token.is_double_quoted);
         }

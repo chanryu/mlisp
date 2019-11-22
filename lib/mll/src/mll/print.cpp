@@ -81,7 +81,7 @@ private:
     {
         assert(_ostream);
 
-        custom.data()->print(*_ostream, _context);
+        custom.core()->print(*_ostream, _context);
     }
 
     void visit(Symbol const& sym) override

@@ -2,20 +2,20 @@
 
 namespace mll {
 
-void Custom::Data::accept(NodeVisitor& visitor)
+void Custom::Core::accept(NodeVisitor& visitor)
 {
-    visitor.visit(Custom{std::static_pointer_cast<Data>(shared_from_this())});
+    visitor.visit(Custom{std::static_pointer_cast<Core>(shared_from_this())});
 }
 
-Custom::Custom(Custom const& other) : _data{other._data}
+Custom::Custom(Custom const& other) : _core{other._core}
 {}
 
-Custom::Custom(std::shared_ptr<Data> const& data) : _data{data}
+Custom::Custom(std::shared_ptr<Core> const& core) : _core{core}
 {}
 
-std::shared_ptr<Custom::Data> const& Custom::data() const
+std::shared_ptr<Custom::Core> const& Custom::core() const
 {
-    return _data;
+    return _core;
 }
 
 } // namespace mll

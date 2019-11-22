@@ -22,7 +22,7 @@ public:
     bool clean() const;
 
     using CustomDataFunc =
-        std::function<std::shared_ptr<Custom::Data>(std::string const& /*token*/, bool /*is_quoted*/)>;
+        std::function<std::shared_ptr<Custom::Core>(std::string const& /*token*/, bool /*is_quoted*/)>;
     void set_custom_data_func(CustomDataFunc);
 
 private:

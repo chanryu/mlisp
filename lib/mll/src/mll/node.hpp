@@ -43,14 +43,14 @@ public:
 
     void accept(NodeVisitor&) const;
 
-    struct Data : std::enable_shared_from_this<Data> {
-        virtual ~Data() = default;
+    struct Core : std::enable_shared_from_this<Core> {
+        virtual ~Core() = default;
         virtual void accept(NodeVisitor&) = 0;
     };
-    std::shared_ptr<Data> const& data() const;
+    std::shared_ptr<Core> const& core() const;
 
 private:
-    std::shared_ptr<Data> _data;
+    std::shared_ptr<Core> _core;
 };
 
 class List final {
@@ -65,14 +65,14 @@ public:
     Node head() const;
     List tail() const;
 
-    struct Data;
-    std::shared_ptr<Data> const& data() const;
+    struct Core;
+    std::shared_ptr<Core> const& core() const;
 
     static std::optional<List> from_node(Node const&);
 
 private:
-    List(std::shared_ptr<Data> const&);
-    std::shared_ptr<Data> _data;
+    List(std::shared_ptr<Core> const&);
+    std::shared_ptr<Core> _core;
 };
 
 class Proc final {
@@ -84,14 +84,14 @@ public:
     const std::string& name() const;
     Node call(List const&, Env&) const;
 
-    struct Data;
-    std::shared_ptr<Data> const& data() const;
+    struct Core;
+    std::shared_ptr<Core> const& core() const;
 
     static std::optional<Proc> from_node(Node const&);
 
 private:
-    Proc(std::shared_ptr<Data>);
-    std::shared_ptr<Data> _data;
+    Proc(std::shared_ptr<Core>);
+    std::shared_ptr<Core> _core;
 };
 
 class Symbol final {
@@ -101,14 +101,14 @@ public:
 
     std::string const& name() const;
 
-    struct Data;
-    std::shared_ptr<Data> const& data() const;
+    struct Core;
+    std::shared_ptr<Core> const& core() const;
 
     static std::optional<Symbol> from_node(Node const&);
 
 private:
-    Symbol(std::shared_ptr<Data>);
-    std::shared_ptr<Data> _data;
+    Symbol(std::shared_ptr<Core>);
+    std::shared_ptr<Core> _core;
 };
 
 // The nil
