@@ -1,8 +1,10 @@
 #include <mll/eval.hpp>
 
 #include <mll/env.hpp>
-#include <mll/node.hpp>
+#include <mll/list.hpp>
 #include <mll/print.hpp>
+#include <mll/proc.hpp>
+#include <mll/symbol.hpp>
 
 #include <cassert>
 

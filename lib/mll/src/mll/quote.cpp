@@ -2,7 +2,9 @@
 
 #include <mll/env.hpp>
 #include <mll/eval.hpp>
-#include <mll/node.hpp>
+#include <mll/list.hpp>
+#include <mll/proc.hpp>
+#include <mll/symbol.hpp>
 
 #define MLL_DEFUN(cmd__, func__)                                                                                       \
     do {                                                                                                               \
@@ -67,9 +69,7 @@ const char* quote_symbol_name_from_token(std::string const& token)
 namespace {
 Node unquote_list(List list, Env& env)
 {
-    return car(map(list, [&env](Node const& node) {
-        return eval(node, env);
-    }));
+    return car(map(list, [&env](Node const& node) { return eval(node, env); }));
 }
 
 Node quasiquote_list(List list, Env& env)
@@ -120,9 +120,7 @@ Node quasiquote_list(List list, Env& env)
 
 void load_quote_procs(Env& env)
 {
-    MLL_DEFUN(SYMBOL_QUOTE, [](List const& args, Env& /*env*/) {
-        return car(args);
-    });
+    MLL_DEFUN(SYMBOL_QUOTE, [](List const& args, Env& /*env*/) { return car(args); });
 
     MLL_DEFUN(SYMBOL_QUASIQUOTE, [](List const& args, Env& env) {
         auto node = car(args);
@@ -132,13 +130,9 @@ void load_quote_procs(Env& env)
         return node;
     });
 
-    MLL_DEFUN(SYMBOL_UNQUOTE, [](List const& args, Env& env) {
-        return unquote_list(args, env);
-    });
+    MLL_DEFUN(SYMBOL_UNQUOTE, [](List const& args, Env& env) { return unquote_list(args, env); });
 
-    MLL_DEFUN(SYMBOL_UNQUOTE_SPLICING, [](List const& args, Env& env) {
-        return unquote_list(args, env);
-    });
+    MLL_DEFUN(SYMBOL_UNQUOTE_SPLICING, [](List const& args, Env& env) { return unquote_list(args, env); });
 }
 
 } // namespace mll

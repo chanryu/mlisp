@@ -3,10 +3,13 @@ set(SOURCES
     src/mll/custom.cpp
     src/mll/env.cpp
     src/mll/eval.cpp
+    src/mll/list.cpp
     src/mll/node.cpp
     src/mll/parser.cpp
     src/mll/print.cpp
-    src/mll/quote.cpp)
+    src/mll/proc.cpp
+    src/mll/quote.cpp
+    src/mll/symbol.cpp)
 file(GLOB HEADERS src/mll/*.hpp)
 add_library(mll STATIC ${SOURCES} ${HEADERS})
 set_target_properties(mll PROPERTIES
