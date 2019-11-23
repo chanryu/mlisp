@@ -28,30 +28,6 @@ Node& Node::operator=(Node const& rhs)
     return *this;
 }
 
-Node& Node::operator=(List const& rhs)
-{
-    _core = rhs.core();
-    return *this;
-}
-
-Node& Node::operator=(Proc const& rhs)
-{
-    _core = rhs.core();
-    return *this;
-}
-
-Node& Node::operator=(Symbol const& rhs)
-{
-    _core = rhs.core();
-    return *this;
-}
-
-Node& Node::operator=(Custom const& rhs)
-{
-    _core = rhs.core();
-    return *this;
-}
-
 void Node::accept(NodeVisitor& visitor) const
 {
     if (_core) {

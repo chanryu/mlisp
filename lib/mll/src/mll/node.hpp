@@ -24,18 +24,13 @@ public:
 class Node final {
 public:
     Node() = default;
-
     Node(Node const&);
     Node(List const&);
     Node(Proc const&);
     Node(Symbol const&);
     Node(Custom const&);
 
-    Node& operator=(Node const&);
-    Node& operator=(List const&);
-    Node& operator=(Proc const&);
-    Node& operator=(Symbol const&);
-    Node& operator=(Custom const&);
+    Node& operator=(Node const& rhs);
 
     void accept(NodeVisitor&) const;
 
