@@ -6,7 +6,7 @@ namespace mll {
 
 TEST_CASE("Proc can be casted from Node", "[Proc]")
 {
-    SECTION("Proc casting")
+    SECTION("Node to Proc casting")
     {
         Proc proc{"x", {}};
         Node node = proc;

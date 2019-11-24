@@ -14,7 +14,7 @@ TEST_CASE("List is nil by default", "[List]")
 
 TEST_CASE("List can be casted from Node", "[List]")
 {
-    SECTION("List casting")
+    SECTION("Node to List casting")
     {
         List list{nil, nil};
         REQUIRE_FALSE(list.empty());
@@ -23,7 +23,7 @@ TEST_CASE("List can be casted from Node", "[List]")
         REQUIRE(dynamic_node_cast<List>(node).has_value());
     }
 
-    SECTION("nil can be casted to (empty) List")
+    SECTION("nil to List casting")
     {
         Node node;
         REQUIRE(dynamic_node_cast<List>(node).has_value());

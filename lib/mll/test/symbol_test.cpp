@@ -14,7 +14,7 @@ TEST_CASE("Same name results same symbol", "[Symbol]")
 
 TEST_CASE("Symbol can be casted from Node", "[Symbol]")
 {
-    SECTION("Symbol casting")
+    SECTION("Node to Symbol casting")
     {
         Symbol symbol{"x"};
         Node node = symbol;
