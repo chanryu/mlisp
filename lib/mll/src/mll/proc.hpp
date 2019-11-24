@@ -11,7 +11,6 @@ using Func = std::function<Node(List const&, Env&)>;
 
 class Proc final {
 public:
-    explicit Proc(Func);
     Proc(std::string name, Func);
     Proc(Proc const&);
 

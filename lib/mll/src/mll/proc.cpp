@@ -2,9 +2,6 @@
 
 namespace mll {
 
-Proc::Proc(Func func) : _core{std::make_shared<Core>("anonymous", std::move(func))}
-{}
-
 Proc::Proc(std::string name, Func func) : _core{std::make_shared<Core>(std::move(name), std::move(func))}
 {}
 
