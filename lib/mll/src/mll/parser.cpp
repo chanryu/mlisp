@@ -1,8 +1,9 @@
 #include <mll/parser.hpp>
 
 #include <mll/custom.hpp>
-#include <mll/node.hpp>
+#include <mll/list.hpp>
 #include <mll/quote.hpp>
+#include <mll/symbol.hpp>
 
 #include <array>
 #include <cassert>
@@ -147,7 +148,7 @@ namespace mll {
 std::optional<Node> Parser::parse(std::istream& istream)
 {
     auto make_custom_or_symbol = [this](Token const& token) -> Node {
-        std::shared_ptr<Custom::Data> custom_data;
+        std::shared_ptr<Custom::Core> custom_data;
         if (_custom_data_func) {
             custom_data = _custom_data_func(token.text, token.is_double_quoted);
         }
@@ -173,7 +174,7 @@ std::optional<Node> Parser::parse(std::istream& istream)
         else if (token.text == ")") {
             List list;
             while (true) {
-                if (_stack.empty() || quote_symbol_name_from_token(_stack.top().token) != nullptr) {
+                if (_stack.empty() || is_quote_token(_stack.top().token)) {
                     throw mll::ParseError{"redundant ')'"};
                 }
 
@@ -201,9 +202,9 @@ std::optional<Node> Parser::parse(std::istream& istream)
                 return node;
             }
 
-            if (auto quote_name = quote_symbol_name_from_token(_stack.top().token)) {
+            if (auto symbol = quote_symbol_from_token(_stack.top().token)) {
                 _stack.pop();
-                node = cons(Symbol{quote_name}, cons(node, nil));
+                node = cons(*symbol, cons(node, nil));
                 continue;
             }
 

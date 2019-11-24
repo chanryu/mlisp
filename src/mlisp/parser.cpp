@@ -30,14 +30,14 @@ namespace mlisp {
 Parser::Parser()
 {
     set_custom_data_func([](std::string const& token, bool is_quoted) {
-        std::shared_ptr<mll::Custom::Data> data;
+        std::shared_ptr<mll::Custom::Core> core;
         if (is_quoted) {
-            data = std::make_shared<String::Data>(token);
+            core = std::make_shared<String::Core>(token);
         }
         else if (double value; parse_number(token, &value)) {
-            data = std::make_shared<Number::Data>(value);
+            core = std::make_shared<Number::Core>(value);
         }
-        return data;
+        return core;
     });
 }
 

@@ -2,9 +2,11 @@
 
 #include <mll/env.hpp>
 #include <mll/eval.hpp>
-#include <mll/node.hpp>
+#include <mll/list.hpp>
 #include <mll/print.hpp>
+#include <mll/proc.hpp>
 #include <mll/quote.hpp>
+#include <mll/symbol.hpp>
 
 #include <cassert>
 #include <iostream>
@@ -247,7 +249,7 @@ void set_primitive_procs(Env& env)
         assert_argc(args, 2, cmd);
         auto lhs = eval(car(args), env);
         auto rhs = eval(cadr(args), env);
-        return to_node(lhs.data() == rhs.data());
+        return to_node(lhs.core() == rhs.core());
     });
 
     MLISP_DEFUN("car", [cmd](List args, Env& env) {

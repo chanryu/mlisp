@@ -2,13 +2,9 @@
 
 #include <mll/env.hpp>
 #include <mll/eval.hpp>
-#include <mll/node.hpp>
-
-#define MLL_DEFUN(cmd__, func__)                                                                                       \
-    do {                                                                                                               \
-        auto const cmd = cmd__;                                                                                        \
-        env.set(cmd, Proc{cmd, func__});                                                                               \
-    } while (0)
+#include <mll/list.hpp>
+#include <mll/proc.hpp>
+#include <mll/symbol.hpp>
 
 namespace mll {
 
@@ -17,12 +13,11 @@ char const* const TOKEN_QUOTE = "'";
 char const* const TOKEN_QUASIQUOTE = "`";
 char const* const TOKEN_UNQUOTE = ",";
 char const* const TOKEN_UNQUOTE_SPLICING = ",@";
-} // namespace
-
 char const* const SYMBOL_QUOTE = "quote";
 char const* const SYMBOL_QUASIQUOTE = "quasiquote";
 char const* const SYMBOL_UNQUOTE = "unquote";
 char const* const SYMBOL_UNQUOTE_SPLICING = "unquote-splicing";
+} // namespace
 
 bool is_quote_token(std::string const& token)
 {
@@ -47,29 +42,31 @@ const char* quote_token_from_symbol_name(std::string const& symbol_name)
     return nullptr;
 }
 
-const char* quote_symbol_name_from_token(std::string const& token)
+std::optional<Symbol> quote_symbol_from_token(std::string const& token)
 {
+    const char* name = nullptr;
     if (token == TOKEN_QUOTE) {
-        return SYMBOL_QUOTE;
+        name = SYMBOL_QUOTE;
     }
-    if (token == TOKEN_QUASIQUOTE) {
-        return SYMBOL_QUASIQUOTE;
+    else if (token == TOKEN_QUASIQUOTE) {
+        name = SYMBOL_QUASIQUOTE;
     }
-    if (token == TOKEN_UNQUOTE) {
-        return SYMBOL_UNQUOTE;
+    else if (token == TOKEN_UNQUOTE) {
+        name = SYMBOL_UNQUOTE;
     }
-    if (token == TOKEN_UNQUOTE_SPLICING) {
-        return SYMBOL_UNQUOTE_SPLICING;
+    else if (token == TOKEN_UNQUOTE_SPLICING) {
+        name = SYMBOL_UNQUOTE_SPLICING;
     }
-    return nullptr;
+    if (name) {
+        return Symbol{name};
+    }
+    return std::nullopt;
 }
 
 namespace {
 Node unquote_list(List list, Env& env)
 {
-    return car(map(list, [&env](Node const& node) {
-        return eval(node, env);
-    }));
+    return car(map(list, [&env](Node const& node) { return eval(node, env); }));
 }
 
 Node quasiquote_list(List list, Env& env)
@@ -116,15 +113,16 @@ Node quasiquote_list(List list, Env& env)
     }
     return list;
 }
+
 } // namespace
 
 void load_quote_procs(Env& env)
 {
-    MLL_DEFUN(SYMBOL_QUOTE, [](List const& args, Env& /*env*/) {
-        return car(args);
-    });
+    auto defun = [&env](char const* cmd, Func func) { env.set(cmd, Proc{cmd, std::move(func)}); };
 
-    MLL_DEFUN(SYMBOL_QUASIQUOTE, [](List const& args, Env& env) {
+    defun(SYMBOL_QUOTE, [](List const& args, Env& /*env*/) { return car(args); });
+
+    defun(SYMBOL_QUASIQUOTE, [](List const& args, Env& env) {
         auto node = car(args);
         if (auto list = dynamic_node_cast<List>(node)) {
             node = quasiquote_list(*list, env);
@@ -132,13 +130,9 @@ void load_quote_procs(Env& env)
         return node;
     });
 
-    MLL_DEFUN(SYMBOL_UNQUOTE, [](List const& args, Env& env) {
-        return unquote_list(args, env);
-    });
+    defun(SYMBOL_UNQUOTE, [](List const& args, Env& env) { return unquote_list(args, env); });
 
-    MLL_DEFUN(SYMBOL_UNQUOTE_SPLICING, [](List const& args, Env& env) {
-        return unquote_list(args, env);
-    });
+    defun(SYMBOL_UNQUOTE_SPLICING, [](List const& args, Env& env) { return unquote_list(args, env); });
 }
 
 } // namespace mll
