@@ -42,4 +42,12 @@ std::optional<Symbol> Symbol::from_node(Node const& node)
     return std::nullopt;
 }
 
+Symbol::Core::Core(std::string n) : name{std::move(n)}
+{}
+
+void Symbol::Core::accept(NodeVisitor& visitor)
+{
+    visitor.visit(Symbol{std::static_pointer_cast<Core>(shared_from_this())});
+}
+
 } // namespace mll

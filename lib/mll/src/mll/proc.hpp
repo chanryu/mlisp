@@ -28,13 +28,8 @@ private:
 };
 
 struct Proc::Core : Node::Core {
-    explicit Core(std::string n, Func f) : name{std::move(n)}, func{std::move(f)}
-    {}
-
-    void accept(NodeVisitor& visitor) final
-    {
-        visitor.visit(Proc{std::static_pointer_cast<Core>(shared_from_this())});
-    }
+    Core(std::string, Func);
+    void accept(NodeVisitor& visitor) final;
 
     std::string const name;
     Func const func;

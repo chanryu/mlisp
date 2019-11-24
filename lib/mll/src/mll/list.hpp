@@ -27,13 +27,8 @@ private:
 };
 
 struct List::Core : Node::Core {
-    Core(Node const& h, List const& t) : head{h}, tail{t}
-    {}
-
-    void accept(NodeVisitor& visitor) final
-    {
-        visitor.visit(List{std::static_pointer_cast<Core>(shared_from_this())});
-    }
+    Core(Node const& h, List const& t);
+    void accept(NodeVisitor& visitor) final;
 
     Node const head;
     List const tail;

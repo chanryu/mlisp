@@ -37,4 +37,12 @@ std::optional<Proc> Proc::from_node(Node const& node)
     return std::nullopt;
 }
 
+Proc::Core::Core(std::string n, Func f) : name{std::move(n)}, func{std::move(f)}
+{}
+
+void Proc::Core::accept(NodeVisitor& visitor)
+{
+    visitor.visit(Proc{std::static_pointer_cast<Core>(shared_from_this())});
+}
+
 } // namespace mll

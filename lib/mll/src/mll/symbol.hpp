@@ -22,13 +22,8 @@ private:
 };
 
 struct Symbol::Core : Node::Core {
-    explicit Core(std::string n) : name{std::move(n)}
-    {}
-
-    void accept(NodeVisitor& visitor) final
-    {
-        visitor.visit(Symbol{std::static_pointer_cast<Core>(shared_from_this())});
-    }
+    explicit Core(std::string);
+    void accept(NodeVisitor& visitor) final;
 
     std::string const name;
 };
