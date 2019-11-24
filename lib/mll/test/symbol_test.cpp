@@ -14,12 +14,9 @@ TEST_CASE("Same name results same symbol", "[Symbol]")
 
 TEST_CASE("Symbol can be casted from Node", "[Symbol]")
 {
-    SECTION("Node to Symbol casting")
-    {
-        Symbol symbol{"x"};
-        Node node = symbol;
-        REQUIRE(dynamic_node_cast<Symbol>(node).has_value());
-    }
+    Symbol symbol{"x"};
+    Node node = symbol;
+    REQUIRE(dynamic_node_cast<Symbol>(node).has_value());
 }
 
 } // namespace mll

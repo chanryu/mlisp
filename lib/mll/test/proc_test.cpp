@@ -6,12 +6,9 @@ namespace mll {
 
 TEST_CASE("Proc can be casted from Node", "[Proc]")
 {
-    SECTION("Node to Proc casting")
-    {
-        Proc proc{"x", {}};
-        Node node = proc;
-        REQUIRE(dynamic_node_cast<Proc>(node).has_value());
-    }
+    Proc proc{"x", {}};
+    Node node = proc;
+    REQUIRE(dynamic_node_cast<Proc>(node).has_value());
 }
 
 } // namespace mll
