@@ -2,10 +2,32 @@
 
 #include <mll/list.hpp>
 
+namespace mll {
+
 TEST_CASE("List is nil by default", "[List]")
 {
-    mll::List l;
+    List l;
 
     REQUIRE(l.empty());
-    REQUIRE(l == mll::nil);
+    REQUIRE(l == nil);
 }
+
+TEST_CASE("List can be casted from Node", "[List]")
+{
+    SECTION("List casting")
+    {
+        List list{nil, nil};
+        REQUIRE_FALSE(list.empty());
+
+        Node node = list;
+        REQUIRE(dynamic_node_cast<List>(node).has_value());
+    }
+
+    SECTION("nil can be casted to (empty) List")
+    {
+        Node node;
+        REQUIRE(dynamic_node_cast<List>(node).has_value());
+        REQUIRE(dynamic_node_cast<List>(node)->empty());
+    }
+}
+} // namespace mll
