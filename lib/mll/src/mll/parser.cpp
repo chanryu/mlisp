@@ -174,7 +174,7 @@ std::optional<Node> Parser::parse(std::istream& istream)
         else if (token.text == ")") {
             List list;
             while (true) {
-                if (_stack.empty() || quote_symbol_name_from_token(_stack.top().token) != nullptr) {
+                if (_stack.empty() || is_quote_token(_stack.top().token)) {
                     throw mll::ParseError{"redundant ')'"};
                 }
 
@@ -202,9 +202,9 @@ std::optional<Node> Parser::parse(std::istream& istream)
                 return node;
             }
 
-            if (auto quote_name = quote_symbol_name_from_token(_stack.top().token)) {
+            if (auto symbol = quote_symbol_from_token(_stack.top().token)) {
                 _stack.pop();
-                node = cons(Symbol{quote_name}, cons(node, nil));
+                node = cons(*symbol, cons(node, nil));
                 continue;
             }
 
