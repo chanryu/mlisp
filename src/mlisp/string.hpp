@@ -4,6 +4,10 @@
 
 #include <string>
 
+namespace mll {
+class Env;
+}
+
 namespace mlisp {
 
 struct StringPrinter {
@@ -11,5 +15,7 @@ struct StringPrinter {
 };
 
 using String = mll::CustomType<std::string, StringPrinter>;
+
+void set_string_procs(mll::Env& env);
 
 } // namespace mlisp

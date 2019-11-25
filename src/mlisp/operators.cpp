@@ -32,23 +32,9 @@ namespace mlisp {
 
 namespace {
 
-bool is_string(Node const& node)
-{
-    return dynamic_node_cast<String>(node).has_value();
-}
-
 bool is_symbol(Node const& node)
 {
     return dynamic_node_cast<Symbol>(node).has_value();
-}
-
-String to_string_or_throw(Node const& node, char const* cmd)
-{
-    auto str = dynamic_node_cast<String>(node);
-    if (!str) {
-        throw EvalError(cmd + (": " + std::to_string(node)) + " is not a string.");
-    }
-    return *str;
 }
 
 } // namespace
@@ -68,24 +54,11 @@ void set_complementary_procs(Env& env)
 
     MLISP_DEFUN("load", [cmd](List args, Env& env) {
         assert_argc(args, 1, cmd);
-        auto filename = to_string_or_throw(car(args), cmd);
-        return to_node(!load_file(env, filename.value()));
-    });
-}
-
-void set_string_procs(Env& env)
-{
-    MLISP_DEFUN("string?", [cmd](List const& args, Env& env) {
-        assert_argc(args, 1, cmd);
-        return to_node(is_string(eval(car(args), env)));
-    });
-
-    MLISP_DEFUN("string-equal?", [cmd](List const& args, Env& env) {
-        assert_argc(args, 2, cmd);
-
-        auto const str1 = to_string_or_throw(eval(car(args), env), cmd);
-        auto const str2 = to_string_or_throw(eval(cadr(args), env), cmd);
-        return to_node(str1.value() == str2.value());
+        auto filename = dynamic_node_cast<String>(car(args));
+        if (!filename) {
+            throw EvalError("load: " + std::to_string(car(args)) + " does not evaluate to a string.");
+        }
+        return to_node(!load_file(env, filename->value()));
     });
 }
 

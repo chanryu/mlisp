@@ -9,6 +9,7 @@
 #include "parser.hpp"
 #include "primitives.hpp"
 #include "repl.hpp"
+#include "string.hpp"
 
 #include <iostream>
 
