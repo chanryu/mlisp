@@ -59,6 +59,34 @@ inline Node cadr(List const& list)
     return car(cdr(list));
 }
 
+inline size_t length(List list)
+{
+    size_t len = 0;
+    while (!list.empty()) {
+        len += 1;
+        list = cdr(list);
+    }
+    return len;
+}
+
+template <typename Func>
+void for_each(List list, Func&& func)
+{
+    while (!list.empty()) {
+        func(car(list));
+        list = cdr(list);
+    }
+}
+
+template <typename Func>
+void for_each_with_index(List list, Func const& func)
+{
+    for (size_t i = 0; !list.empty(); ++i) {
+        func(i, car(list));
+        list = cdr(list);
+    }
+}
+
 template <typename Func>
 List map(List list, Func&& func)
 {

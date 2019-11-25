@@ -13,10 +13,12 @@ add_subdirectory(lib/3rd-party/linenoise)
 ################################################################################
 # mlisp executable target
 set(MLISP_SOURCES
+    src/mlisp/argc.cpp
     src/mlisp/load.cpp
     src/mlisp/number.cpp
     src/mlisp/operators.cpp
     src/mlisp/parser.cpp
+    src/mlisp/primitives.cpp
     src/mlisp/repl.cpp
     src/mlisp/string.cpp)
 file(GLOB MLISP_HEADERS src/mlisp/*.hpp)
