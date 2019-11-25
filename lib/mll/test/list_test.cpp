@@ -7,9 +7,7 @@ namespace mll {
 TEST_CASE("List is nil by default", "[List]")
 {
     List l;
-
     REQUIRE(l.empty());
-    REQUIRE(l == nil);
 }
 
 TEST_CASE("List can be casted from Node", "[List]")
