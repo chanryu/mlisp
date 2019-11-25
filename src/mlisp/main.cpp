@@ -6,6 +6,7 @@
 #include "load.hpp"
 #include "operators.hpp"
 #include "parser.hpp"
+#include "primitives.hpp"
 #include "repl.hpp"
 
 #include <iostream>
@@ -35,9 +36,7 @@ int main(int argc, char* argv[])
     }
 
 #if MLISP_EVAL_PIPED_STDIN
-    bool is_stdin_piped = [] {
-        return !isatty(fileno(stdin));
-    }();
+    bool is_stdin_piped = [] { return !isatty(fileno(stdin)); }();
     if (is_stdin_piped) {
         try {
             mlisp::Parser parser;
