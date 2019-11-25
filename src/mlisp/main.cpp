@@ -4,6 +4,7 @@
 #include <mll/print.hpp>
 
 #include "load.hpp"
+#include "number.hpp"
 #include "operators.hpp"
 #include "parser.hpp"
 #include "primitives.hpp"

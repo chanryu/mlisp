@@ -2,6 +2,10 @@
 
 #include <mll/custom.hpp>
 
+namespace mll {
+class Env;
+}
+
 namespace mlisp {
 
 struct NumberPrinter {
@@ -9,5 +13,7 @@ struct NumberPrinter {
 };
 
 using Number = mll::CustomType<double, NumberPrinter>;
+
+void set_number_procs(mll::Env& env);
 
 } // namespace mlisp
