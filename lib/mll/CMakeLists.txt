@@ -3,6 +3,7 @@ set(SOURCES
     src/mll/custom.cpp
     src/mll/env.cpp
     src/mll/eval.cpp
+    src/mll/gc.cpp
     src/mll/list.cpp
     src/mll/node.cpp
     src/mll/parser.cpp

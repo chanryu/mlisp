@@ -24,6 +24,7 @@ private:
 struct Symbol::Core : Node::Core {
     explicit Core(std::string);
     void accept(NodeVisitor& visitor) final;
+    void get_collectables(std::vector<Collectable*>&) const final;
 
     std::string const name;
 };

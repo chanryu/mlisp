@@ -30,6 +30,7 @@ private:
 struct Proc::Core : Node::Core {
     Core(std::string, Func);
     void accept(NodeVisitor& visitor) final;
+    void get_collectables(std::vector<Collectable*>&) const final;
 
     std::string const name;
     Func const func;

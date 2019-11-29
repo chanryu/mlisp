@@ -63,4 +63,12 @@ std::optional<Node> Env::shallow_lookup(std::string const& name) const
     return std::nullopt;
 }
 
+void Env::get_collectables(std::vector<Collectable*>& collectables) const
+{
+    for (auto& [_, node] : _vars) {
+        collectables.push_back(node.core().get());
+        node.core()->get_collectables(collectables);
+    }
+}
+
 } // namespace mll

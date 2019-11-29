@@ -5,11 +5,13 @@
 #include <optional>
 #include <string>
 
+#include <mll/gc.hpp>
+
 namespace mll {
 
 class Node;
 
-class Env : public std::enable_shared_from_this<Env> {
+class Env : public std::enable_shared_from_this<Env>, Collectable {
 public:
     static std::shared_ptr<Env> create();
     std::shared_ptr<Env> derive_new();
@@ -19,6 +21,10 @@ public:
     bool shallow_update(std::string const&, Node const&);
     std::optional<Node> deep_lookup(std::string const&) const;
     std::optional<Node> shallow_lookup(std::string const&) const;
+
+private:
+    // Collectable overrides
+    void get_collectables(std::vector<Collectable*>&) const override;
 
 private:
     Env() = default;

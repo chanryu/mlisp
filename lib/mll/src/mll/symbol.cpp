@@ -50,4 +50,9 @@ void Symbol::Core::accept(NodeVisitor& visitor)
     visitor.visit(Symbol{std::static_pointer_cast<Core>(shared_from_this())});
 }
 
+void Symbol::Core::get_collectables(std::vector<Collectable*>& /*collectables*/) const
+{
+    // DO NOTHING
+}
+
 } // namespace mll

@@ -5,6 +5,8 @@
 #include <mll/proc.hpp>
 #include <mll/symbol.hpp>
 
+#include <iostream>
+
 namespace mll {
 
 Node::Node(Node const& other) : _core{other._core}
@@ -41,6 +43,22 @@ void Node::accept(NodeVisitor& visitor) const
 std::shared_ptr<Node::Core> const& Node::core() const
 {
     return _core;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+static int totalObjectCount = 0;
+
+Node::Core::Core()
+{
+    totalObjectCount += 1;
+    std::cerr << "object count = " << totalObjectCount << std::endl;
+}
+
+Node::Core::~Core()
+{
+    totalObjectCount -= 1;
+    std::cerr << "object count = " << totalObjectCount << std::endl;
 }
 
 } // namespace mll

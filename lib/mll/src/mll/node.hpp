@@ -5,6 +5,8 @@
 #include <stack>
 #include <string>
 
+#include <mll/gc.hpp>
+
 namespace mll {
 
 class Node;
@@ -34,14 +36,17 @@ public:
 
     void accept(NodeVisitor&) const;
 
-    struct Core : std::enable_shared_from_this<Core> {
-        virtual ~Core() = default;
-        virtual void accept(NodeVisitor&) = 0;
-    };
+    struct Core;
     std::shared_ptr<Core> const& core() const;
 
 private:
     std::shared_ptr<Core> _core;
+};
+
+struct Node::Core : std::enable_shared_from_this<Core>, Collectable {
+    Core();
+    virtual ~Core();
+    virtual void accept(NodeVisitor&) = 0;
 };
 
 template <typename T>

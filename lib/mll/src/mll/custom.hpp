@@ -37,6 +37,10 @@ public:
         {
             ValuePrinter::print(ostream, context, value);
         }
+        void get_collectables(std::vector<Collectable*>& /*collectables*/) const final
+        {
+            // DO NOTHING
+        }
         ValueType const value;
     };
 
