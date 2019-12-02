@@ -11,7 +11,7 @@ namespace mll {
 
 class Node;
 
-class Env : public std::enable_shared_from_this<Env>, Collectable {
+class Env : public std::enable_shared_from_this<Env>, public Collectable {
 public:
     static std::shared_ptr<Env> create();
     std::shared_ptr<Env> derive_new();
@@ -22,9 +22,9 @@ public:
     std::optional<Node> deep_lookup(std::string const&) const;
     std::optional<Node> shallow_lookup(std::string const&) const;
 
-private:
+public:
     // Collectable overrides
-    void get_collectables(std::vector<Collectable*>&) const override;
+    void mark_reachables() final;
 
 private:
     Env() = default;

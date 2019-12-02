@@ -1,3 +1,4 @@
+#include <mll/env.hpp>
 #include <mll/gc.hpp>
 
 #include <algorithm>
@@ -13,7 +14,17 @@ Collectable::Collectable()
     all_collectables.push_back(this);
 }
 
-void GC::collect()
+bool Collectable::is_reachable() const
+{
+    return _reachable;
+}
+
+void Collectable::mark_reachables()
+{
+    _reachable = true;
+}
+
+void GC::collect(Env& root_env)
 {
     // Clear
     for (auto collectable : all_collectables) {
@@ -21,6 +32,9 @@ void GC::collect()
     }
 
     // Mark
+    root_env.mark_reachables();
+
+    // Sweep
 }
 
 } // namespace mll

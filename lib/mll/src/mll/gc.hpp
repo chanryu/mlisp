@@ -4,13 +4,16 @@
 
 namespace mll {
 
+class Env;
 class GC;
 
 class Collectable {
 public:
     Collectable();
     virtual ~Collectable() = default;
-    virtual void get_collectables(std::vector<Collectable*>& collectables) const = 0;
+
+    bool is_reachable() const;
+    virtual void mark_reachables();
 
 private:
     friend class GC;
@@ -19,6 +22,6 @@ private:
 
 class GC {
 public:
-    void collect();
+    void collect(Env& root_env);
 };
 } // namespace mll

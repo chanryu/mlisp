@@ -63,11 +63,17 @@ std::optional<Node> Env::shallow_lookup(std::string const& name) const
     return std::nullopt;
 }
 
-void Env::get_collectables(std::vector<Collectable*>& collectables) const
+void Env::mark_reachables()
 {
+    if (is_reachable()) {
+        // already marked
+        return;
+    }
+
+    Collectable::mark_reachables();
+
     for (auto& [_, node] : _vars) {
-        collectables.push_back(node.core().get());
-        node.core()->get_collectables(collectables);
+        node.core()->mark_reachables();
     }
 }
 

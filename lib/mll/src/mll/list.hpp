@@ -29,7 +29,7 @@ private:
 struct List::Core : Node::Core {
     Core(Node const& h, List const& t);
     void accept(NodeVisitor& visitor) final;
-    void get_collectables(std::vector<Collectable*>&) const final;
+    void mark_reachables() final;
 
     Node const head;
     List const tail;

@@ -53,12 +53,14 @@ void List::Core::accept(NodeVisitor& visitor)
     visitor.visit(List{std::static_pointer_cast<Core>(shared_from_this())});
 }
 
-void List::Core::get_collectables(std::vector<Collectable*>& collectables) const
+void List::Core::mark_reachables()
 {
-    collectables.push_back(head.core().get());
-    head.core()->get_collectables(collectables);
-    collectables.push_back(tail.core().get());
-    tail.core()->get_collectables(collectables);
+    Node::Core::mark_reachables();
+
+    head.core()->mark_reachables();
+    if (tail.core()) {
+        tail.core()->mark_reachables();
+    }
 }
 
 } // namespace mll

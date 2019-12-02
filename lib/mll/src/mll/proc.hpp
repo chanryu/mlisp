@@ -7,11 +7,13 @@
 namespace mll {
 
 class Env;
-using Func = std::function<Node(List const&, Env&)>;
+using Func = std::function<Node(List const& /*args*/, Env& /*env*/)>;
+using ClosureFunc = std::function<Node(List const& /*args*/, Env& /*env*/, Env& /*outer_env*/)>;
 
 class Proc final {
 public:
     Proc(std::string name, Func);
+    Proc(std::string name, ClosureFunc, std::shared_ptr<Env> const& outer_env);
     Proc(Proc const&);
 
     const std::string& name() const;
@@ -29,10 +31,13 @@ private:
 
 struct Proc::Core : Node::Core {
     Core(std::string, Func);
+    Core(std::string, ClosureFunc, std::shared_ptr<Env> const&);
     void accept(NodeVisitor& visitor) final;
-    void get_collectables(std::vector<Collectable*>&) const final;
+    void mark_reachables() final;
 
     std::string const name;
     Func const func;
+    ClosureFunc const closure_func;
+    std::shared_ptr<Env> const outer_env;
 };
 } // namespace mll

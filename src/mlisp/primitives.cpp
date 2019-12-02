@@ -68,8 +68,8 @@ List to_formal_args_or_throw(Node const& node, char const* cmd)
 Node make_lambda(std::string name, List const& formal_args, List const& lambda_body,
                  std::shared_ptr<Env> const& outer_env)
 {
-    return Proc(std::move(name), [formal_args, lambda_body, outer_env](List args, Env& env) {
-        auto lambda_env = outer_env->derive_new();
+    auto func = [formal_args, lambda_body](List args, Env& env, Env& outer_env) {
+        auto lambda_env = outer_env.derive_new();
         auto syms = formal_args;
         while (!syms.empty()) {
             auto sym = dynamic_node_cast<Symbol>(car(syms));
@@ -100,7 +100,9 @@ Node make_lambda(std::string name, List const& formal_args, List const& lambda_b
         for_each(lambda_body, [&result, lambda_env](auto const& expr) { result = eval(expr, *lambda_env); });
 
         return result;
-    });
+    };
+
+    return Proc(std::move(name), std::move(func), outer_env);
 }
 
 Proc make_macro(std::string name, List const& formal_args, Node const& macro_body)

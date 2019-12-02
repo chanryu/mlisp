@@ -21,10 +21,9 @@ private:
     std::shared_ptr<Core> _core;
 };
 
-struct Symbol::Core : Node::Core {
+struct Symbol::Core final : Node::Core {
     explicit Core(std::string);
     void accept(NodeVisitor& visitor) final;
-    void get_collectables(std::vector<Collectable*>&) const final;
 
     std::string const name;
 };
