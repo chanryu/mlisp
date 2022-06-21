@@ -11,6 +11,8 @@ public:
     List(List const&);
     List(Node const& head, List const& tail);
 
+    List& operator=(List const& rhs);
+
     bool empty() const;
 
     Node head() const;

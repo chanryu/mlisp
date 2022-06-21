@@ -13,6 +13,14 @@ List::List(Node const& head, List const& tail) : _core{std::make_shared<Core>(he
 List::List(std::shared_ptr<Core> const& core) : _core{core}
 {}
 
+List& List::operator=(List const& rhs)
+{
+    if (this != &rhs) {
+        _core = rhs._core;
+    }
+    return *this;
+}
+
 bool List::empty() const
 {
     return !_core;
