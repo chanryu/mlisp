@@ -1,7 +1,5 @@
 # mlisp
 
-![Build Status](https://travis-ci.com/chanryu/mlisp.svg?branch=master)
-
 ### Why?
 Because every programmer should write (unless already have written) their own Lisp interpreter!
 
